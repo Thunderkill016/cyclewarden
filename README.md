@@ -1,164 +1,163 @@
 # ✦ CycleWarden
 
-**Unified AI-Native Product Evolution System & Deterministic Control Engine**
+**Experimental local workflow for bounded AI-assisted software delivery**
 
-CycleWarden combines a product workspace, Next.js application foundation, deterministic evolution kernel, evidence-backed research intelligence, governed agent delivery, automated verification, and continuous measured learning into one product lifecycle.
+CycleWarden helps a solo developer prepare a real repository task, hand implementation to a coding agent, verify the resulting change, and make a human merge decision.
 
-> CycleWarden was formerly named Shipkit. Existing state and configuration
-> compatibility are documented in
-> [docs/RENAMING_FROM_SHIPKIT.md](docs/RENAMING_FROM_SHIPKIT.md).
+> **Current direction:** CycleWarden is in practical validation mode. The previous full-platform roadmap is frozen. Active work is tracked in [issue #57](https://github.com/Thunderkill016/cyclewarden/issues/57) and defined in [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md).
 
-> **Core Philosophy:** Models and agents are *interchangeable workers*. They do not own CycleWarden's state, permissions, evidence, release authority, or final verdicts. CycleWarden wraps probabilistic AI in a deterministic control harness.
+CycleWarden was formerly named Shipkit. Existing state and configuration compatibility are documented in [`docs/RENAMING_FROM_SHIPKIT.md`](docs/RENAMING_FROM_SHIPKIT.md).
 
-[![Node.js](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](https://nodejs.org)
-[![pnpm](https://img.shields.io/badge/pnpm-9.15.0-blue.svg)](https://pnpm.io)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Security: Protected](https://img.shields.io/badge/Security-Secret%20Scanning%20%26%20Push%20Protection-success.svg)](#security-boundary)
-[![Autonomy](https://img.shields.io/badge/autonomy-A2%20%2B%20trusted--local%20A3-blueviolet.svg)](#current-status)
+## Current product hypothesis
 
----
+For a solo developer using Codex or another coding agent on real repositories, bounded task preparation and independent verification can reduce:
 
-## 🔄 Unified Product Loop
+- unclear task scope;
+- accidental changes outside the request;
+- repeated implementation attempts;
+- uncertainty about whether a change is ready to merge.
 
-Every product improvement cycle (`EvolutionCycle`) progresses through one durable, evidence-gated lifecycle:
+The repository does **not** currently claim that CycleWarden is better than using a coding agent directly. That must be decided from six real project tasks.
+
+## Practical workflow
 
 ```text
-  idea & product definition
-→ product workspace & foundation
-→ repository inspection & modeling
-→ evidence-backed research & discovery
-→ opportunity decision & experiment planning
-→ governed agent-assisted implementation
-→ independent verification & security audit
-→ authorized release & deployment
-→ outcome measurement & continuous learning
+real task
+→ repository context and bounded scope
+→ coding agent implementation
+→ test / lint / typecheck / build
+→ changed-file and patch verification
+→ human review and merge decision
 ```
 
----
+The useful surface today is:
 
-## 🧩 Architecture & Product Modules
+1. inspect and assess a repository;
+2. prepare an evidence-backed execution handoff;
+3. run one trusted local implementation in an isolated branch or worktree;
+4. require a different verifier before accepting the change;
+5. optionally publish the exact verified commit as a draft pull request.
 
-| Module | Description & Role |
-| :--- | :--- |
-| **Product Workspace** | Web UI (`apps/web`) for bounded A2 research, decision inspection, human approvals, and evidence review. |
-| **Product Foundation** | Generated Next.js application with Supabase / Better Auth, Drizzle/PostgreSQL, Tailwind CSS, Sentry, and Vercel/Docker recipes. |
-| **Evolution Kernel** | Deterministic lifecycle engine (`packages/evolution-core`), append-only journal (`events.jsonl`), write locks, and recovery snapshots. |
-| **Research Intelligence** | Public repository search, claim extraction, citation integrity verification, deduplication, and contradiction analysis. |
-| **Execution & Sandbox** | Manifest-bound trusted-local delivery, isolated worktrees, and a separate hostile Docker check baseline. |
-| **Verification & Evidence** | SHA-256 content-addressed evidence, patch digests, independent verifier commands, and accepted/rejected/inconclusive verdicts. |
-| **Delivery & Operations** | Verified local branches plus explicit opt-in push and draft PR publication; merge, deployment, rollback, and production operations remain later gates. |
-| **Learning & Improvement** | Durable memory records with expiry/scope, skill registry, paired cycle evaluations, and evidence-gated promotion. |
-| **Interoperability** | GitHub workflows and portable records today; broader MCP, tracing and trust attestations remain planned. |
+## Practical validation
 
----
+Issue #57 compares:
 
-## 🚦 Current Status & Autonomy Levels
+- three real tasks using the normal coding-agent workflow;
+- three comparable real tasks using CycleWarden.
 
-**Current autonomy:** A2 is operational for repository research. A3 is an experimental trusted-local CLI beta for explicitly trusted repositories, commands, remotes, and GitHub accounts.
+Fixtures and synthetic work do not count. Every task records preparation time, implementation retries, scope escapes, checks, review time, friction, and final outcome using [`docs/practical/TASK_RECORD_TEMPLATE.md`](docs/practical/TASK_RECORD_TEMPLATE.md).
 
-### Safe Autonomy Scale
+After six tasks:
 
-- **A0:** Inspect and display repository evidence.
-- **A1:** Bounded research, planning, static checks, and record creation.
-- **A2 (Operational):** Research and decision preparation within approved data scopes.
-- **A3 (Trusted-local beta):** Execute one exact `ExecutionHandoff` in an isolated branch/worktree, require a different verifier before creating a local commit, and optionally publish that exact commit as a draft PR.
-- **A4:** Production deployment, secret access, infrastructure spending, and other high-risk operations requiring explicit human approval.
+- keep task preparation only if it materially improves clarity or context recovery;
+- keep execution orchestration only if it removes repeated work without comparable friction;
+- keep verification if it catches meaningful errors or clarifies merge decisions;
+- freeze CycleWarden as a research prototype if direct coding-agent use performs as well or better.
 
-### Implemented and Verified Capabilities
+## Frozen during validation
 
-- ✅ **Deterministic Evolution Engine:** Append-only transaction journal, atomic snapshots, write-lock serialization, and recovery.
-- ✅ **Evidence Registry:** SHA-256 content-addressed storage for evidence blobs, occurrences, citations, delivery records, patch snapshots, and publication records.
-- ✅ **Research Intelligence:** Public GitHub search provider, repository research, named-candidate comparison, citation capture, and contradiction auditing.
-- ✅ **Bounded A2 Workspace:** Objective → inspect → assess → research → reviewed `ExecutionHandoff` against one server-configured trusted repository.
-- ✅ **Governed Local Delivery:** Generic command and optional Codex CLI profile, exact handoff digest binding, clean-base requirement, isolated worktree, changed-file scope checks, separate verifier, local commit after accepted checks, and explicit verified draft-PR publication.
-- ✅ **Application Foundation:** Next.js workspace, Supabase / Better Auth, PostgreSQL migrations, and Playwright E2E tests.
-- ✅ **Security Baselines:** Secret scanning, push protection, bounded execution interfaces, and hostile Docker check proof.
+The following are not active product goals:
 
----
+- multi-project web dashboards;
+- deployment and rollback automation;
+- outcome analytics and recursive learning;
+- MCP/A2A integration;
+- multi-user SaaS;
+- additional coding-agent adapters;
+- additional sandbox backends;
+- broad research-provider expansion;
+- persistence hardening unrelated to a real task blocker.
 
-## 💡 Product Usability and Readiness
+Existing code for these areas is preserved as technical evidence. It is not deleted, but architecture completeness no longer justifies new work.
 
-### 🟢 Ready to Use Now
+## Existing technical capabilities
 
-- **Web application foundation (`apps/web`):** A modern product starter with auth, database, security, mail, storage, payment ports, tests, and deployment recipes.
-- **A2 workspace and CLI:** Create a cycle, inspect and assess a repository, run bounded research, inspect evidence, and persist a reviewed handoff.
-- **Trusted-local delivery CLI:** Run one exact approved implementation command in an isolated worktree, require independent verification before a local commit, and explicitly publish that verified commit as a draft PR.
+The repository already contains:
 
-### 🟠 Important Beta Boundaries
+- a deterministic lifecycle and evidence core;
+- repository inspection and readiness assessment;
+- bounded repository research and `ExecutionHandoff` records;
+- trusted-local command and optional Codex CLI delivery profiles;
+- clean-base and isolated worktree requirements;
+- changed-file scope checks and external-symlink rejection;
+- separate implementer and verifier identities;
+- test, lint, typecheck and build verification commands;
+- local commit creation only after an accepted verdict;
+- explicit opt-in draft pull-request publication;
+- CI, Docker hostile-check fixtures, and Node.js 20/22/24 package verification.
 
-- Trusted-local delivery is **not a security sandbox**. The command runs with the current operating-system user's available filesystem, credential, tool, and network privileges.
-- The web workspace still ends at `ExecutionHandoff`; execute, verify, and publish are CLI-only.
-- Draft PR publication requires explicit `--draft-pr`, an installed and authenticated GitHub CLI, and a trusted Git remote/account.
-- Publication never merges or deploys. A branch push may succeed while later PR creation becomes inconclusive and requires operator attention.
-- A process crash after the cycle enters `executing` or during publication may require manual recovery.
-- Untrusted writable agent execution needs a remote or microVM backend with explicit egress, disk, credential, and lifecycle controls.
-- Release, deployment, rollback, outcome measurement, and learning are not yet complete.
-- The preserved six-session external protocol is deferred at `0/6`; external product value is not claimed.
+These mechanisms are implementation details supporting the practical workflow, not separate roadmap obligations.
 
-### Recommended Usage Today
+## Important boundaries
 
-- **Product foundation:** use `apps/web` or `pnpm create -- my-product`.
-- **Repository decisions:** use the web workspace or `pnpm evolve` for evidence-backed audits and reviewed handoffs.
-- **Trusted local implementation:** use `pnpm deliver` only for a repository and implementation command you trust, verify with a distinct actor, then explicitly open a draft PR for human review.
+- Trusted-local execution is **not a security sandbox**. Commands inherit the current operating-system user's accessible filesystem, credentials, tools, and network.
+- The web workspace ends at the execution handoff. Execute, verify, and publish remain CLI operations.
+- Draft pull-request publication requires an installed and authenticated GitHub CLI.
+- CycleWarden never automatically merges, deploys, accesses production secrets, or spends money.
+- CI success proves technical checks passed; it does not prove product value.
 
----
-
-## ⚡ Quickstart
+## Quickstart
 
 ### Prerequisites
 
-- Node.js `≥ 20`
-- `pnpm` `≥ 9`
-- Git for governed delivery
-- GitHub CLI (`gh`) authenticated to the target hostname for draft PR publication
+- Node.js 20 or later
+- pnpm 9 or later
+- Git
+- GitHub CLI only when publishing a draft pull request
 
-### 1. Install and Initialize
+### Install
 
 ```bash
-# Clone repository
 git clone https://github.com/Thunderkill016/cyclewarden.git
 cd cyclewarden
-
 pnpm install
 pnpm --filter @cyclewarden/evolution-core build
 pnpm evolve -- init
 ```
 
-### 2. Run an A2 Evolution Cycle
+### Inspect a trusted repository
 
 ```bash
 pnpm evolve -- start \
-  --id cyclewarden:cycle-001 \
-  --objective "Identify the highest-value bounded improvement" \
+  --id practical:task-001 \
+  --objective "Prepare one bounded real project task" \
   --autonomy A2 \
   --risk R1
 
-pnpm evolve -- inspect cyclewarden:cycle-001 --project-root .
-pnpm evolve -- assess cyclewarden:cycle-001 --project-root .
-pnpm evolve -- show cyclewarden:cycle-001
+pnpm evolve -- inspect practical:task-001 \
+  --project-root /absolute/path/to/trusted/repository
+
+pnpm evolve -- assess practical:task-001 \
+  --project-root /absolute/path/to/trusted/repository
+
+pnpm evolve -- show practical:task-001
 ```
 
-The repository-research flow can then produce a reviewed `ExecutionHandoff`. A3 delivery requires a cycle intentionally created or authorized at A3 and a manifest whose `expectedParameterDigest` exactly matches that handoff.
+Repository research can then produce a reviewed `ExecutionHandoff`.
 
-### 3. Run Trusted-Local Delivery
+### Run trusted-local delivery
 
-See [`docs/evolution/GOVERNED_DELIVERY.md`](docs/evolution/GOVERNED_DELIVERY.md) for the manifest format and full boundaries.
+See [`docs/evolution/GOVERNED_DELIVERY.md`](docs/evolution/GOVERNED_DELIVERY.md) for the manifest contract and safety boundaries.
 
 ```bash
 pnpm deliver -- execute <cycle-id> \
-  --root .cyclewarden \
+  --root /absolute/path/to/project/.cyclewarden \
   --project-root /absolute/path/to/trusted/repository \
   --manifest delivery.json \
   --actor owner-implementation-agent \
   --trusted-repository
 
 pnpm deliver -- verify <cycle-id> \
-  --root .cyclewarden \
+  --root /absolute/path/to/project/.cyclewarden \
   --project-root /absolute/path/to/trusted/repository \
   --actor independent-verifier
+```
 
+Publishing is a separate explicit operation:
+
+```bash
 pnpm deliver -- publish <cycle-id> \
-  --root .cyclewarden \
+  --root /absolute/path/to/project/.cyclewarden \
   --project-root /absolute/path/to/trusted/repository \
   --actor owner-publisher \
   --draft-pr \
@@ -166,47 +165,17 @@ pnpm deliver -- publish <cycle-id> \
   --base main
 ```
 
-Verification creates a local commit on the isolated branch. Publication is a separate explicit command that pushes only that verified commit and opens a draft PR. Neither command merges or deploys.
-
-### 4. Run the Web Workspace
-
-```bash
-pnpm ready
-pnpm dev
-```
-
-Open `http://localhost:3000/app/evolution`.
-
----
-
-## 🛡️ Security Boundary
-
-CycleWarden enforces deterministic authorization and evidence boundaries, but each execution backend has a different trust model:
-
-- **Evidence-gated transitions:** lifecycle state changes require the correct stage, artifacts, autonomy, risk, and approval scope.
-- **Secret protection:** GitHub Secret Scanning and Push Protection reduce accidental committed credential exposure.
-- **Docker hostile-check baseline:** immutable image, denied network, read-only container root, reduced environment, resource bounds, and cleanup checks.
-- **Trusted-local delivery:** shell-free orchestration, isolated worktree, changed-file scope checks, patch digest, separate verifier, exact verified-commit publication, and durable partial-result evidence. This does not isolate the commands from the current user account or prevent arbitrary side effects outside the worktree.
-- **No implicit release authority:** CycleWarden may open a draft PR only after explicit opt-in; it does not automatically merge or deploy.
-
----
-
-## 📚 Documentation Index
+## Documentation
 
 | Document | Purpose |
-| :--- | :--- |
-| [`IDEA.md`](./IDEA.md) | Single product source of truth and vision |
-| [`ROADMAP.md`](./ROADMAP.md) | Milestone roadmap and workstreams |
-| [`ARCHITECTURE.md`](./docs/evolution/ARCHITECTURE.md) | Unified product architecture and module contracts |
-| [`GOVERNED_DELIVERY.md`](./docs/evolution/GOVERNED_DELIVERY.md) | Trusted-local A3 delivery manifest, verifier, and draft PR publication boundaries |
-| [`PROJECT_MODEL.md`](./docs/ai/PROJECT_MODEL.md) | Verified project model, capabilities, gaps, and priority order |
-| [`CAPABILITIES.json`](./docs/CAPABILITIES.json) | Machine-readable capability truth and limitations |
-| [`DATA_GOVERNANCE.md`](./docs/evolution/DATA_GOVERNANCE.md) | Data classification, privacy, and retention rules |
+| --- | --- |
+| [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md) | Active product direction and frozen boundaries |
+| [`docs/practical/TASK_RECORD_TEMPLATE.md`](docs/practical/TASK_RECORD_TEMPLATE.md) | Evidence template for the six-task comparison |
+| [`ROADMAP.md`](ROADMAP.md) | Current practical validation roadmap |
+| [`docs/evolution/GOVERNED_DELIVERY.md`](docs/evolution/GOVERNED_DELIVERY.md) | Trusted-local execution and verification contract |
+| [`docs/CAPABILITIES.json`](docs/CAPABILITIES.json) | Machine-readable technical capability evidence |
+| [`IDEA.md`](IDEA.md) | Historical broad product vision retained for reference |
 
----
+## License
 
-## 🤝 License and Contribution
-
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE).
-
-Contributions must align with the One Product Loop: claims must link to verifiable code, tests, evidence, or product-outcome data. Models and agents may propose and implement work, but they do not own final authorization, verification, merge, deployment, or product-value claims.
+Distributed under the MIT License. See [`LICENSE`](LICENSE).
