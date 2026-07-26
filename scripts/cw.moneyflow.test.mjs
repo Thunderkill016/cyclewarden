@@ -16,23 +16,27 @@ test("MoneyFlow brownfield pilot is structurally valid", async () => {
   assert.deepEqual(validateProject(model), []);
 });
 
-test("MoneyFlow next remains on the manual readiness gates", async () => {
+test("MoneyFlow next advances to seven-day self-use after readiness passes", async () => {
   const model = await loadProject(moneyFlowFixture);
   const next = selectNextTask(model);
 
-  assert.equal(next.task.id, "MFVN-001");
-  assert.equal(next.task.humanOnly, true);
-  assert.match(next.task.title, /manual readiness gates/i);
+  assert.equal(next.task.id, "MFVN-002");
+  assert.equal(next.task.humanOnly, undefined);
+  assert.match(next.task.title, /seven consecutive days/i);
 });
 
-test("MoneyFlow status explains why redesign work is blocked", async () => {
+test("MoneyFlow status keeps redesign blocked during self-use", async () => {
   const model = await loadProject(moneyFlowFixture);
   const status = projectStatus(model);
 
-  assert.equal(status.activeTask.id, "MFVN-001");
-  assert.equal(status.activeTask.humanOnly, true);
-  assert.ok(status.blockers.some((blocker) => blocker.type === "human-evidence"));
+  assert.equal(status.activeTask.id, "MFVN-002");
+  assert.equal(status.activeTask.humanOnly, false);
+  assert.equal(status.blockers.length, 0);
   assert.match(model.status.ownerSummary.whatNotToDo, /Do not begin the broad redesign/i);
+
+  const readiness = model.roadmap.tasks.find((task) => task.id === "MFVN-001");
+  assert.equal(readiness.status, "done");
+  assert.equal(readiness.completedAt, "2026-07-27");
 
   const redesign = model.roadmap.tasks.find((task) => task.id === "MFVN-003");
   assert.equal(redesign.status, "blocked");
