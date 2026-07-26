@@ -4,8 +4,14 @@ import "./check-capabilities.mjs";
 const required = [
   "AGENTS.md",
   "AI_WORKFLOW.md",
+  "PROJECT_OS_SCOPE.md",
+  "PRACTICAL_SCOPE.md",
+  "README.md",
+  "ROADMAP.md",
   "IDEA.md",
   "ARCHITECTURE.md",
+  "docs/research/AI_PROJECT_OS_LANDSCAPE.md",
+  "docs/project-os/PILOT_PROTOCOL.md",
   "docs/CAPABILITIES.json",
   "docs/ai/PROJECT_MODEL.md",
   "docs/ai/OPERATING_MODEL.md",
@@ -73,6 +79,9 @@ for (const file of required) {
 const activeDocs = [
   "AGENTS.md",
   "AI_WORKFLOW.md",
+  "PROJECT_OS_SCOPE.md",
+  "README.md",
+  "ROADMAP.md",
   ".github/copilot-instructions.md",
 ];
 
@@ -95,7 +104,21 @@ const contentChecks = [
   },
   {
     file: "AGENTS.md",
-    phrases: ["Default to A2", "Never claim to understand the entire project"],
+    phrases: [
+      "Exactly one project task is active by default",
+      "The MVP must not require a separate model provider",
+    ],
+  },
+  {
+    file: "PROJECT_OS_SCOPE.md",
+    phrases: [
+      "exactly one task may be `active`",
+      "Runtime development is frozen until a pilot exposes a repeated need",
+    ],
+  },
+  {
+    file: "AI_WORKFLOW.md",
+    phrases: ["Project OS loop", "exactly one task is active by default"],
   },
 ];
 
