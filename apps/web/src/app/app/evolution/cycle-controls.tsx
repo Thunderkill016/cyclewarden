@@ -60,24 +60,27 @@ function ActionFeedback({ state }: { state: EvolutionActionState }) {
   return null;
 }
 
-function useRefreshAfterSuccess(state: EvolutionActionState) {
+function useRefreshAfterSuccess(state: EvolutionActionState, fallbackProjectId: string) {
   const router = useRouter();
   useEffect(() => {
     if (!state.ok || !state.cycleId) return;
-    router.push(`/app/evolution?cycle=${encodeURIComponent(state.cycleId)}`);
+    const projectId = state.projectId ?? fallbackProjectId;
+    router.push(
+      `/app/evolution?project=${encodeURIComponent(projectId)}&cycle=${encodeURIComponent(state.cycleId)}`
+    );
     router.refresh();
-  }, [router, state.cycleId, state.message, state.ok, state.operation]);
+  }, [fallbackProjectId, router, state.cycleId, state.message, state.ok, state.operation, state.projectId]);
 }
 
 export function CycleControls({
   enabled,
   accessReason,
-  projectRoot,
+  project,
   selected,
 }: {
   enabled: boolean;
   accessReason: string;
-  projectRoot: string;
+  project: { id: string; label: string };
   selected: { cycleId: string; stage: string } | null;
 }) {
   const [createState, createAction, createPending] = useActionState(
@@ -88,8 +91,8 @@ export function CycleControls({
     runEvolutionWorkspaceAction,
     initialState
   );
-  useRefreshAfterSuccess(createState);
-  useRefreshAfterSuccess(stepState);
+  useRefreshAfterSuccess(createState, project.id);
+  useRefreshAfterSuccess(stepState, project.id);
 
   const next = selected ? NEXT_OPERATION[selected.stage] : null;
 
@@ -98,6 +101,7 @@ export function CycleControls({
       <div className="grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <form action={createAction} className="space-y-4 p-5 sm:p-6">
           <input type="hidden" name="operation" value="start" />
+          <input type="hidden" name="projectId" value={project.id} />
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-accent">
               New A2 cycle
@@ -161,6 +165,7 @@ export function CycleControls({
           ) : next ? (
             <form action={stepAction} className="mt-4 space-y-4">
               <input type="hidden" name="operation" value={next.value} />
+              <input type="hidden" name="projectId" value={project.id} />
               <input type="hidden" name="cycleId" value={selected.cycleId} />
               <div>
                 <p className="font-medium text-foreground">{next.title}</p>
@@ -177,8 +182,8 @@ export function CycleControls({
                     className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]"
                   />
                   <span>
-                    I confirm the configured repository is trusted. Package scripts run without a
-                    shell in a temporary source copy.
+                    I confirm <strong className="font-medium text-foreground">{project.label}</strong> is
+                    trusted. Package scripts run without a shell in a temporary source copy.
                   </span>
                 </label>
               )}
@@ -209,11 +214,10 @@ export function CycleControls({
           <div className="mt-5 border-t border-border pt-4 text-xs leading-relaxed text-muted">
             {enabled ? (
               <>
-                Configured repository:{" "}
-                <code className="break-all text-foreground">{projectRoot}</code>
+                Configured project: <code className="text-foreground">{project.label}</code>
               </>
             ) : (
-              "Configured repository path is hidden until operator access is granted."
+              "Configured project details are hidden until operator access is granted."
             )}
           </div>
         </div>
