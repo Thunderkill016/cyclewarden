@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "phase": "manual-readiness",
+  "activeTaskId": "MFVN-001",
+  "lastCompletedTaskId": "MFVN-000",
+  "blockedTaskIds": ["MFVN-002", "MFVN-003", "MFVN-004", "MFVN-005", "MFVN-006"],
+  "blockers": [
+    {
+      "taskId": "MFVN-001",
+      "type": "human-evidence",
+      "reason": "Requires an owner-controlled inbox, an end-user spreadsheet application, and a physical phone."
+    }
+  ],
+  "unresolvedDecisions": [
+    "Choose the spreadsheet application.",
+    "Choose the physical phone and browser.",
+    "Choose the seven-day self-use start date after readiness passes."
+  ],
+  "next": {
+    "taskId": "MFVN-001",
+    "reason": "Continue the active readiness task; redesign work is dependency-blocked."
+  },
+  "ownerSummary": {
+    "whatIsBeingBuilt": "A trustworthy daily personal ledger for Vietnamese users.",
+    "whyThisTaskNow": "Automated gates passed; real-world callback, spreadsheet, and phone behavior remain unknown.",
+    "whatNotToDo": "Do not begin the broad redesign while issue #27 remains open.",
+    "whatComesAfter": "Seven-day self-use, then a bounded Calm Ledger foundation slice."
+  }
+}
