@@ -1,21 +1,19 @@
 {
   "schemaVersion": 1,
-  "phase": "seven-day-self-use",
-  "activeTaskId": "MFVN-002",
+  "phase": "calm-ledger-foundation",
+  "activeTaskId": "MFVN-003",
   "lastCompletedTaskId": "MFVN-001",
-  "blockedTaskIds": ["MFVN-003", "MFVN-004", "MFVN-005", "MFVN-006"],
+  "blockedTaskIds": ["MFVN-004", "MFVN-005", "MFVN-006"],
   "blockers": [],
-  "unresolvedDecisions": [
-    "Confirm and record the calendar date used as day 1 of the seven-day self-use period."
-  ],
+  "unresolvedDecisions": [],
   "next": {
-    "taskId": "MFVN-002",
-    "reason": "All three manual readiness gates passed; seven-day self-use is now the active dependency-ready task."
+    "taskId": "MFVN-003",
+    "reason": "Manual readiness passed and the owner explicitly dropped the fixed seven-day self-use requirement after real use."
   },
   "ownerSummary": {
-    "whatIsBeingBuilt": "A trustworthy daily personal ledger for Vietnamese users.",
-    "whyThisTaskNow": "The callback, spreadsheet, and physical-phone readiness gates passed; sustained real use is the remaining product-readiness evidence.",
-    "whatNotToDo": "Do not begin the broad redesign until seven consecutive self-use days complete.",
-    "whatComesAfter": "A bounded Calm Ledger foundation slice if self-use supports continuing."
+    "whatIsBeingBuilt": "A trustworthy daily personal ledger for Vietnamese users, moving into a bounded Calm Ledger redesign.",
+    "whyThisTaskNow": "Readiness passed and the owner removed the unnecessary fixed-duration gate.",
+    "whatNotToDo": "Do not begin later redesign slices before the foundation and landing/auth slice is accepted.",
+    "whatComesAfter": "The Calm Ledger daily-flow slice."
   }
 }
