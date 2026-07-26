@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "tasks": [
+    {
+      "id": "MFVN-000",
+      "title": "Adopt MoneyFlow into the CycleWarden project model",
+      "status": "done",
+      "dependsOn": [],
+      "source": "issue #85",
+      "acceptance": ["project truth is grounded", "one task is active"],
+      "requiredEvidence": ["project.json", "roadmap.json", "status.json"]
+    },
+    {
+      "id": "MFVN-001",
+      "title": "Complete final manual readiness gates",
+      "status": "active",
+      "dependsOn": ["MFVN-000"],
+      "source": "issue #27",
+      "humanOnly": true,
+      "acceptance": [
+        "production callback passes without secret exposure",
+        "synthetic CSV is safe in an end-user spreadsheet",
+        "physical-phone transaction form remains usable with the keyboard open"
+      ],
+      "requiredEvidence": [
+        "minimal pass or fail metadata for each manual gate"
+      ]
+    },
+    {
+      "id": "MFVN-002",
+      "title": "Complete seven consecutive days of real self-use",
+      "status": "blocked",
+      "dependsOn": ["MFVN-001"]
+    },
+    {
+      "id": "MFVN-003",
+      "title": "Implement Calm Ledger foundation and landing/auth slice",
+      "status": "blocked",
+      "dependsOn": ["MFVN-002"]
+    },
+    {
+      "id": "MFVN-004",
+      "title": "Implement Calm Ledger daily-flow slice",
+      "status": "blocked",
+      "dependsOn": ["MFVN-003"]
+    },
+    {
+      "id": "MFVN-005",
+      "title": "Implement Calm Ledger planning and settings slice",
+      "status": "blocked",
+      "dependsOn": ["MFVN-004"]
+    },
+    {
+      "id": "MFVN-006",
+      "title": "Complete Calm Ledger cross-device acceptance",
+      "status": "blocked",
+      "dependsOn": ["MFVN-005"]
+    }
+  ]
+}
