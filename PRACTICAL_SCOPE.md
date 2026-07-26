@@ -1,23 +1,12 @@
-# CycleWarden practical scope
+# Historical bounded-delivery validation scope
 
-Status: active product direction
+Status: superseded by [`PROJECT_OS_SCOPE.md`](PROJECT_OS_SCOPE.md)  
+Historical tracking issue: #57  
+Superseded by Project OS pilot: #59
 
-Tracking issue: #57
+## Why this scope existed
 
-## Purpose
-
-CycleWarden is currently an experimental local workflow for a solo developer using coding agents on real repositories.
-
-Its job is limited to four outcomes:
-
-1. prepare a bounded task with relevant repository context;
-2. run or hand off implementation in an isolated Git branch or worktree;
-3. verify scope, tests and changed files independently from the implementer;
-4. produce enough evidence for a human to decide whether to merge.
-
-CycleWarden is not currently being developed as a complete AI engineering platform, hosted SaaS, deployment system or autonomous product manager.
-
-## Active workflow
+CycleWarden previously tested whether a solo developer benefited from a bounded delivery workflow:
 
 ```text
 real project task
@@ -28,61 +17,66 @@ real project task
 → human merge decision
 ```
 
-Existing internal mechanisms may support this workflow, but they are not independent product goals.
+Its intended outcomes were:
 
-## Practical validation
+1. prepare a bounded task with relevant repository context;
+2. run or hand off implementation in an isolated Git branch or worktree;
+3. verify scope, tests and changed files independently from the implementer;
+4. produce enough evidence for a human to decide whether to merge.
 
-The current phase compares six real tasks:
+The experiment compared direct coding-agent tasks with CycleWarden-assisted tasks and recorded preparation time, retries, scope escapes, failures, review time, friction and final result.
 
-- three completed through the normal coding-agent workflow;
-- three comparable tasks completed with CycleWarden assistance.
+## What was learned
 
-Fixtures, synthetic examples and work created only to exercise CycleWarden do not count.
+The research and practical preflight established useful engineering principles:
 
-Every task must record:
+- task scope and acceptance criteria matter;
+- build success does not prove scope correctness;
+- a neighboring behavior check can expose shared-code regressions;
+- implementation should remain in an isolated branch or worktree;
+- the human owner must retain merge and production decisions;
+- deterministic checks should run before adding another model call.
 
-- preparation time;
-- implementation retries;
-- scope escapes;
-- failures found before review;
-- human review time;
-- tool-specific friction;
-- final result.
+It also exposed a product problem:
 
-Use [`docs/practical/TASK_RECORD_TEMPLATE.md`](docs/practical/TASK_RECORD_TEMPLATE.md) for each task.
+- modern coding agents already implement, test, review and manage Git effectively;
+- CycleWarden's execution lifecycle added setup and ceremony before demonstrating unique value;
+- the stronger unmet problem appeared one level above individual tasks: shaping an entire project, preserving foundation decisions and maintaining task order across sessions.
 
-## Allowed development
+## Historical decision rules
 
-During practical validation, CycleWarden code may change only when:
+The old scope would have retained:
 
-- a real task cannot proceed because of a concrete defect;
-- a repeated manual step is observed in multiple real tasks;
-- the change is the smallest way to test a specific value hypothesis.
+- task preparation if it materially improved clarity;
+- execution orchestration if it reduced repeated manual effort without comparable friction;
+- verification if it caught meaningful errors or clarified merge decisions;
+- no active product if direct coding-agent use performed as well or better.
 
-Every runtime change must link to the real task that exposed the need.
+That evaluation is not being represented as a completed controlled experiment. Issue #57 and its task records remain historical evidence.
 
-## Frozen areas
+## Preserved implementation
 
-The following work is frozen until task evidence justifies re-entry:
+The repository still contains research code for:
 
-- multi-project web dashboards;
-- deployment, release and rollback automation;
-- outcome analytics and recursive learning;
-- MCP and A2A integration;
-- multi-user or hosted SaaS capabilities;
-- additional coding-agent adapters;
-- additional sandbox backends;
-- broad research-provider expansion;
-- persistence hardening unrelated to a task-blocking defect;
-- architecture work justified only by completeness.
+- repository inspection and assessment;
+- evidence and lifecycle records;
+- trusted-local execution;
+- isolated worktrees;
+- scope and patch verification;
+- separate implementer and verifier identities;
+- draft pull-request publication;
+- CI and sandbox proofs.
 
-Frozen code remains in the repository as technical and research evidence. It is not deleted or represented as the active roadmap.
+This code is preserved, not deleted. It is not the active product surface and does not create a maintenance obligation.
 
-## Decision after six tasks
+## Reuse rule
 
-- Keep `prepare` if it materially improves task clarity or context recovery.
-- Keep execution orchestration only if it reduces repeated manual effort without adding comparable friction.
-- Keep `verify` if it catches meaningful errors or makes merge decisions clearer.
-- Freeze the repository as a research prototype if direct coding-agent use performs as well or better.
+A component from the bounded-delivery system may be reused only when a Project OS pilot exposes a concrete need and reuse is smaller than building or integrating another solution.
 
-No broader roadmap resumes without observed, repeated need from real project work.
+The active direction, boundaries and experiments now live in:
+
+- [`PROJECT_OS_SCOPE.md`](PROJECT_OS_SCOPE.md);
+- [`docs/research/AI_PROJECT_OS_LANDSCAPE.md`](docs/research/AI_PROJECT_OS_LANDSCAPE.md);
+- [`docs/project-os/PILOT_PROTOCOL.md`](docs/project-os/PILOT_PROTOCOL.md);
+- [`ROADMAP.md`](ROADMAP.md);
+- issue #59.
