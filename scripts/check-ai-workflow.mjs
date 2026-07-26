@@ -94,65 +94,80 @@ const activeDocs = [
 
 const placeholderPattern = /\b(TODO|TBD|FIXME)\b|<name>|YYYY-MM-DD/;
 const unresolved = [];
-
 for (const file of activeDocs) {
   const content = await readFile(file, "utf8");
   if (placeholderPattern.test(content)) unresolved.push(file);
 }
 
-const contentChecks = [
+const conceptChecks = [
   {
     file: "docs/ai/AUTONOMOUS_IMPROVEMENT.md",
-    phrases: ["Autonomy levels", "project model", "Stop and escalation conditions"],
+    patterns: [
+      { label: "autonomy levels", regex: /Autonomy levels/i },
+      { label: "project model", regex: /project model/i },
+      { label: "stop and escalation conditions", regex: /Stop and escalation conditions/i },
+    ],
   },
   {
     file: "docs/ai/DISCOVERY_RESEARCH.md",
-    phrases: ["evidence ledger", "contradiction", "cheapest useful experiment"],
+    patterns: [
+      { label: "evidence ledger", regex: /evidence ledger/i },
+      { label: "contradiction", regex: /contradiction/i },
+      { label: "cheapest useful experiment", regex: /cheapest useful experiment/i },
+    ],
   },
   {
     file: "AGENTS.md",
-    phrases: [
-      "At most one project task is active by default",
-      "The MVP must not require a separate model provider or duplicate model calls",
-      "pnpm test:project-os",
+    patterns: [
+      { label: "one-active-task rule", regex: /at most one project task is active/i },
+      { label: "no separate model provider", regex: /must not require a separate model provider/i },
+      { label: "Project OS test command", regex: /pnpm test:project-os/ },
+      { label: "repository state contract", regex: /\.cyclewarden\// },
     ],
   },
   {
     file: "PROJECT_OS_SCOPE.md",
-    phrases: [
-      "at most one task may be `active`",
-      "The pilot requires no separate model provider",
-      "scripts/cw.mjs",
-      "Brownfield pilot evidence",
+    patterns: [
+      { label: "one-active-task rule", regex: /at most one task may be `active`/i },
+      { label: "no separate model provider", regex: /requires no separate model provider/i },
+      { label: "deterministic CLI implementation", regex: /scripts\/cw\.mjs/ },
+      { label: "MoneyFlow brownfield evidence", regex: /Brownfield pilot evidence/i },
     ],
   },
   {
     file: "AI_WORKFLOW.md",
-    phrases: ["Project OS loop", "exactly one task is active by default"],
+    patterns: [
+      { label: "Project OS loop", regex: /Project OS loop/i },
+      { label: "one active task", regex: /exactly one task is active/i },
+      { label: "deterministic validation", regex: /Deterministic validation/i },
+    ],
   },
   {
     file: "README.md",
-    phrases: [
-      "free local project operating layer",
-      "pnpm cw -- validate",
-      "First brownfield pilot: MoneyFlow",
+    patterns: [
+      { label: "free local product", regex: /free local project operating layer/i },
+      { label: "validate command", regex: /pnpm cw -- validate/ },
+      { label: "MoneyFlow pilot", regex: /brownfield pilot:\s*MoneyFlow/i },
+      { label: "no duplicate token spend", regex: /duplicate token spend/i },
     ],
   },
   {
     file: "ROADMAP.md",
-    phrases: [
-      "MoneyFlow brownfield adoption",
-      "smallest deterministic CLI",
-      "no model calls or provider keys",
+    patterns: [
+      { label: "MoneyFlow adoption milestone", regex: /MoneyFlow brownfield adoption/i },
+      { label: "deterministic CLI milestone", regex: /smallest deterministic CLI/i },
+      { label: "no model calls", regex: /no model calls or provider keys/i },
     ],
   },
 ];
 
 const incomplete = [];
-for (const check of contentChecks) {
+for (const check of conceptChecks) {
   const content = await readFile(check.file, "utf8");
-  const missingPhrases = check.phrases.filter((phrase) => !content.includes(phrase));
-  if (missingPhrases.length) incomplete.push({ file: check.file, missingPhrases });
+  const missingConcepts = check.patterns
+    .filter(({ regex }) => !regex.test(content))
+    .map(({ label }) => label);
+  if (missingConcepts.length) incomplete.push({ file: check.file, missingConcepts });
 }
 
 if (missing.length || unresolved.length || incomplete.length) {
@@ -171,7 +186,7 @@ if (missing.length || unresolved.length || incomplete.length) {
   if (incomplete.length) {
     console.error("\nRequired workflow concepts are missing:");
     for (const item of incomplete) {
-      console.error(`- ${item.file}: ${item.missingPhrases.join(", ")}`);
+      console.error(`- ${item.file}: ${item.missingConcepts.join(", ")}`);
     }
   }
 
