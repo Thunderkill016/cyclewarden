@@ -7,200 +7,183 @@
 
 ## Current objective
 
-Determine whether a lightweight, agent-neutral project operating layer helps a solo or non-expert builder maintain a coherent software project across many coding-agent sessions.
-
-The current roadmap does not resume the previous integrated-platform vision. It tests a narrower hypothesis:
+Prove whether a free, local and agent-neutral project operating layer helps a solo or non-expert builder maintain a coherent project across coding-agent sessions.
 
 ```text
-shape project
-→ record foundation decisions
-→ create dependency-aware vertical slices
+shape or recover project truth
+→ record minimum foundation decisions
+→ create dependency-aware slices
 → keep one task active
 → delegate implementation
 → verify and update state
-→ select next task
+→ select next
 ```
 
-## Product boundary
+CycleWarden owns intent, decisions, dependencies, status and acceptance structure. It delegates code to existing agents and repository checks.
 
-CycleWarden owns:
-
-- project intent and constraints;
-- product scope and first useful flow;
-- significant decisions and consequences;
-- roadmap dependencies;
-- current task, blockers and status;
-- acceptance evidence structure.
-
-CycleWarden delegates implementation to existing coding agents and should integrate with feature-level SDD tools rather than reproduce them.
-
-## Milestone P0 — research and define the candidate product
+## P0 — research and product boundary
 
 - [x] identify the whole-project failure mode not solved by code generation alone;
 - [x] compare Spec Kit, Kiro, Taskmaster, BMAD and OpenSpec;
-- [x] incorporate bounded shaping, ADR, C4 and security-requirement practices;
-- [x] define CycleWarden's layer above feature implementation;
-- [x] reject autonomous execution, multi-agent personas and hosted platform work for the pilot;
+- [x] incorporate bounded shaping, ADR, C4 and risk-based security practices;
+- [x] define CycleWarden above feature-level implementation;
+- [x] reject autonomous execution, multi-agent personas and hosted platform work;
 - [x] open issue #59 with measurable pilot acceptance.
 
-Exit: the product hypothesis and competitive boundary are explicit.
+Exit: complete.
 
-## Milestone P1 — artifact-first manual protocol
+## P1 — minimal artifact contract
 
-- [x] define repository-local project artifacts;
-- [x] define project, product, design, architecture, roadmap, decision, task and status responsibilities;
-- [x] define immutable roadmap/task IDs;
+- [x] define repository-local project state;
+- [x] choose a small JSON contract plus human README;
+- [x] define immutable task IDs and allowed statuses;
 - [x] define dependency and blocker semantics;
 - [x] define one-active-task rule;
-- [x] define task lifecycle and completion evidence;
-- [x] define greenfield and brownfield pilot procedures;
-- [ ] review the protocol against one real project idea before creating runtime code.
+- [x] require acceptance and evidence for executable/completed tasks;
+- [x] define greenfield and brownfield procedures.
 
-Exit: an existing coding agent can follow the manual protocol using repository files only.
+Current contract:
 
-## Milestone P2 — greenfield pilot
+```text
+.cyclewarden/
+├── README.md
+├── project.json
+├── roadmap.json
+└── status.json
+```
 
-Start from one real, short project idea supplied by the owner.
+Exit: complete for the pilot. Expand only after repeated evidence.
 
-Required outcomes:
+## P2 — MoneyFlow brownfield adoption
 
-- [ ] target user, problem, constraints and non-goals are clear;
-- [ ] the first end-to-end user flow is bounded;
-- [ ] only decisions needed for the first slice are recorded;
-- [ ] the roadmap contains three to seven independently valuable slices;
-- [ ] exactly one task is active;
-- [ ] an existing coding agent completes the task without changing stack or scope silently;
-- [ ] repository checks and owner review produce an honest acceptance result;
-- [ ] the next task is selected from completed dependencies.
+Tracked in `Thunderkill016/moneyflow#85` on branch `chore/cyclewarden-brownfield-pilot`.
 
-Record:
+- [x] recover product purpose, user, core flow and explicit non-goals from repository evidence;
+- [x] preserve the existing Next.js/Supabase architecture rather than redesigning it;
+- [x] record financial, RLS, export and runtime invariants;
+- [x] represent issue #27 as the single active human-gated readiness task;
+- [x] make seven-day self-use depend on the manual readiness gates;
+- [x] split issue #81 into later dependency-bound Calm Ledger slices;
+- [x] show that `next` must remain on issue #27 rather than jumping to the newest broad issue;
+- [ ] run the CLI against a checkout of the MoneyFlow branch;
+- [ ] verify a fresh agent session recovers the same active task and project direction;
+- [ ] move the active task to an honest final state after the owner performs the manual gates.
 
-- time and owner input needed to reach the first ready task;
-- number of decisions and tasks created before implementation;
-- task switches, scope changes and dependency violations;
-- implementation retries and check failures;
-- review time and owner understanding;
-- artifact maintenance and unnecessary ceremony.
+Observed value:
 
-Exit: one useful vertical slice is accepted, blocked, dropped or honestly classified as inconclusive.
+`AGENTS.md` explains how to work safely, but it does not by itself encode that a current readiness issue blocks a newer redesign issue. The task graph makes project sequencing explicit.
 
-## Milestone P3 — brownfield adoption pilot
+Exit: current-state map complete; real human-gate completion remains pending.
 
-Use one existing repository with real history and unfinished work.
+## P3 — smallest deterministic CLI
 
-Required outcomes:
+Implemented as `scripts/cw.mjs` using Node.js built-ins only.
 
-- [ ] current product, core flow, stack and boundaries are recovered from evidence;
-- [ ] confirmed facts, owner statements, inference and unknowns are separated;
-- [ ] accepted architecture is preserved rather than redesigned during adoption;
-- [ ] contradictory source-of-truth claims are recorded;
-- [ ] one valuable dependency-valid task is selected;
-- [ ] exactly one task is active;
-- [ ] a fresh agent session can recover the active task and project direction;
-- [ ] the task reaches an honest final state.
+- [x] scaffold greenfield project state with `cw init`;
+- [x] scaffold brownfield mapping state with `cw adopt`;
+- [x] parse repository-local project state;
+- [x] validate schema versions, statuses and unique IDs;
+- [x] reject missing, self and cyclic dependencies;
+- [x] enforce at most one active task and status consistency;
+- [x] reject ready/active/verify tasks with incomplete dependencies;
+- [x] require acceptance and evidence fields;
+- [x] print project status, blockers and unresolved decisions;
+- [x] return the active task or first dependency-ready task;
+- [x] provide `--json` output;
+- [x] add focused Node tests;
+- [x] include tests in `check:ai` and `verify`.
 
-Exit: the model helps continue an existing project without a broad cleanup or rewrite.
+Constraints preserved:
 
-## Milestone P4 — compare with simpler alternatives
-
-For each pilot compare CycleWarden with:
-
-- concise `AGENTS.md` and one issue;
-- plain Markdown roadmap and ADRs;
-- Spec Kit or Kiro feature specs where available;
-- Taskmaster-style dependency tracking;
-- the coding agent's normal planning behavior.
-
-Evaluate:
-
-- [ ] project continuity across sessions;
-- [ ] decision clarity and stability;
-- [ ] dependency-aware next-task selection;
-- [ ] task-switch prevention;
-- [ ] owner understanding;
-- [ ] duplicate/stale documentation;
-- [ ] total setup and maintenance cost;
-- [ ] value not already supplied by another tool.
-
-Exit: the project can state precisely which layer is unique and which layers should be integrated or dropped.
-
-## Milestone P5 — choose command scope
-
-For each candidate command choose **keep**, **integrate**, **manual** or **drop**.
-
-### `cw init`
-
-Keep only if scaffolding and validation repeatedly improve greenfield shaping.
-
-### `cw adopt`
-
-Keep only if deterministic repository discovery and evidence labeling remove repeated brownfield work.
-
-### `cw status`
-
-Keep if one machine-readable summary reliably improves continuity across sessions.
-
-### `cw next`
-
-Keep if dependency/blocker logic makes better next-task decisions than a plain checklist.
-
-### `cw validate`
-
-Keep for deterministic rules such as dependency cycles, broken links, missing fields and multiple active tasks. Do not use it to pretend semantic product correctness is deterministic.
-
-Exit: only demonstrated commands enter implementation.
-
-## Milestone P6 — smallest deterministic CLI
-
-This milestone remains blocked until P2–P5 evidence exists.
-
-Allowed implementation:
-
-- [ ] scaffold accepted artifact templates;
-- [ ] parse project status and task metadata;
-- [ ] validate task IDs, statuses, dependencies and one-active-task rule;
-- [ ] print blockers and next ready task;
-- [ ] provide machine-readable output for coding agents;
-- [ ] add focused tests for state transitions and dependency errors.
-
-Constraints:
-
-- no model call inside the CLI;
-- no provider API keys;
-- no autonomous code implementation;
+- no model calls or provider keys;
+- no autonomous implementation;
 - no database or hosted service;
 - no general workflow language;
 - no web dashboard;
 - no feature-level spec engine.
 
-Exit: the CLI automates only repeated deterministic work observed in pilots.
+This is a pilot implementation, not proof that all five commands deserve a permanent product surface.
 
-## Milestone P7 — agent integration
+## P4 — greenfield pilot
 
-Consider only after the CLI is useful independently.
+Start from one real project idea supplied by the owner.
 
-Possible work:
+Required outcomes:
 
-- generate a concise repository `AGENTS.md` entrypoint;
-- provide installable skill/command wrappers for Codex or Claude Code;
-- export a roadmap slice into Spec Kit or OpenSpec-compatible feature work;
-- read repository-owned verification commands;
-- add optional hooks that run deterministic validation.
+- [ ] target user, problem, constraints and non-goals are clear;
+- [ ] first end-to-end flow is bounded;
+- [ ] only decisions required by the first slice are selected;
+- [ ] roadmap contains three to seven independently valuable slices;
+- [ ] exactly one task is active;
+- [ ] existing coding agent completes the first task without silently changing stack or scope;
+- [ ] repository checks and owner review produce an honest result;
+- [ ] `next` selects from completed dependencies.
+
+Record setup time, owner input, number of decisions/tasks, task switching, scope changes, retries, check failures, review time and artifact maintenance.
+
+Exit: one useful vertical slice reaches accepted, blocked, dropped or honestly inconclusive status.
+
+## P5 — compare with simpler alternatives
+
+Compare both pilots with:
+
+- concise `AGENTS.md` and one issue;
+- plain roadmap plus ADRs;
+- Spec Kit or Kiro feature specs;
+- Taskmaster-style dependency tracking;
+- normal coding-agent planning.
+
+Evaluate:
+
+- [ ] project continuity across sessions;
+- [ ] decision clarity and stability;
+- [ ] dependency-aware next selection;
+- [ ] prevention of unfinished-task jumping;
+- [ ] owner understanding;
+- [ ] duplicate or stale documentation;
+- [ ] total setup and maintenance cost;
+- [ ] value not already supplied by another tool.
+
+Exit: identify the unique layer precisely or stop.
+
+## P6 — command decisions
+
+Current provisional decisions:
+
+| Command | Pilot state | Decision gate |
+| --- | --- | --- |
+| `cw init` | implemented scaffold | keep only if greenfield shaping improves without excess ceremony |
+| `cw adopt` | implemented scaffold | keep only if it materially reduces repeated brownfield mapping work |
+| `cw status` | implemented | likely keep if fresh sessions recover state reliably |
+| `cw next` | implemented | likely keep if dependency/human-gate logic prevents real task jumping |
+| `cw validate` | implemented | keep if it catches state errors without pretending semantic correctness |
+
+Final values must be **keep**, **integrate**, **manual** or **drop** after both pilots.
+
+## P7 — optional agent integration
+
+Consider only after the CLI is useful independently:
+
+- generate a concise `AGENTS.md` entrypoint;
+- provide installable wrappers for Codex or Claude Code;
+- export a slice to Spec Kit/OpenSpec when feature-level SDD is useful;
+- read target-repository verification commands;
+- add optional deterministic validation hooks.
 
 Do not make one IDE or model the source of truth.
 
 ## Frozen backlog
 
 - autonomous implementation and publishing;
-- multi-agent roles, debate or voting;
+- multi-agent roles or debate;
 - model routing and provider abstraction;
 - hosted dashboards, accounts and multi-user SaaS;
 - deployment, release and rollback;
-- recursive learning and skill promotion;
+- recursive learning;
 - broad research providers;
 - general workflow authoring;
 - additional execution sandboxes;
-- feature-level SDD duplicated from mature tools;
+- duplicated feature-level SDD;
 - architecture refactors justified only by completeness.
 
 ## Re-entry rule
@@ -209,11 +192,11 @@ A frozen capability may return only when at least two real pilot/task records ex
 
 ## Kill criteria
 
-Freeze CycleWarden as a research artifact when:
+Freeze CycleWarden when:
 
-- the protocol only reproduces existing tools;
+- the contract only reproduces existing tools;
 - `AGENTS.md` plus ordinary issues provides equivalent continuity;
-- the artifacts become stale faster than they help;
+- artifacts become stale faster than they help;
 - the owner still cannot explain the product, decisions, active task or next task;
-- ceremony delays useful implementation without preventing scope or sequencing failures;
-- a mature external product solves the full target problem more simply.
+- ceremony delays useful implementation without preventing real sequencing failures;
+- a mature external product solves the target problem more simply.
