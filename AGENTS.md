@@ -1,98 +1,118 @@
 # AGENTS.md — CycleWarden
 
-You are building a product on CycleWarden. Preserve the chosen stack and make the
-smallest verifiable change that satisfies the current task.
+CycleWarden is testing a lightweight project operating layer for software built with existing AI coding agents. Make the smallest evidence-backed change that advances the active pilot.
 
 ## Start here
 
 Read only the context needed for the task:
 
-1. `IDEA.md` — product scope and MVP.
-2. `docs/ai/PROJECT_MODEL.md` — current evidence-backed map, coverage, and blind spots.
-3. `docs/CAPABILITIES.json` — current capability and verification state.
-4. `AI_WORKFLOW.md` — delivery, discovery, and improvement loops.
-5. `ARCHITECTURE.md` — when changing boundaries, data flow, or packages.
-6. The active plan in `docs/ai/plans/`, when one exists.
-7. The nearest path-specific instruction under `.github/instructions/`.
+1. `PROJECT_OS_SCOPE.md` — candidate active product direction and boundaries.
+2. Issue #59 — pilot problem, acceptance criteria and frozen areas.
+3. `docs/research/AI_PROJECT_OS_LANDSCAPE.md` — comparable products and adoption/rejection decisions.
+4. `docs/project-os/PILOT_PROTOCOL.md` — greenfield and brownfield experiment.
+5. `ROADMAP.md` — current milestones and gates.
+6. `README.md` — public product summary.
+7. `ARCHITECTURE.md` and `docs/CAPABILITIES.json` only when changing preserved runtime code.
+8. The nearest path-specific instruction under `.github/instructions/`.
 
-For open-ended requests such as “understand and improve this project,” read
-`docs/ai/AUTONOMOUS_IMPROVEMENT.md`. For uncertain ideas, market research, or
-technology choices, read `docs/ai/DISCOVERY_RESEARCH.md`.
+`IDEA.md`, issue #57 and `PRACTICAL_SCOPE.md` are historical evidence, not current product authority.
 
-Do not treat this file as an encyclopedia. Follow its links to the current
-source of truth.
+## Current phase
+
+The current phase is research plus an artifact-first manual pilot.
+
+Allowed work:
+
+- correct or clarify Project OS product truth;
+- improve the manual pilot from real use;
+- record greenfield and brownfield pilot evidence;
+- fix a concrete defect that blocks a pilot;
+- implement deterministic CLI behavior only after repeated manual value is recorded.
+
+Do not resume platform or runtime work because the code already exists or the architecture looks incomplete.
 
 ## Working agreement
 
 For every non-trivial change:
 
-1. Inspect relevant code and runtime evidence before editing.
-2. State current behavior, evidence, confidence, and important blind spots.
-3. Define acceptance criteria.
-4. Save a plan in `docs/ai/plans/` when the task crosses a subsystem, changes
-   data, touches security, or is expected to modify more than five files.
-5. Implement one reviewable slice at a time.
+1. State the user or pilot problem being solved.
+2. Inspect current repository evidence before editing.
+3. Check whether an existing product already solves the layer better.
+4. Define acceptance criteria and explicit non-goals.
+5. Keep the patch limited to one decision or pilot blocker.
 6. Run the narrowest relevant checks while iterating.
-7. Run `pnpm verify` before reporting completion.
-8. Review the final diff for regressions and out-of-scope changes.
-9. Report verification evidence and remaining risks.
+7. Run `pnpm verify` before claiming runtime completion when a local checkout is available.
+8. Review the final diff for stale source-of-truth claims and unintended product expansion.
+9. Open a draft PR; do not self-merge or deploy.
+10. Report checks that could not run without implying success.
 
-Use a fresh agent session for independent review when practical.
+## Product rules
 
-## Open-ended improvement requests
-
-Do not immediately clean up or rewrite the repository.
-
-1. Declare the objective and autonomy level. Default to A2: research and plan.
-2. Read and refresh `docs/ai/PROJECT_MODEL.md`; read
-   `docs/CAPABILITIES.json` before ranking work.
-3. Validate the baseline and trace critical journeys.
-4. Create a health report and rank improvement candidates.
-5. Select one bounded candidate.
-6. Research only decision-critical unknowns using current primary sources.
-7. Implement only when the autonomy level and risk gates allow it.
-8. Open a draft PR; do not self-merge or deploy.
-
-Never claim to understand the entire project without reporting inspected areas,
-blind spots, and confidence.
+- CycleWarden coordinates project-level intent, decisions, dependencies and status.
+- Existing coding agents own implementation.
+- Target repositories own tests, builds and repeatable quality gates.
+- The human owner owns risky product choices, acceptance, merge and production actions.
+- The MVP must not require a separate model provider or duplicate model calls.
+- Exactly one project task is active by default during pilots.
+- A task becomes ready only after dependencies and blocking decisions are resolved.
+- A coding agent may propose a new task or decision but may not silently replace the active task.
+- Generate only enough roadmap detail to reach the next useful vertical slice.
+- Integrate with feature-level SDD tools instead of rebuilding them.
 
 ## Research rules
 
-- Inspect internal evidence before public web research.
-- Write the decision and questions before searching.
-- Prefer official, direct, and primary sources for technical decisions.
-- Record URLs, source dates, access dates, contradiction, and uncertainty.
-- Separate fact, user statement, source interpretation, and agent inference.
-- Do not invent analytics, interviews, incidents, source access, or market facts.
-- Discovery may create research artifacts but must not edit product code.
+- Write the decision question and evaluation criteria before searching.
+- Prefer official documentation, source repositories, standards and primary sources.
+- Record source date, access date, contradiction and uncertainty for changeable claims.
+- Separate confirmed fact, owner statement, vendor claim, inference and unknown.
+- Compare the simplest alternative, including plain `AGENTS.md` and issue tracking.
+- Popularity, repository stars and generated document volume are not product evidence.
+- Research must end with an adopt, integrate, test, reject or unknown decision.
 
-## Stack and boundaries
+## Pilot rules
+
+### Greenfield
+
+- Start from the user problem, not the framework.
+- Shape one first end-to-end flow.
+- Record only decisions that block the first slice.
+- Create three to seven vertical roadmap slices, not a complete feature backlog.
+- Complete or explicitly block/drop the active task before selecting another.
+
+### Brownfield
+
+- Recover current behavior from code, tests, configuration and current documentation.
+- Label evidence, owner statements, inference and unknowns.
+- Preserve the existing stack during adoption unless the task explicitly evaluates replacement.
+- Do not turn repository adoption into broad cleanup.
+- Select the next task from core-flow value, correctness, security and dependencies.
+
+## Preserved runtime boundaries
+
+When a pilot justifies touching existing code:
 
 | Area | Rule |
 |---|---|
 | App | Next.js App Router under `apps/web` |
-| Product UI | Prefer `apps/web/src/app/app/**` for authenticated features |
-| Auth | Use `getAuth()` and existing adapters |
-| Vendor SDKs | Keep inside `apps/web/src/lib/adapters/**` |
+| Auth | Use existing auth adapters and authorization boundaries |
+| Vendor SDKs | Keep inside existing adapter boundaries |
 | Validation | Validate writes with Zod |
 | Database | Schema and SQL live under `packages/db` |
-| Styling | Reuse Tailwind tokens from `apps/web/src/app/globals.css` |
+| Core CLI/runtime | Prefer focused changes under `packages/evolution-core` |
+| Styling | Reuse existing Tailwind tokens |
 | Skills | Reusable workflows live under `.agents/skills/**/SKILL.md` |
 
 ## Hard rules
 
-- Do not replace the framework, auth architecture, or monorepo tooling unless
-  the human explicitly requests it.
-- Do not add a dependency without explaining why existing code cannot solve
-  the task.
-- Do not commit secrets, `.env.local`, service-role keys, or production data.
-- Do not weaken security headers, authorization, row isolation, or validation.
-- Do not edit an already-deployed migration; add a new migration.
-- Do not remove code until usage has been checked and evidence is recorded.
-- Do not change unrelated files just to make them “cleaner.”
-- Never claim completion while required checks are failing.
-- Never self-merge, deploy, alter production data, or perform irreversible work
-  without explicit permission for that exact action.
+- Do not replace the framework, auth architecture or monorepo tooling without explicit owner approval.
+- Do not add a dependency before showing why repository code or an existing tool cannot solve the problem.
+- Do not add model providers, hosted services, dashboards or autonomous execution during the pilot.
+- Do not commit secrets, local environment files, service-role keys or production data.
+- Do not weaken authorization, validation, security headers or data isolation.
+- Do not change unrelated files merely to clean them up.
+- Do not create a general abstraction from one hypothetical future use.
+- Never claim completion while required checks fail.
+- Never self-merge, deploy, alter production data or perform irreversible work without exact permission.
 
 ## Commands
 
@@ -108,30 +128,21 @@ pnpm check:ai
 pnpm verify
 ```
 
-Use focused tests during implementation. `pnpm verify` is the final local gate.
+Use focused checks during iteration. `pnpm verify` is the final existing repository gate for runtime changes.
 
-## Risk gates
-
-Pause and present a clear plan before actions involving:
-
-- authentication or authorization;
-- database migrations or destructive data changes;
-- secrets, billing, external paid services, or production;
-- broad refactors, dependency replacement, or public API changes;
-- legal, privacy, safety, or regulated data decisions.
+Documentation-only work should still validate links, source-of-truth consistency and any repository-owned documentation checks that can run.
 
 ## Completion report
 
 Include:
 
-- objective and autonomy level when applicable;
-- repository coverage, blind spots, and confidence;
-- behavior changed;
+- problem and expected outcome;
+- product layer affected;
 - files changed;
-- research and sources used;
-- tests or checks run and their outcomes;
-- assumptions and unresolved risks;
-- what the project owner should review manually;
-- durable project memory updated for the next agent.
-
-When teaching the owner, follow `docs/ai/LEARNING_MODE.md`.
+- research sources and decisions used;
+- tests or checks run and exact outcomes;
+- checks not run and why;
+- assumptions, contradictions and remaining risks;
+- what was intentionally not built;
+- what the owner should review;
+- whether the result changes a keep/integrate/manual/drop decision for the pilot.
