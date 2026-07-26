@@ -1,29 +1,21 @@
 {
   "schemaVersion": 1,
-  "phase": "manual-readiness",
-  "activeTaskId": "MFVN-001",
-  "lastCompletedTaskId": "MFVN-000",
-  "blockedTaskIds": ["MFVN-002", "MFVN-003", "MFVN-004", "MFVN-005", "MFVN-006"],
-  "blockers": [
-    {
-      "taskId": "MFVN-001",
-      "type": "human-evidence",
-      "reason": "Requires an owner-controlled inbox, an end-user spreadsheet application, and a physical phone."
-    }
-  ],
+  "phase": "seven-day-self-use",
+  "activeTaskId": "MFVN-002",
+  "lastCompletedTaskId": "MFVN-001",
+  "blockedTaskIds": ["MFVN-003", "MFVN-004", "MFVN-005", "MFVN-006"],
+  "blockers": [],
   "unresolvedDecisions": [
-    "Choose the spreadsheet application.",
-    "Choose the physical phone and browser.",
-    "Choose the seven-day self-use start date after readiness passes."
+    "Confirm and record the calendar date used as day 1 of the seven-day self-use period."
   ],
   "next": {
-    "taskId": "MFVN-001",
-    "reason": "Continue the active readiness task; redesign work is dependency-blocked."
+    "taskId": "MFVN-002",
+    "reason": "All three manual readiness gates passed; seven-day self-use is now the active dependency-ready task."
   },
   "ownerSummary": {
     "whatIsBeingBuilt": "A trustworthy daily personal ledger for Vietnamese users.",
-    "whyThisTaskNow": "Automated gates passed; real-world callback, spreadsheet, and phone behavior remain unknown.",
-    "whatNotToDo": "Do not begin the broad redesign while issue #27 remains open.",
-    "whatComesAfter": "Seven-day self-use, then a bounded Calm Ledger foundation slice."
+    "whyThisTaskNow": "The callback, spreadsheet, and physical-phone readiness gates passed; sustained real use is the remaining product-readiness evidence.",
+    "whatNotToDo": "Do not begin the broad redesign until seven consecutive self-use days complete.",
+    "whatComesAfter": "A bounded Calm Ledger foundation slice if self-use supports continuing."
   }
 }
