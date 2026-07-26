@@ -7,7 +7,7 @@
     "repository": "Thunderkill016/moneyflow",
     "mission": "A calm, manual-first Vietnamese personal income-and-expense ledger that helps one person record transactions, know balances, understand monthly cash flow, correct mistakes, and export trustworthy data.",
     "targetUser": "A Vietnamese individual managing their own money without accounting jargon, bank aggregation, or automated financial advice.",
-    "currentPhase": "manual readiness before seven-day self-use",
+    "currentPhase": "Calm Ledger foundation and landing/auth implementation",
     "firstCriticalFlow": [
       "sign in or use the supported runtime mode",
       "create or choose an account",
@@ -70,9 +70,8 @@
     "issue #81"
   ],
   "unknowns": [
-    "whether the real production email callback passes with an inbox controlled by the owner",
-    "whether exported CSV behavior is safe in the owner-selected end-user spreadsheet application",
-    "whether the primary transaction form remains usable with a real physical-phone keyboard",
-    "whether seven consecutive days of self-use expose reconciliation or provenance defects"
+    "whether the Calm Ledger token consolidation can be completed without visual regressions",
+    "whether the landing and authentication slice communicates the product clearly on supported viewports",
+    "whether the redesign preserves financial, ownership, export, and runtime-mode invariants"
   ]
 }
