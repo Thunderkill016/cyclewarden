@@ -46,8 +46,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node scripts/check-ai-workflow.mjs
-      - run: node --test scripts/cw.test.mjs scripts/cw.moneyflow.test.mjs
+      - name: Validate capability registry
+        run: node scripts/check-capabilities.mjs
+      - name: Validate active workflow contract
+        run: node scripts/check-ai-workflow.mjs
+      - name: Test Project OS CLI and MoneyFlow pilot
+        run: node --test scripts/cw.test.mjs scripts/cw.moneyflow.test.mjs
       - run: node scripts/test-capabilities.mjs
       - run: node scripts/check-external-systems.mjs
       - run: node scripts/test-external-systems.mjs
