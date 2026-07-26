@@ -1,34 +1,23 @@
 # CycleWarden repository instructions
 
-- Read `AGENTS.md` and follow its linked source-of-truth documents.
-- Read `docs/ai/PROJECT_MODEL.md` and `docs/CAPABILITIES.json` before broad or
-  open-ended work; report stale sections, blind spots, and failing verification.
-- Treat the GitHub Issue as the task specification.
-- Inspect relevant code, tests, and runtime evidence before editing.
-- Use existing patterns and keep changes within the requested scope.
-- Save a plan under `docs/ai/plans/` for cross-subsystem, high-risk, or broad
-  work.
-- For open-ended “understand and improve” work, follow
-  `docs/ai/AUTONOMOUS_IMPROVEMENT.md`, declare an autonomy level, and default to
-  A2 research and planning.
-- Refresh the evidence-backed project model and health report before proposing a
-  broad cleanup. Report coverage, blind spots, and confidence.
-- Rank improvement candidates, then select one bounded issue. Never combine the
-  whole audit into one implementation PR.
-- For uncertain ideas or current technical choices, follow
-  `docs/ai/DISCOVERY_RESEARCH.md`: inspect internal evidence first, prefer
-  current primary sources, record dates and citations, and search for
-  contradiction.
-- Discovery and audit modes do not authorize product-code edits.
-- Keep vendor SDK calls inside `apps/web/src/lib/adapters/**`.
-- Validate writes with Zod and preserve authorization and user isolation.
-- Never commit secrets, weaken security controls, self-merge, deploy, or alter
-  production data without explicit permission.
-- Add or update meaningful tests for changed behavior.
-- Update `docs/CAPABILITIES.json` when a change affects a capability, but do not
-  treat an evidence path as proof that runtime behavior passes.
-- Run focused checks while iterating and `pnpm verify` before completion.
-- Report command outcomes, research evidence, assumptions, and remaining risk;
-  never claim success while required checks fail.
-- During review, prioritize correctness, security, regressions, architecture
-  boundaries, scope, and whether tests would catch the failure.
+- Read `AGENTS.md`, `PROJECT_OS_SCOPE.md` and the current GitHub issue before editing.
+- Treat issue #59 and `ROADMAP.md` as the active pilot contract.
+- Treat `IDEA.md`, issue #57 and `PRACTICAL_SCOPE.md` as historical evidence, not current product authority.
+- Inspect relevant code, tests, configuration and current documentation before making a claim about repository behavior.
+- Keep changes within one product decision, pilot finding or concrete blocker.
+- During the manual pilot, maintain exactly one active task by default.
+- Do not silently change the product, stack, architecture, data model, authentication approach or active task.
+- When new evidence invalidates an accepted decision, propose a superseding decision record instead of rewriting history.
+- Start greenfield work from the target user, core problem, constraints and first useful flow; do not choose technology first.
+- Adopt brownfield repositories by separating confirmed evidence, owner statements, inference and unknowns; do not redesign during inspection.
+- Generate only enough roadmap detail to reach the next useful vertical slice.
+- Compare changes with the simplest alternative and integrate existing feature-level SDD tools instead of duplicating them.
+- Do not add model providers, autonomous execution, multi-agent personas, dashboards, deployment or a workflow engine during the pilot.
+- Runtime work requires a repeated pilot problem and must be the smallest deterministic solution.
+- Keep vendor SDK calls inside existing adapter boundaries.
+- Validate writes with Zod and preserve authorization, validation and user isolation.
+- Never commit secrets, weaken security controls, self-merge, deploy or alter production data without explicit permission.
+- Add or update meaningful tests for changed runtime behavior.
+- Run focused checks while iterating and `pnpm verify` before runtime completion when a local checkout is available.
+- Report exact command outcomes, research evidence, assumptions, contradictions and remaining risk.
+- Never claim success for an unrun check or mark the coding agent's own work accepted.
