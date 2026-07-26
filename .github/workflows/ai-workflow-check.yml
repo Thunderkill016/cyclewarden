@@ -49,7 +49,22 @@ jobs:
       - name: Validate capability registry
         run: node scripts/check-capabilities.mjs
       - name: Validate active workflow contract
-        run: node scripts/check-ai-workflow.mjs
+        id: workflow-contract
+        continue-on-error: true
+        run: node scripts/check-ai-workflow.mjs > workflow-check.log 2>&1
+      - name: Upload workflow diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-check-diagnostics
+          path: workflow-check.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Fail when workflow contract is invalid
+        if: steps.workflow-contract.outcome == 'failure'
+        run: |
+          cat workflow-check.log
+          exit 1
       - name: Test Project OS CLI and MoneyFlow pilot
         run: node --test scripts/cw.test.mjs scripts/cw.moneyflow.test.mjs
       - run: node scripts/test-capabilities.mjs
