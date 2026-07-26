@@ -1,6 +1,6 @@
 # CycleWarden Project OS scope
 
-Status: proposed active direction  
+Status: active pilot direction  
 Tracking issue: #59  
 Research basis: [`docs/research/AI_PROJECT_OS_LANDSCAPE.md`](docs/research/AI_PROJECT_OS_LANDSCAPE.md)
 
@@ -8,31 +8,31 @@ Research basis: [`docs/research/AI_PROJECT_OS_LANDSCAPE.md`](docs/research/AI_PR
 
 CycleWarden helps a solo or non-expert builder use an existing coding agent to build a coherent software project over many sessions.
 
-Its job is not to write better code than Codex, Claude Code, Kiro or another agent. Its job is to preserve the product's direction, foundational decisions, task order and definition of done so those agents work on the right thing next.
+It does not try to write code better than Codex, Claude Code, Kiro or another agent. It preserves project intent, foundational decisions, task order, blockers and definition of done so the existing agent works on the right thing next.
 
 ## User problem
 
-A coding agent can implement individual requests while the overall project still fails:
+A coding agent can complete individual requests while the project as a whole still fails:
 
-- code starts before the target user, core problem and first flow are clear;
+- implementation begins before the target user, core problem and first useful flow are clear;
 - UI, framework, database, backend, authentication and security choices are made implicitly;
 - choices change between sessions without a recorded reason;
-- the agent begins new features while previous work remains incomplete;
-- tasks ignore dependencies;
-- repository structure and architecture drift;
+- unfinished tasks accumulate while new work starts;
+- dependencies and human gates are ignored;
+- architecture and repository conventions drift;
 - the owner cannot explain the active task, blocker or next task.
 
 ## Product promise
 
-From a one-sentence idea or an existing repository, CycleWarden creates and maintains enough project truth that:
+From a short idea or an existing repository, CycleWarden maintains enough project truth that:
 
-1. the owner understands what is being built and what is explicitly excluded;
+1. the owner understands what is being built and what is excluded;
 2. important product and engineering choices have a reason and reconsideration condition;
-3. the roadmap is a small set of useful vertical slices rather than an unbounded feature backlog;
-4. exactly one implementation task is active by default;
-5. the next task is chosen from completed dependencies and unresolved blockers;
-6. a new coding-agent session can continue without reinventing the project;
-7. work is marked done only when task-specific evidence exists.
+3. the roadmap is a small set of useful vertical slices rather than an unbounded feature list;
+4. at most one task is active by default;
+5. the next task respects completed dependencies and unresolved blockers;
+6. a fresh coding-agent session can continue without reinventing the project;
+7. work is accepted only when task-specific evidence exists.
 
 ## Responsibility boundary
 
@@ -41,196 +41,144 @@ Project intent, decisions and order  → CycleWarden
 Feature implementation              → existing coding agent
 Feature-level SDD                    → Spec Kit, Kiro, OpenSpec or task documents
 Tests and repeatable checks          → target repository
-Risk and merge decision              → human owner
+Risk, acceptance and merge           → human owner
 ```
 
-CycleWarden may prepare agent-readable context, but it does not need its own model provider in the MVP.
+The pilot requires no separate model provider, hosted service or additional token spend.
 
 ## Operating workflow
 
 ```text
-one-sentence idea or existing repository
-→ shape target user, problem, constraints, core flow and non-goals
-→ choose the smallest useful vertical slice
-→ record only the foundational decisions needed for that slice
-→ create a dependency-aware roadmap
-→ activate exactly one ready task
-→ coding agent implements the task
-→ repository checks and human review verify the task
+idea or existing repository
+→ shape or recover project truth
+→ record only required foundation decisions
+→ create dependency-aware vertical slices
+→ activate one task
+→ existing coding agent implements it
+→ repository checks and human review verify it
 → update project state
 → select the next ready task
 ```
 
-## Project artifacts
+## Repository contract
 
-The candidate repository-local contract is:
+The deterministic pilot uses a deliberately small contract:
 
 ```text
 .cyclewarden/
-├── project.md
-├── product.md
-├── design.md
-├── architecture.md
-├── roadmap.md
-├── status.yaml
-├── decisions/
-└── tasks/
+├── README.md
+├── project.json
+├── roadmap.json
+└── status.json
 ```
 
-### `project.md`
+Human-facing product, design, architecture and decision documents remain in the target repository. CycleWarden references them instead of copying the entire documentation tree.
 
-Contains:
+### `project.json`
 
-- project purpose;
-- target user;
-- observed or stated problem;
-- owner constraints such as time, budget, skills and deployment environment;
-- success and failure signals;
-- current phase.
+Stores:
 
-### `product.md`
+- schema version and greenfield/brownfield mode;
+- project ID, name, mission, target user and current phase;
+- first critical flow, priorities and explicit non-goals;
+- foundation choices for UI, data, auth, validation, tests and deployment;
+- non-negotiable invariants;
+- source-of-truth paths or issue references;
+- known unknowns that must not be guessed.
 
-Contains:
+### `roadmap.json`
 
-- core user job;
-- first end-to-end flow;
-- current scope;
-- explicit non-goals;
-- assumptions and unresolved product decisions;
-- conditions that justify adding another feature.
+Stores ordered tasks with:
 
-### `design.md`
-
-Created only when the project has a user interface. Contains:
-
-- platform and input constraints;
-- primary navigation and screen map;
-- design principles;
-- chosen component/design-system approach;
-- loading, empty, error and recovery expectations;
-- accessibility and responsive requirements.
-
-It must not become a generated component catalogue before a real flow exists.
-
-### `architecture.md`
-
-Contains the smallest useful architecture map:
-
-- system context;
-- runtime containers such as web app, API, worker and data store;
-- trust and data boundaries;
-- important interfaces;
-- repository ownership map;
-- checks that protect major boundaries.
-
-Component-level documentation is added only for a difficult or risky subsystem.
-
-### `decisions/`
-
-One concise record for each architecturally significant choice:
-
-- status;
-- context and constraints;
-- considered alternatives;
-- decision;
-- consequences;
-- evidence;
-- when to reconsider;
-- superseded decision when applicable.
-
-Decisions are required for choices such as persistence, authentication, sensitive data, externally hosted services, major frameworks and cross-cutting architecture. They are not required for ordinary local implementation details.
-
-### `roadmap.md`
-
-Contains stable slice IDs, user value, dependencies, status and links to task/spec artifacts.
-
-Roadmap entries are vertical slices that can be demonstrated independently. The first slice should be a walking product path, not infrastructure completeness.
-
-### `tasks/`
-
-Each task contains:
-
-- immutable ID;
-- parent roadmap slice;
-- outcome;
-- dependencies;
-- allowed and forbidden scope;
+- immutable task ID;
+- title and status;
+- dependency IDs;
+- source issue or decision;
+- allowed and forbidden scope when needed;
 - acceptance criteria;
-- required checks and manual evidence;
-- unresolved questions;
-- current status.
+- required evidence;
+- optional `humanOnly` marker.
 
-### `status.yaml`
+The array order is the deterministic tie-breaker when multiple tasks are ready.
 
-Contains machine-readable current state:
+### `status.json`
 
-```yaml
-phase: shaping
-active_task: null
-blockers: []
-unresolved_decisions: []
-last_accepted_task: null
-updated_at: 2026-07-27
-```
+Stores:
 
-## Task state and sequencing
+- current project phase;
+- active and last-completed task IDs;
+- blocked task IDs;
+- blockers and unresolved decisions;
+- current `next` explanation;
+- a short owner summary of what is being built, why this task is active, what must not start and what follows.
 
-Allowed task lifecycle:
+### `README.md`
+
+Explains the local contract, source-of-truth boundary and safety rules to humans and coding agents.
+
+## Task lifecycle
+
+Allowed states:
 
 ```text
 proposed → ready → active → verify → done
                     ↘ blocked
-proposed/ready/blocked → dropped
+proposed / ready / blocked → dropped
 ```
 
 Rules:
 
-- exactly one task may be `active` unless a later pilot proves safe parallelism is needed;
-- a task becomes `ready` only when all dependencies are `done`;
-- a blocked foundational decision prevents dependent tasks from becoming ready;
-- an agent may propose a new task or decision but may not silently replace the active task;
-- unfinished work is resumed, explicitly blocked or dropped before another task is activated;
-- task IDs never change after another artifact references them.
+- at most one task may be `active`;
+- a `ready`, `active` or `verify` task requires every dependency to be `done`;
+- task IDs are unique and immutable after use;
+- dependency cycles and missing IDs are invalid;
+- `ready`, `active`, `verify` and `done` tasks require acceptance and evidence fields;
+- an agent may propose work but may not silently replace the active task;
+- human-only work stays visible and must not be simulated by AI.
 
-## Candidate CLI surface
+## Implemented pilot CLI
 
-### `cw init`
+The CLI is intentionally deterministic and uses only Node.js built-ins.
 
-Create the project operating files for a new repository and print the shaping questions the existing agent must answer with the owner.
+```bash
+pnpm cw -- init [root] --name "Project name"
+pnpm cw -- adopt [root] --name "Project name"
+pnpm cw -- validate [root]
+pnpm cw -- status [root] [--json]
+pnpm cw -- next [root] [--json]
+```
 
-### `cw adopt`
+### `init`
 
-Inspect an existing repository and create a current-state draft. It must label evidence, inference and unknowns instead of inventing missing product decisions.
+Creates a greenfield scaffold with one active shaping task. It does not choose a framework, database or product scope.
 
-### `cw status`
+### `adopt`
 
-Show:
+Creates a brownfield scaffold with one active repository-mapping task. It does not pretend to inspect or understand the repository automatically; the existing coding agent fills the artifacts from evidence.
 
-- project phase;
-- active task;
-- blockers;
-- unresolved foundational decisions;
-- last accepted task;
-- next dependency-ready candidates.
+### `validate`
 
-### `cw next`
+Checks:
 
-Return the single next task when one is unambiguously ready. Otherwise explain which dependency, decision or owner choice prevents selection.
-
-### `cw validate`
-
-Deterministically check:
-
-- required artifact structure;
+- required JSON files and schema version;
 - valid task statuses;
-- missing or cyclic dependencies;
+- unique IDs;
+- missing, self and cyclic dependencies;
 - more than one active task;
-- active tasks with incomplete dependencies;
-- broken artifact links;
-- missing acceptance/evidence fields;
-- whether the configured repository checks were recorded.
+- mismatch between roadmap and `status.activeTaskId`;
+- active/ready/verify tasks with incomplete dependencies;
+- missing acceptance and evidence fields;
+- broken task references in status.
 
-It does not pretend to semantically prove that a product is correct.
+It does not claim semantic product correctness or test execution.
+
+### `status`
+
+Shows project, mode, phase, active task, blockers, unresolved decisions and the next result.
+
+### `next`
+
+Returns the current active task first. When no task is active, it selects the first `ready` task whose dependencies are `done`. Otherwise it explains that no task is ready and lists dependency blockers.
 
 ## Proportional depth
 
@@ -238,95 +186,84 @@ CycleWarden must not force the same process on every project.
 
 ### Tiny experiment
 
-Required:
-
-- project and product brief;
-- first slice;
-- one task;
-- only decisions needed to run the experiment.
+Record mission, target user, first slice, non-goals, one task and only decisions needed to run it.
 
 ### Normal application
 
-Add:
-
-- design and architecture maps;
-- dependency roadmap;
-- data/auth/security decisions as applicable;
-- repository checks.
+Add foundation choices, design/architecture references, dependency slices and repository checks.
 
 ### High-risk project
 
-Add explicit human gates and appropriate standards for:
-
-- authentication and authorization;
-- financial, health, legal or regulated data;
-- payments and billing;
-- destructive operations;
-- secrets and external infrastructure;
-- privacy and retention;
-- production migration or rollback.
+Add explicit human gates and appropriate standards for authentication, financial or regulated data, payments, destructive operations, secrets, privacy and production migrations.
 
 ## Agent integration
 
-The MVP should work through plain repository files. An agent entrypoint can instruct the coding agent to:
+A repository instruction entrypoint should tell the coding agent to:
 
-1. read project status;
-2. work only on the active task;
-3. consult referenced decisions and source files;
-4. stop when scope or requirements conflict;
-5. run required checks;
-6. update evidence without marking its own work accepted;
-7. leave activation and final acceptance to the owner or deterministic state transition.
+1. read `.cyclewarden/status.json` and the active roadmap task;
+2. consult the referenced repository sources;
+3. work only within the task scope;
+4. stop when requirements or boundaries conflict;
+5. run target-repository checks;
+6. record evidence without accepting its own work;
+7. leave task activation, acceptance, merge and production action to the owner.
 
-Later integrations may generate commands or skills for specific agents, but the project model must remain portable.
+CycleWarden remains portable across coding agents because the source of truth is plain repository data.
+
+## Brownfield pilot evidence
+
+The first adoption pilot is MoneyFlow, tracked in `Thunderkill016/moneyflow#85`.
+
+Repository evidence showed:
+
+- issue #27 is the active manual readiness contract;
+- it explicitly forbids feature expansion while real email, spreadsheet and physical-phone checks remain incomplete;
+- issue #81 is a broad redesign request created later;
+- choosing work by recency or size would incorrectly jump to the redesign;
+- representing readiness, seven-day self-use and redesign slices as dependencies makes `next` remain on issue #27.
+
+This is distinct from `AGENTS.md`: agent instructions explain how to work, while Project OS state explains which project work is valid now and why later work is blocked.
 
 ## What CycleWarden will not build now
 
 - a coding model or coding-agent replacement;
-- autonomous implementation and publication;
+- autonomous implementation, merge, deployment or publication;
 - multi-agent personas, debates or voting;
-- a general workflow engine;
 - a hosted dashboard or multi-user SaaS;
 - model routing or provider abstraction;
-- deployment and rollback;
+- a general workflow language;
 - recursive learning;
 - a design-system generator;
 - a full security scanner;
 - feature-level SDD already available in mature tools;
-- a hundred-task backlog created from an unvalidated idea.
+- a large backlog generated from an unvalidated idea.
 
-## Manual pilot before CLI work
+## Remaining pilot gates
 
-Two pilots are required:
-
-1. **Greenfield:** turn one short project idea into a coherent first vertical slice and complete it with an existing coding agent.
-2. **Brownfield:** adopt an existing repository, recover trustworthy current state and complete the next dependency-valid task.
-
-Use [`docs/project-os/PILOT_PROTOCOL.md`](docs/project-os/PILOT_PROTOCOL.md).
+1. Run the deterministic CLI and artifacts through CI.
+2. Complete the MoneyFlow brownfield mapping and verify its `next` result.
+3. Run one greenfield project from a short idea through one accepted vertical slice.
+4. Decide keep, integrate, manual or drop for each command.
+5. Simplify or stop if the artifacts add no value beyond `AGENTS.md` and ordinary issues.
 
 ## Success signals
 
-- the owner can state the target user, core flow, non-goals, stack rationale, active task and next task;
-- a fresh agent session correctly recovers those facts from the repository;
+- a fresh session recovers target user, core flow, non-goals, foundation, active task and blocker;
 - no unapproved stack or architecture switch occurs;
-- only one task remains active during the pilot;
-- the next task respects dependencies;
+- only one task is active;
+- `next` respects dependencies and human gates;
 - at least one vertical slice reaches accepted completion;
-- the artifact set is materially lighter than adopting a complete lifecycle framework;
-- the project-level layer adds value beyond `AGENTS.md` and feature-level specs alone.
+- the owner understands why the active task is current;
+- the artifact set stays lighter than a complete lifecycle framework.
 
 ## Kill or integrate criteria
 
-Stop building a standalone CycleWarden product when:
+Stop building a standalone product when:
 
-- the artifact set only reproduces Spec Kit, Kiro, Taskmaster, BMAD or OpenSpec;
-- a concise `AGENTS.md` plus ordinary issue tracking produces the same result;
-- users cannot maintain project truth without repeated manual repair;
+- the contract merely reproduces Spec Kit, Kiro, Taskmaster, BMAD or OpenSpec;
+- concise `AGENTS.md` plus issues gives the same sequencing and continuity;
+- project truth requires constant manual repair;
 - the process delays the first useful slice more than it prevents confusion;
-- the owner remains unable to understand decisions and project status.
+- the owner still cannot understand project status and decisions.
 
 When another tool solves a layer better, integrate with it instead of duplicating it.
-
-## Current phase
-
-Research and an artifact-first manual protocol. Runtime development is frozen until a pilot exposes a repeated need that deterministic tooling can solve.
