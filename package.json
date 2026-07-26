@@ -2,7 +2,7 @@
   "name": "cyclewarden",
   "version": "0.4.0",
   "private": true,
-  "description": "CycleWarden — one AI-native system for researching, building, verifying, shipping and continuously improving products.",
+  "description": "CycleWarden — a lightweight project operating layer for software built with AI coding agents.",
   "license": "MIT",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
