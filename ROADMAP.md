@@ -1,248 +1,161 @@
-# CycleWarden integrated product roadmap
+# CycleWarden practical validation roadmap
 
-> Product source of truth: [`IDEA.md`](./IDEA.md)  
-> Detailed implementation plan: [`docs/evolution/ROADMAP.md`](./docs/evolution/ROADMAP.md)  
-> Machine-readable capability evidence: [`docs/CAPABILITIES.json`](./docs/CAPABILITIES.json)
+> Active scope: [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md)  
+> Active experiment: [issue #57](https://github.com/Thunderkill016/cyclewarden/issues/57)  
+> Historical platform vision: [`IDEA.md`](IDEA.md) and closed issue #9
 
-CycleWarden is one product. The repository does not contain a primary product competing with a secondary product. It contains modules that must integrate into one lifecycle:
+## Current objective
 
-```text
-workspace and product foundation
-→ understand and research
-→ decide and experiment
-→ implement through agents
-→ verify and release
-→ measure and learn
-```
+Determine whether CycleWarden helps a solo developer complete real software tasks better than using a coding agent directly.
 
-Implementation is sequenced by safety and dependency. Sequencing does not remove any module from the final product.
+The current roadmap contains one milestone only: six real project tasks with comparable evidence.
 
-## Unified workstreams
-
-### A. Product workspace and foundation
-
-- product brief, roadmap, opportunity, experiment and approval surfaces;
-- generated application foundation;
-- auth, user data, security, mail, storage and payment modules;
-- local setup, Vercel and Docker delivery paths;
-- one UI for research, execution, verification, release and learning.
-
-### B. Evolution kernel
-
-- durable cycles and legal transitions;
-- policy, risk and exact approvals;
-- evidence gates, recovery, rollback and replay;
-- stable schemas and portable package boundary.
-
-### C. Research intelligence
-
-- repository, internal, web, paper, competitor and user research;
-- reproducible search, source quality and citation tracking;
-- claims, contradictions, uncertainty and expiry;
-- opportunity portfolios and experiment selection.
-
-### D. Execution and sandbox
-
-- command, Codex, OpenHands and other agent adapters;
-- isolated workspaces and branches;
-- filesystem, process, dependency, secret, network and resource containment;
-- draft PR delivery and rollback preparation.
-
-### E. Verification, delivery and operations
-
-- independent technical and security review;
-- CI, benchmark, provenance and attestations;
-- authorized release, deployment and rollback;
-- GitHub Action, MCP/A2A interoperability and optional telemetry.
-
-### F. Measurement and learning
-
-- technical, UX, adoption, retention, conversion and cost outcomes;
-- keep, iterate, reject and rollback decisions;
-- memory and skill consumption tracking;
-- paired evaluation, promotion, expiry and retirement.
-
-## Current verified foundation
-
-- deterministic evolution state machine and legal transitions;
-- A0–A4 autonomy and R0–R4 risk model;
-- exact cycle/action/scope approvals;
-- append-only journal, atomic snapshot recovery and serialized writers;
-- content-addressed evidence blobs and contextual occurrences;
-- bounded repository inspection and trust-boundary discovery;
-- temporary-workspace checks and readiness model;
-- typed research briefs, plans, runs, queries, sources, claims and contradictions;
-- deterministic repository/internal single-worker research adapter;
-- bounded query, source, time and cost accounting with explicit stopping reasons;
-- durable completed or `inconclusive` research outcomes;
-- independent deterministic research evaluation with a distinct reviewer actor;
-- repository-only user-demand claim rejection and visible research limitations;
-- three-opportunity portfolios, decision and reversible experiment records;
-- parameter-bound `ExecutionHandoff` persisted through the same cycle;
-- CLI commands to run repository research, prepare manual handoffs and inspect research state;
-- `/app/evolution` workspace showing runs, coverage, stopping reasons and review verdicts;
-- opt-in local operator flow from A2/R1 objective through inspect, trusted assessment, bounded repository research and persisted execution handoff;
-- Next.js product foundation, auth, PostgreSQL, security and delivery recipes;
-- product generator and AI workflow;
-- CLI and CI dogfood on CycleWarden plus assessment proof on an unrelated repository;
-- demo and portable PostgreSQL E2E paths.
-
-“Verified” means repository code and current CI evidence exist. It does not imply public-web research quality, direct user evidence, product-market fit, secure untrusted execution, production operation or measured self-improvement.
-
-## Integration milestone 0 — one product identity
-
-- [x] define CycleWarden as one integrated product;
-- [x] define the Evolution Engine as the control core rather than a separate product;
-- [x] define the web foundation and generator as product modules rather than disposable dogfood;
-- [x] preserve independent product definitions for projects generated by CycleWarden;
-- [x] synchronize README, package metadata, capability registry, project model, architecture, issue and PR descriptions;
-- [x] map planned capabilities to product workstreams and tracked issues.
-
-Exit: every active document describes one CycleWarden product and no capability is implicitly abandoned.
-
-## Integration milestone 1 — trustworthy foundation
-
-- [x] exact approval scope, expiry, revocation and policy version;
-- [x] writer serialization and stale-writer rejection;
-- [x] separate evidence blobs from contextual occurrences;
-- [x] evidence digest verification;
-- [ ] event-schema migration fixtures;
-- [ ] kill-process and multi-process persistence proof;
-- [ ] content-level secret detection and enforceable data governance;
-- [ ] independently buildable/versioned evolution core;
-- [ ] independent persistence, policy and API review.
-
-Exit: the shared lifecycle is durable enough for every later module to rely on it.
-
-## Integration milestone 2 — research and decision loop
+## Product surface under evaluation
 
 ```text
-workspace objective
-→ inspect and assess
-→ decision brief and coverage map
-→ bounded repository or external research
-→ atomic claims and contradictions
-→ independent research review
-→ three or more opportunities
-→ transparent ranking
-→ reversible experiment
-→ persisted execution handoff
+prepare bounded task
+→ implement in isolated Git context
+→ verify scope and checks independently
+→ report evidence
+→ human merge decision
 ```
 
-- [x] typed `ResearchBrief`, `ResearchPlan`, `ResearchRunRecord`, `QueryRecord`, `SourceRecord`, `ClaimRecord`, `ContradictionRecord`, `ResearchEvaluationRecord`, `OpportunityRecord`, `DecisionRecord`, `ExperimentRecord` and `ExecutionHandoff`;
-- [x] append research records through legal immutable cycle transitions;
-- [x] deterministic repository/internal single-worker source adapter;
-- [x] validate at least three opportunities before accepting a decision bundle;
-- [x] enforce repository coverage, query, source and time budgets;
-- [x] persist usage, coverage gaps and explicit stopping reasons;
-- [x] create an automated durable `inconclusive` outcome when minimum evidence or budget is insufficient;
-- [x] require a distinct independent reviewer before repository research can enter `decided`;
-- [x] reject repository-only `user-problem` claims without direct user-research evidence;
-- [x] preserve contradictory evidence, rejected alternatives and reviewer limitations;
-- [x] bind the execution handoff to an experiment and SHA-256 parameter digest;
-- [x] CLI `research-repository`, `prepare-handoff` and `research-show` over the shared durable store;
-- [x] workspace views for research usage, coverage, stop reason, reviewer checks, sources, claims, contradictions, opportunities, decisions, experiments and execution scope;
-- [x] gated local-first workspace actions for cycle creation, repository inspection, trusted assessment and bounded repository research;
-- [x] CycleWarden dogfood proof for autonomous repository research and journal reload;
-- [ ] public web, paper, specification, competitor, changelog, incident and dataset adapters;
-- [ ] adaptive query reformulation, citation chasing, entity resolution and hostile-source defenses;
-- [ ] exact evidence spans, transformations and calculation provenance;
-- [ ] product discovery and consented user-research evidence ingestion;
-- [ ] independent external citation verification beyond the deterministic repository reviewer;
-- [ ] workspace authoring, review and approval of research plans and decisions;
-- [ ] autonomous research proof on an unrelated real product;
-- [ ] real-user decision-value validation.
+The experiment evaluates three possible useful capabilities:
 
-Current boundary: CycleWarden can autonomously make bounded repository-readiness decisions and explicitly identify questions that require user or external evidence. It cannot yet autonomously browse the public web or prove user demand.
+1. `prepare` — repository context, scope and acceptance criteria;
+2. execution handoff — isolated implementation through an existing coding agent;
+3. `verify` — changed-file, patch and project-check validation.
 
-Exit: CycleWarden can decide what to build and preserve why, while preparing a typed handoff to execution.
+No capability is retained merely because it is technically complete.
 
-## Integration milestone 3 — governed implementation
+## Milestone P0 — align the repository
 
-- stable `ExecutionBackend` capability contract;
-- trusted-local and real sandbox backends;
-- generic command adapter;
-- Codex and OpenHands adapters, followed by additional agent clients;
-- isolated branch/worktree delivery;
-- approved plan and parameter-bound execution;
-- draft PR, change evidence and rollback plan;
-- live execution progress in the same product workspace.
+- [x] close the unmerged multi-project web registry PR as archived work;
+- [x] supersede the full integrated-platform roadmap issue;
+- [x] create the six-task practical validation issue;
+- [x] define the active practical scope and frozen areas;
+- [x] add a repeatable task evidence template;
+- [x] reframe the README and roadmap around observed project value.
 
-Exit: at least two interchangeable agent clients implement the same accepted experiment without owning cycle state or acceptance.
+Exit: contributors can distinguish active practical work from preserved platform research.
 
-## Integration milestone 4 — independent verification and release
+## Milestone P1 — select real tasks
 
-- independent code, test, security and policy reviewer boundaries;
-- project-specific verification packs;
-- benchmark comparison against baselines;
-- GitHub Action and PR scorecard;
-- provenance and in-toto-compatible attestations;
-- authorized release/deployment adapters;
-- environment-specific rollback;
-- release and deployment views in the workspace.
+Select six tasks across at least two real repositories:
 
-Exit: a selected change can move from decision to verified and explicitly authorized release through one cycle.
+- [ ] direct-agent task 1;
+- [ ] direct-agent task 2;
+- [ ] direct-agent task 3;
+- [ ] CycleWarden-assisted task 1;
+- [ ] CycleWarden-assisted task 2;
+- [ ] CycleWarden-assisted task 3.
 
-## Integration milestone 5 — product measurement
+Preferred distribution:
 
-- experiment exposure and comparison contracts;
-- UX, adoption, retention, conversion, reliability and cost evaluators;
-- analytics, support and user-research ingestion under data governance;
-- technical and product verdicts reported separately;
-- keep, iterate, reject and rollback records;
-- outcome dashboards attached to the original decision and change.
+- two AtoEnglish tasks;
+- two tasks from a second real project;
+- two tasks from a third project when available.
 
-Exit: CycleWarden can reject technically passing work when real product evidence does not support it.
+A task must be independently valuable to its target project. Fixtures, demos and work invented to exercise CycleWarden do not count.
 
-## Integration milestone 6 — measured learning and continuous evolution
+Exit: all six tasks have a clear goal, bounded scope and task record.
 
-- memory and skill registry with provenance, scope, risk and expiry;
-- actual later-cycle consumption tracking;
-- comparable runs with and without proposed learning;
-- skill promotion, versioning, retirement and harmful-learning detection;
-- research, planning, execution and verification skill packs;
-- controlled meta-improvement experiments;
-- no positive-recursion claim without causal evidence.
+## Milestone P2 — complete direct-agent baseline
 
-Exit: at least one accepted learning measurably improves a later comparable complete product cycle.
+For three tasks, use the normal coding-agent workflow:
 
-## Integration milestone 7 — complete product distribution
+```text
+AGENTS.md and repository context
+→ coding agent
+→ Git diff
+→ project checks
+→ human review
+```
 
-- unified local workspace;
-- standalone CLI and libraries;
-- reusable GitHub Action;
-- MCP server and A2A interoperability where useful;
-- self-hosted deployment;
-- hosted team history, policy, benchmark and collaboration service;
-- organization-level access, approvals and audit history;
-- generator and application foundation integrated into onboarding.
+Record:
 
-Exit: users experience CycleWarden as one product across local, repository and hosted surfaces.
+- [ ] preparation time;
+- [ ] implementation retries;
+- [ ] scope escapes;
+- [ ] failures caught before review;
+- [ ] human review time;
+- [ ] final outcome and friction.
 
-## Cross-product metrics
+Exit: three honest baseline records exist.
 
-- time from product objective to first useful evidence;
-- time from accepted experiment to verified change;
-- time from verified change to measured outcome;
-- cycle recovery without state loss;
-- unsafe action false-allow and false-block rates;
-- citation quality, contradiction recall and research coverage;
-- research budget use, stop quality and reviewer rejection rate;
-- agent task success, cost, duration and intervention rate;
-- recommendation survival and implementation waste avoided;
-- release and rollback reliability;
-- repeat use across complete cycles;
-- measured benefit or harm from promoted learning.
+## Milestone P3 — complete CycleWarden-assisted tasks
 
-## Operating principles
+For three comparable tasks, use existing CycleWarden capabilities without adding optional platform features:
 
-1. One product, many modules, one shared lifecycle.
-2. Every module remains in the destination architecture unless evidence explicitly rejects it.
-3. Dependencies determine build order; they do not redefine product direction.
-4. Research, execution, verification, release and learning must connect through typed durable handoffs.
-5. A module working in isolation is not complete integration.
-6. Temporary workspaces are not security sandboxes.
-7. Passing checks is not proof of user value.
-8. Repository evidence is not proof of user demand or current external facts.
-9. Simpler baselines must be measured, but complexity may be added when the integrated product requires it.
-10. Documentation must distinguish planned, implemented, integrated and experimentally proven capability.
+```text
+inspect / assess / handoff
+→ trusted-local implementation
+→ independent verification
+→ optional draft PR
+→ human review
+```
+
+Runtime changes are permitted only when a concrete defect blocks a real task. Every such change must link to the task record that exposed it.
+
+Record the same baseline metrics plus CycleWarden-specific setup and ceremony.
+
+Exit: three honest CycleWarden-assisted task records exist.
+
+## Milestone P4 — compare outcomes
+
+Summarize all six tasks:
+
+- [ ] median preparation time;
+- [ ] total implementation retries;
+- [ ] meaningful scope escapes;
+- [ ] failures caught before human review;
+- [ ] human review time;
+- [ ] abandoned or inconclusive tasks;
+- [ ] repeated CycleWarden friction;
+- [ ] repeated value not provided by direct agent usage.
+
+Do not treat code volume, CI complexity, number of records, or number of automated steps as product success.
+
+Exit: a clear comparison exists with limitations and no unsupported causal claim.
+
+## Milestone P5 — choose the smallest future
+
+Choose exactly one primary direction:
+
+### A. Task preparation tool
+
+Use when context and bounded acceptance criteria create most of the value. Retain `prepare`; freeze delivery orchestration.
+
+### B. Verification quality gate
+
+Use when independent scope and check verification create most of the value. Retain `verify`; rely on external agents for implementation.
+
+### C. Thin prepare + verify workflow
+
+Use only when both capabilities repeatedly help and execution orchestration remains low-friction.
+
+### D. Research prototype
+
+Use when direct coding-agent work performs as well or better. Preserve the repository, stop active product development, and reuse individual components only when another project needs them.
+
+Exit: README, package surface and active issues reflect the selected smallest direction.
+
+## Frozen backlog
+
+The following work has no active milestone:
+
+- multi-project web dashboards;
+- hosted or multi-user product operation;
+- deployment, release and rollback automation;
+- product outcome dashboards;
+- recursive learning and skill promotion;
+- MCP and A2A integration;
+- additional coding-agent adapters;
+- additional sandbox backends;
+- broad public research adapters;
+- provenance and persistence hardening beyond a real task blocker;
+- architecture refactors justified only by completeness.
+
+## Re-entry rule
+
+A frozen capability may return only when at least two real task records show the same material problem and the proposed capability is the smallest credible experiment for solving it.
