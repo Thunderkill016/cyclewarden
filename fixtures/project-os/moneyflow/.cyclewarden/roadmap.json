@@ -13,7 +13,7 @@
     {
       "id": "MFVN-001",
       "title": "Complete final manual readiness gates",
-      "status": "active",
+      "status": "done",
       "dependsOn": ["MFVN-000"],
       "source": "issue #27",
       "humanOnly": true,
@@ -24,13 +24,26 @@
       ],
       "requiredEvidence": [
         "minimal pass or fail metadata for each manual gate"
+      ],
+      "completedAt": "2026-07-27",
+      "completionEvidence": [
+        "The owner confirmed that all three manual readiness gates passed."
       ]
     },
     {
       "id": "MFVN-002",
       "title": "Complete seven consecutive days of real self-use",
-      "status": "blocked",
-      "dependsOn": ["MFVN-001"]
+      "status": "active",
+      "dependsOn": ["MFVN-001"],
+      "acceptance": [
+        "seven consecutive calendar days complete without data loss or manual database repair",
+        "core transactions reconcile",
+        "all reproducible P0 and P1 defects are recorded and resolved or explicitly blocking"
+      ],
+      "requiredEvidence": [
+        "daily pass or fail record using non-sensitive summaries",
+        "bounded issues for reproducible defects"
+      ]
     },
     {
       "id": "MFVN-003",
