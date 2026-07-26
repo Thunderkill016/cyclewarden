@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "defaultProjectId": "cyclewarden",
+  "projects": [
+    {
+      "id": "cyclewarden",
+      "label": "CycleWarden",
+      "projectRoot": ".",
+      "stateRoot": ".cyclewarden"
+    },
+    {
+      "id": "atoenglish",
+      "label": "AtoEnglish",
+      "projectRoot": "../AtoEnglish",
+      "stateRoot": "../AtoEnglish/.cyclewarden"
+    }
+  ]
+}
