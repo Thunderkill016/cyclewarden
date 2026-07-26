@@ -1,5 +1,4 @@
 import { readFile, access } from "node:fs/promises";
-import "./check-capabilities.mjs";
 
 const required = [
   "AGENTS.md",
