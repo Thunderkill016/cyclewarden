@@ -139,7 +139,7 @@ Rules:
 
 ## Implemented pilot CLI
 
-The CLI is intentionally deterministic and uses only Node.js built-ins.
+The CLI is intentionally deterministic and uses only Node.js built-ins. Source: [`scripts/cw.mjs`](scripts/cw.mjs).
 
 ```bash
 pnpm cw -- init [root] --name "Project name"
