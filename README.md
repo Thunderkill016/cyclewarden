@@ -1,180 +1,167 @@
 # ✦ CycleWarden
 
-**Experimental local workflow for bounded AI-assisted software delivery**
+**A project operating layer for software built with AI coding agents**
 
-CycleWarden helps a solo developer prepare a real repository task, hand implementation to a coding agent, verify the resulting change, and make a human merge decision.
+CycleWarden helps a solo or non-expert builder turn an idea into a coherent software project, preserve important decisions, work on one dependency-valid task at a time, and continue across agent sessions without losing direction.
 
-> **Current direction:** CycleWarden is in practical validation mode. The previous full-platform roadmap is frozen. Active work is tracked in [issue #57](https://github.com/Thunderkill016/cyclewarden/issues/57) and defined in [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md).
+It does not try to write code better than Codex, Claude Code, Kiro, Cursor or another coding agent. It gives those agents stable project intent, accepted decisions, an active task and a definition of done.
+
+> **Current direction:** artifact-first Project OS validation, tracked in [issue #59](https://github.com/Thunderkill016/cyclewarden/issues/59) and defined in [`PROJECT_OS_SCOPE.md`](PROJECT_OS_SCOPE.md).
 
 CycleWarden was formerly named Shipkit. Existing state and configuration compatibility are documented in [`docs/RENAMING_FROM_SHIPKIT.md`](docs/RENAMING_FROM_SHIPKIT.md).
 
-## Current product hypothesis
+## Problem
 
-For a solo developer using Codex or another coding agent on real repositories, bounded task preparation and independent verification can reduce:
+Coding agents can complete individual requests while the project as a whole becomes incoherent:
 
-- unclear task scope;
-- accidental changes outside the request;
-- repeated implementation attempts;
-- uncertainty about whether a change is ready to merge.
+- implementation starts before the target user and first useful flow are clear;
+- framework, UI library, backend, database, authentication and security choices are made implicitly;
+- choices change between sessions without a recorded reason;
+- unfinished tasks multiply while the agent starts new work;
+- dependencies and blockers are ignored;
+- architecture and repository conventions drift;
+- the owner cannot explain the active task or what should happen next.
 
-The repository does **not** currently claim that CycleWarden is better than using a coding agent directly. That must be decided from six real project tasks.
+## Product hypothesis
 
-## Practical workflow
+CycleWarden can add value above existing agents by owning project-level continuity:
+
+1. shape a one-sentence idea into product truth and explicit non-goals;
+2. record significant product, design, stack, architecture, data and security decisions;
+3. create a small dependency-aware roadmap of useful vertical slices;
+4. allow exactly one active implementation task by default;
+5. select the next ready task from completed dependencies and unresolved blockers;
+6. preserve project state for a fresh agent session;
+7. require task-specific evidence before work is accepted.
+
+## Operating workflow
 
 ```text
-real task
-→ repository context and bounded scope
-→ coding agent implementation
-→ test / lint / typecheck / build
-→ changed-file and patch verification
-→ human review and merge decision
+idea or existing repository
+→ target user, problem, constraints, core flow and non-goals
+→ minimum foundation decisions
+→ dependency-aware vertical-slice roadmap
+→ one active task
+→ existing coding agent implementation
+→ repository checks and human review
+→ accepted project state
+→ next ready task
 ```
 
-The useful surface today is:
+## What CycleWarden owns
 
-1. inspect and assess a repository;
-2. prepare an evidence-backed execution handoff;
-3. run one trusted local implementation in an isolated branch or worktree;
-4. require a different verifier before accepting the change;
-5. optionally publish the exact verified commit as a draft pull request.
+- project and product truth;
+- accepted decisions and their rationale;
+- a small architecture and trust-boundary map;
+- roadmap slices and dependencies;
+- the single active task and blockers;
+- task acceptance and evidence fields;
+- durable status across sessions.
 
-## Practical validation
+## What CycleWarden delegates
 
-Issue #57 compares:
+- code implementation to the user's existing coding agent;
+- feature-level SDD to Spec Kit, Kiro, OpenSpec or focused task documents when useful;
+- tests, builds, linting and security checks to the target repository and established tools;
+- final product, risk and merge decisions to the human owner.
 
-- three real tasks using the normal coding-agent workflow;
-- three comparable real tasks using CycleWarden.
+The MVP should not require a separate model provider or duplicate token spend.
 
-Fixtures and synthetic work do not count. Every task records preparation time, implementation retries, scope escapes, checks, review time, friction, and final outcome using [`docs/practical/TASK_RECORD_TEMPLATE.md`](docs/practical/TASK_RECORD_TEMPLATE.md).
+## Candidate repository contract
 
-After six tasks:
+```text
+.cyclewarden/
+├── project.md
+├── product.md
+├── design.md
+├── architecture.md
+├── roadmap.md
+├── status.yaml
+├── decisions/
+└── tasks/
+```
 
-- keep task preparation only if it materially improves clarity or context recovery;
-- keep execution orchestration only if it removes repeated work without comparable friction;
-- keep verification if it catches meaningful errors or clarifies merge decisions;
-- freeze CycleWarden as a research prototype if direct coding-agent use performs as well or better.
+See [`PROJECT_OS_SCOPE.md`](PROJECT_OS_SCOPE.md) for the responsibility of each artifact.
 
-## Frozen during validation
+## Candidate CLI
 
-The following are not active product goals:
+```text
+cw init      scaffold project operating artifacts for a new project
+cw adopt     recover trustworthy current state from an existing repository
+cw status    show phase, active task, blockers and unresolved decisions
+cw next      select the next dependency-ready task
+cw validate  check artifact structure, dependencies and one-active-task rules
+```
 
-- multi-project web dashboards;
-- deployment and rollback automation;
-- outcome analytics and recursive learning;
-- MCP/A2A integration;
-- multi-user SaaS;
-- additional coding-agent adapters;
-- additional sandbox backends;
-- broad research-provider expansion;
-- persistence hardening unrelated to a real task blocker.
+These commands are hypotheses. They will be implemented only when the manual pilots show that deterministic automation removes repeated, valuable work.
 
-Existing code for these areas is preserved as technical evidence. It is not deleted, but architecture completeness no longer justifies new work.
+## Current pilot
 
-## Existing technical capabilities
+Before new runtime development, issue #59 requires:
 
-The repository already contains:
+1. one greenfield pilot from a one-sentence idea to an accepted vertical slice;
+2. one brownfield pilot that recovers current state and completes the next valid task;
+3. comparison with a concise `AGENTS.md`, ordinary issue tracking and existing spec/task tools;
+4. a keep, integrate, manual or drop decision for each proposed command.
 
-- a deterministic lifecycle and evidence core;
-- repository inspection and readiness assessment;
-- bounded repository research and `ExecutionHandoff` records;
-- trusted-local command and optional Codex CLI delivery profiles;
-- clean-base and isolated worktree requirements;
-- changed-file scope checks and external-symlink rejection;
-- separate implementer and verifier identities;
-- test, lint, typecheck and build verification commands;
-- local commit creation only after an accepted verdict;
-- explicit opt-in draft pull-request publication;
-- CI, Docker hostile-check fixtures, and Node.js 20/22/24 package verification.
+Use [`docs/project-os/PILOT_PROTOCOL.md`](docs/project-os/PILOT_PROTOCOL.md).
 
-These mechanisms are implementation details supporting the practical workflow, not separate roadmap obligations.
+## Research basis
+
+The product direction is based on comparison with:
+
+- GitHub Spec Kit;
+- Kiro Specs, Steering and Hooks;
+- Taskmaster;
+- BMAD Method;
+- OpenSpec;
+- Shape Up;
+- Architectural Decision Records;
+- C4 architecture maps;
+- OWASP ASVS.
+
+The full comparison and adoption/rejection decisions are in [`docs/research/AI_PROJECT_OS_LANDSCAPE.md`](docs/research/AI_PROJECT_OS_LANDSCAPE.md).
+
+The central conclusion is that CycleWarden should sit **above feature-level implementation tools**, not recreate them.
+
+## Frozen until pilot evidence
+
+- autonomous coding-agent execution;
+- multi-agent personas, debates or voting;
+- hosted dashboards and multi-user SaaS;
+- model routing and provider expansion;
+- deployment and rollback;
+- recursive learning;
+- a general workflow language;
+- feature-level SDD already available in mature tools;
+- architecture work justified only by completeness.
+
+## Preserved experimental runtime
+
+The repository already contains substantial research code for repository inspection, evidence records, trusted-local execution, independent verification, worktrees, draft PR publication and web workflows.
+
+That code is preserved as technical evidence. It is not the active product surface and does not justify new work unless a Project OS pilot exposes a concrete reusable need.
+
+Historical practical validation is retained in [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md), [`docs/practical/TASK_RECORD_TEMPLATE.md`](docs/practical/TASK_RECORD_TEMPLATE.md) and issue #57.
 
 ## Important boundaries
 
-- Trusted-local execution is **not a security sandbox**. Commands inherit the current operating-system user's accessible filesystem, credentials, tools, and network.
-- The web workspace ends at the execution handoff. Execute, verify, and publish remain CLI operations.
-- Draft pull-request publication requires an installed and authenticated GitHub CLI.
-- CycleWarden never automatically merges, deploys, accesses production secrets, or spends money.
-- CI success proves technical checks passed; it does not prove product value.
-
-## Quickstart
-
-### Prerequisites
-
-- Node.js 20 or later
-- pnpm 9 or later
-- Git
-- GitHub CLI only when publishing a draft pull request
-
-### Install
-
-```bash
-git clone https://github.com/Thunderkill016/cyclewarden.git
-cd cyclewarden
-pnpm install
-pnpm --filter @cyclewarden/evolution-core build
-pnpm evolve -- init
-```
-
-### Inspect a trusted repository
-
-```bash
-pnpm evolve -- start \
-  --id practical:task-001 \
-  --objective "Prepare one bounded real project task" \
-  --autonomy A2 \
-  --risk R1
-
-pnpm evolve -- inspect practical:task-001 \
-  --project-root /absolute/path/to/trusted/repository
-
-pnpm evolve -- assess practical:task-001 \
-  --project-root /absolute/path/to/trusted/repository
-
-pnpm evolve -- show practical:task-001
-```
-
-Repository research can then produce a reviewed `ExecutionHandoff`.
-
-### Run trusted-local delivery
-
-See [`docs/evolution/GOVERNED_DELIVERY.md`](docs/evolution/GOVERNED_DELIVERY.md) for the manifest contract and safety boundaries.
-
-```bash
-pnpm deliver -- execute <cycle-id> \
-  --root /absolute/path/to/project/.cyclewarden \
-  --project-root /absolute/path/to/trusted/repository \
-  --manifest delivery.json \
-  --actor owner-implementation-agent \
-  --trusted-repository
-
-pnpm deliver -- verify <cycle-id> \
-  --root /absolute/path/to/project/.cyclewarden \
-  --project-root /absolute/path/to/trusted/repository \
-  --actor independent-verifier
-```
-
-Publishing is a separate explicit operation:
-
-```bash
-pnpm deliver -- publish <cycle-id> \
-  --root /absolute/path/to/project/.cyclewarden \
-  --project-root /absolute/path/to/trusted/repository \
-  --actor owner-publisher \
-  --draft-pr \
-  --remote origin \
-  --base main
-```
+- CycleWarden does not automatically merge, deploy, access production secrets or spend money.
+- Project files cannot replace owner judgment about an unclear or unsafe product.
+- A valid task graph does not prove the product is useful.
+- A green build does not prove product correctness, security or user value.
+- Existing tools should be integrated when they solve a layer better than CycleWarden.
 
 ## Documentation
 
 | Document | Purpose |
 | --- | --- |
-| [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md) | Active product direction and frozen boundaries |
-| [`docs/practical/TASK_RECORD_TEMPLATE.md`](docs/practical/TASK_RECORD_TEMPLATE.md) | Evidence template for the six-task comparison |
-| [`ROADMAP.md`](ROADMAP.md) | Current practical validation roadmap |
-| [`docs/evolution/GOVERNED_DELIVERY.md`](docs/evolution/GOVERNED_DELIVERY.md) | Trusted-local execution and verification contract |
-| [`docs/CAPABILITIES.json`](docs/CAPABILITIES.json) | Machine-readable technical capability evidence |
-| [`IDEA.md`](IDEA.md) | Historical broad product vision retained for reference |
+| [`PROJECT_OS_SCOPE.md`](PROJECT_OS_SCOPE.md) | Candidate active product direction |
+| [`docs/research/AI_PROJECT_OS_LANDSCAPE.md`](docs/research/AI_PROJECT_OS_LANDSCAPE.md) | Comparable products, methods and product decision |
+| [`docs/project-os/PILOT_PROTOCOL.md`](docs/project-os/PILOT_PROTOCOL.md) | Manual greenfield and brownfield experiment |
+| [`ROADMAP.md`](ROADMAP.md) | Evidence-driven implementation roadmap |
+| [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md) | Superseded bounded-delivery validation retained as history |
+| [`IDEA.md`](IDEA.md) | Historical broad platform vision |
 
 ## License
 
