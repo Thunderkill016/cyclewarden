@@ -12,6 +12,7 @@ const required = [
   "ARCHITECTURE.md",
   "docs/research/AI_PROJECT_OS_LANDSCAPE.md",
   "docs/project-os/PILOT_PROTOCOL.md",
+  "docs/project-os/pilots/MONEYFLOW_BROWNFIELD.md",
   "docs/CAPABILITIES.json",
   "docs/ai/PROJECT_MODEL.md",
   "docs/ai/OPERATING_MODEL.md",
@@ -65,6 +66,12 @@ const required = [
   "scripts/test-a2-pilot.mjs",
   "scripts/create-cyclewarden.mjs",
   "scripts/test-create-cyclewarden.mjs",
+  "scripts/cw.mjs",
+  "scripts/cw.test.mjs",
+  "scripts/cw.moneyflow.test.mjs",
+  "fixtures/project-os/moneyflow/.cyclewarden/project.json",
+  "fixtures/project-os/moneyflow/.cyclewarden/roadmap.json",
+  "fixtures/project-os/moneyflow/.cyclewarden/status.json",
 ];
 
 const missing = [];
@@ -105,20 +112,39 @@ const contentChecks = [
   {
     file: "AGENTS.md",
     phrases: [
-      "Exactly one project task is active by default",
-      "The MVP must not require a separate model provider",
+      "At most one project task is active by default",
+      "The MVP must not require a separate model provider or duplicate model calls",
+      "pnpm test:project-os",
     ],
   },
   {
     file: "PROJECT_OS_SCOPE.md",
     phrases: [
-      "exactly one task may be `active`",
-      "Runtime development is frozen until a pilot exposes a repeated need",
+      "at most one task may be `active`",
+      "The pilot requires no separate model provider",
+      "scripts/cw.mjs",
+      "Brownfield pilot evidence",
     ],
   },
   {
     file: "AI_WORKFLOW.md",
     phrases: ["Project OS loop", "exactly one task is active by default"],
+  },
+  {
+    file: "README.md",
+    phrases: [
+      "free local project operating layer",
+      "pnpm cw -- validate",
+      "First brownfield pilot: MoneyFlow",
+    ],
+  },
+  {
+    file: "ROADMAP.md",
+    phrases: [
+      "MoneyFlow brownfield adoption",
+      "smallest deterministic CLI",
+      "no model calls or provider keys",
+    ],
   },
 ];
 
