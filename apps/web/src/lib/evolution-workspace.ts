@@ -2,9 +2,10 @@ import "server-only";
 
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { realpath, stat } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 import { basename, dirname, parse, resolve } from "node:path";
 import { promisify } from "node:util";
+import { z } from "zod";
 
 export type CycleSummary = {
   cycleId: string;
@@ -91,6 +92,16 @@ export type CycleView = {
   research?: ResearchView;
 };
 
+export type EvolutionProjectSummary = {
+  id: string;
+  label: string;
+};
+
+export type EvolutionProjectContext = EvolutionProjectSummary & {
+  projectRoot: string;
+  stateRoot: string;
+};
+
 type StatusOutput = {
   root: string;
   cycles: CycleSummary[];
@@ -99,6 +110,42 @@ type StatusOutput = {
 type ShowOutput = {
   cycle: CycleView;
 };
+
+type ProjectDefinition = {
+  id: string;
+  label: string;
+  projectRoot: string;
+  stateRoot: string;
+};
+
+type ProjectRegistry = {
+  defaultProjectId: string;
+  projects: ProjectDefinition[];
+};
+
+const ProjectIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
+
+const ProjectDefinitionSchema = z
+  .object({
+    id: ProjectIdSchema,
+    label: z.string().trim().min(1).max(80),
+    projectRoot: z.string().trim().min(1).max(4096),
+    stateRoot: z.string().trim().min(1).max(4096),
+  })
+  .strict();
+
+const ProjectRegistrySchema = z
+  .object({
+    version: z.literal(1),
+    defaultProjectId: ProjectIdSchema.optional(),
+    projects: z.array(ProjectDefinitionSchema).min(1).max(32),
+  })
+  .strict();
 
 const execFileAsync = promisify(execFile);
 const MAX_CLI_OUTPUT_BYTES = 4 * 1024 * 1024;
@@ -118,7 +165,7 @@ function configuredEvolutionProjectRoot(): string {
 
 /** A display-safe label; the configured absolute path remains server-only. */
 export function resolveEvolutionProjectRoot(): string {
-  return "server-configured trusted repository";
+  return process.env.CYCLEWARDEN_PROJECT_LABEL?.trim() || "server-configured trusted repository";
 }
 
 export function resolveEvolutionStateRoot(): string {
@@ -132,22 +179,121 @@ export function resolveEvolutionStateRoot(): string {
   return existsSync(canonicalRoot) || !existsSync(legacyRoot) ? canonicalRoot : legacyRoot;
 }
 
-export async function assertEvolutionProjectRoot(): Promise<string> {
-  const requestedRoot = configuredEvolutionProjectRoot();
+async function assertProjectDirectory(requestedRoot: string): Promise<string> {
   let projectRoot: string;
   try {
     projectRoot = await realpath(requestedRoot);
   } catch {
-    throw new Error(`Configured project root does not exist: ${requestedRoot}`);
+    throw new Error("Configured project root does not exist");
   }
   if (projectRoot === parse(projectRoot).root) {
-    throw new Error("CYCLEWARDEN_PROJECT_ROOT may not target a filesystem root");
+    throw new Error("Configured project root may not target a filesystem root");
   }
   const info = await stat(projectRoot);
   if (!info.isDirectory()) {
-    throw new Error(`Configured project root is not a directory: ${projectRoot}`);
+    throw new Error("Configured project root is not a directory");
   }
   return projectRoot;
+}
+
+export async function assertEvolutionProjectRoot(): Promise<string> {
+  return assertProjectDirectory(configuredEvolutionProjectRoot());
+}
+
+function legacyProjectRegistry(): ProjectRegistry {
+  return {
+    defaultProjectId: "default",
+    projects: [
+      {
+        id: "default",
+        label: resolveEvolutionProjectRoot(),
+        projectRoot: configuredEvolutionProjectRoot(),
+        stateRoot: resolveEvolutionStateRoot(),
+      },
+    ],
+  };
+}
+
+async function loadProjectRegistry(): Promise<ProjectRegistry> {
+  const configuredFile = process.env.CYCLEWARDEN_PROJECTS_FILE?.trim();
+  if (!configuredFile) return legacyProjectRegistry();
+
+  const registryPath = resolve(resolveCycleWardenRepositoryRoot(), configuredFile);
+  let source: string;
+  try {
+    source = await readFile(registryPath, "utf8");
+  } catch {
+    throw new Error("Configured CycleWarden project registry could not be read");
+  }
+
+  let json: unknown;
+  try {
+    json = JSON.parse(source);
+  } catch {
+    throw new Error("Configured CycleWarden project registry is not valid JSON");
+  }
+
+  const parsed = ProjectRegistrySchema.safeParse(json);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    throw new Error(`Invalid CycleWarden project registry: ${issue?.message ?? "schema mismatch"}`);
+  }
+
+  const data = parsed.data as { defaultProjectId?: string; projects: ProjectDefinition[] };
+  const ids = data.projects.map((project) => project.id);
+  if (new Set(ids).size !== ids.length) {
+    throw new Error("Invalid CycleWarden project registry: project IDs must be unique");
+  }
+
+  const defaultProjectId = data.defaultProjectId ?? data.projects[0].id;
+  if (!ids.includes(defaultProjectId)) {
+    throw new Error("Invalid CycleWarden project registry: defaultProjectId is not configured");
+  }
+
+  const repositoryRoot = resolveCycleWardenRepositoryRoot();
+  const projects = data.projects.map((project) => ({
+    ...project,
+    projectRoot: resolve(repositoryRoot, project.projectRoot),
+    stateRoot: resolve(repositoryRoot, project.stateRoot),
+  }));
+  const stateRoots = projects.map((project) => project.stateRoot);
+  if (new Set(stateRoots).size !== stateRoots.length) {
+    throw new Error("Invalid CycleWarden project registry: state roots must be unique");
+  }
+
+  return { defaultProjectId, projects };
+}
+
+export async function resolveEvolutionProjectContext(requestedProjectId?: string): Promise<{
+  projects: EvolutionProjectSummary[];
+  selected: EvolutionProjectContext;
+}> {
+  const registry = await loadProjectRegistry();
+  const requested = requestedProjectId?.trim();
+  if (requested && !ProjectIdSchema.safeParse(requested).success) {
+    throw new Error("Invalid configured project ID");
+  }
+
+  const selectedId = requested || registry.defaultProjectId;
+  const definition = registry.projects.find((project) => project.id === selectedId);
+  if (!definition) {
+    throw new Error("Requested project is not present in the server-configured registry");
+  }
+
+  const stateRoot = resolve(definition.stateRoot);
+  if (stateRoot === parse(stateRoot).root) {
+    throw new Error("Configured project state root may not target a filesystem root");
+  }
+
+  return {
+    projects: registry.projects.map(({ id, label }) => ({ id, label })),
+    selected: {
+      id: definition.id,
+      label: definition.label,
+      projectRoot: await assertProjectDirectory(definition.projectRoot),
+      stateRoot,
+    },
+  };
 }
 
 function evolutionCliPath(): string {
@@ -185,8 +331,23 @@ export async function runEvolutionCoreCli<T>(args: string[]): Promise<T> {
   }
 }
 
-export async function loadEvolutionWorkspace(selectedCycleId?: string) {
-  const root = resolveEvolutionStateRoot();
+export async function loadEvolutionWorkspace(selectedCycleId?: string, projectId?: string) {
+  let registry: Awaited<ReturnType<typeof resolveEvolutionProjectContext>>;
+  try {
+    registry = await resolveEvolutionProjectContext(projectId);
+  } catch (error) {
+    return {
+      root: basename(resolveEvolutionStateRoot()),
+      projects: [] as EvolutionProjectSummary[],
+      project: null as EvolutionProjectSummary | null,
+      summaries: [] as CycleSummary[],
+      selected: null as CycleView | null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  const root = registry.selected.stateRoot;
+  const project = { id: registry.selected.id, label: registry.selected.label };
   try {
     const status = await runEvolutionCoreCli<StatusOutput>(["status", "--root", root]);
     const selectedSummary =
@@ -201,10 +362,19 @@ export async function loadEvolutionWorkspace(selectedCycleId?: string) {
           root,
         ])).cycle
       : null;
-    return { root: basename(status.root), summaries: status.cycles, selected, error: null };
+    return {
+      root: basename(status.root),
+      projects: registry.projects,
+      project,
+      summaries: status.cycles,
+      selected,
+      error: null,
+    };
   } catch (error) {
     return {
       root: basename(root),
+      projects: registry.projects,
+      project,
       summaries: [] as CycleSummary[],
       selected: null as CycleView | null,
       error: error instanceof Error ? error.message : String(error),
