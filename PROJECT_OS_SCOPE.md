@@ -2,7 +2,8 @@
 
 Status: active pilot direction  
 Tracking issue: #59  
-Research basis: [`docs/research/AI_PROJECT_OS_LANDSCAPE.md`](docs/research/AI_PROJECT_OS_LANDSCAPE.md)
+Research basis: [`docs/research/AI_PROJECT_OS_LANDSCAPE.md`](docs/research/AI_PROJECT_OS_LANDSCAPE.md)  
+Pilot procedure: [`docs/project-os/PILOT_PROTOCOL.md`](docs/project-os/PILOT_PROTOCOL.md)
 
 ## Purpose
 
