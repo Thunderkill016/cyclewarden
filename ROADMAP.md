@@ -1,161 +1,219 @@
-# CycleWarden practical validation roadmap
+# CycleWarden Project OS roadmap
 
-> Active scope: [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md)  
-> Active experiment: [issue #57](https://github.com/Thunderkill016/cyclewarden/issues/57)  
-> Historical platform vision: [`IDEA.md`](IDEA.md) and closed issue #9
+> Product scope: [`PROJECT_OS_SCOPE.md`](PROJECT_OS_SCOPE.md)  
+> Active pilot: [issue #59](https://github.com/Thunderkill016/cyclewarden/issues/59)  
+> Research: [`docs/research/AI_PROJECT_OS_LANDSCAPE.md`](docs/research/AI_PROJECT_OS_LANDSCAPE.md)  
+> Historical bounded-delivery experiment: [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md) and issue #57
 
 ## Current objective
 
-Determine whether CycleWarden helps a solo developer complete real software tasks better than using a coding agent directly.
+Determine whether a lightweight, agent-neutral project operating layer helps a solo or non-expert builder maintain a coherent software project across many coding-agent sessions.
 
-The current roadmap contains one milestone only: six real project tasks with comparable evidence.
-
-## Product surface under evaluation
+The current roadmap does not resume the previous integrated-platform vision. It tests a narrower hypothesis:
 
 ```text
-prepare bounded task
-→ implement in isolated Git context
-→ verify scope and checks independently
-→ report evidence
-→ human merge decision
+shape project
+→ record foundation decisions
+→ create dependency-aware vertical slices
+→ keep one task active
+→ delegate implementation
+→ verify and update state
+→ select next task
 ```
 
-The experiment evaluates three possible useful capabilities:
+## Product boundary
 
-1. `prepare` — repository context, scope and acceptance criteria;
-2. execution handoff — isolated implementation through an existing coding agent;
-3. `verify` — changed-file, patch and project-check validation.
+CycleWarden owns:
 
-No capability is retained merely because it is technically complete.
+- project intent and constraints;
+- product scope and first useful flow;
+- significant decisions and consequences;
+- roadmap dependencies;
+- current task, blockers and status;
+- acceptance evidence structure.
 
-## Milestone P0 — align the repository
+CycleWarden delegates implementation to existing coding agents and should integrate with feature-level SDD tools rather than reproduce them.
 
-- [x] close the unmerged multi-project web registry PR as archived work;
-- [x] supersede the full integrated-platform roadmap issue;
-- [x] create the six-task practical validation issue;
-- [x] define the active practical scope and frozen areas;
-- [x] add a repeatable task evidence template;
-- [x] reframe the README and roadmap around observed project value.
+## Milestone P0 — research and define the candidate product
 
-Exit: contributors can distinguish active practical work from preserved platform research.
+- [x] identify the whole-project failure mode not solved by code generation alone;
+- [x] compare Spec Kit, Kiro, Taskmaster, BMAD and OpenSpec;
+- [x] incorporate bounded shaping, ADR, C4 and security-requirement practices;
+- [x] define CycleWarden's layer above feature implementation;
+- [x] reject autonomous execution, multi-agent personas and hosted platform work for the pilot;
+- [x] open issue #59 with measurable pilot acceptance.
 
-## Milestone P1 — select real tasks
+Exit: the product hypothesis and competitive boundary are explicit.
 
-Select six tasks across at least two real repositories:
+## Milestone P1 — artifact-first manual protocol
 
-- [ ] direct-agent task 1;
-- [ ] direct-agent task 2;
-- [ ] direct-agent task 3;
-- [ ] CycleWarden-assisted task 1;
-- [ ] CycleWarden-assisted task 2;
-- [ ] CycleWarden-assisted task 3.
+- [x] define repository-local project artifacts;
+- [x] define project, product, design, architecture, roadmap, decision, task and status responsibilities;
+- [x] define immutable roadmap/task IDs;
+- [x] define dependency and blocker semantics;
+- [x] define one-active-task rule;
+- [x] define task lifecycle and completion evidence;
+- [x] define greenfield and brownfield pilot procedures;
+- [ ] review the protocol against one real project idea before creating runtime code.
 
-Preferred distribution:
+Exit: an existing coding agent can follow the manual protocol using repository files only.
 
-- two AtoEnglish tasks;
-- two tasks from a second real project;
-- two tasks from a third project when available.
+## Milestone P2 — greenfield pilot
 
-A task must be independently valuable to its target project. Fixtures, demos and work invented to exercise CycleWarden do not count.
+Start from one real, short project idea supplied by the owner.
 
-Exit: all six tasks have a clear goal, bounded scope and task record.
+Required outcomes:
 
-## Milestone P2 — complete direct-agent baseline
-
-For three tasks, use the normal coding-agent workflow:
-
-```text
-AGENTS.md and repository context
-→ coding agent
-→ Git diff
-→ project checks
-→ human review
-```
+- [ ] target user, problem, constraints and non-goals are clear;
+- [ ] the first end-to-end user flow is bounded;
+- [ ] only decisions needed for the first slice are recorded;
+- [ ] the roadmap contains three to seven independently valuable slices;
+- [ ] exactly one task is active;
+- [ ] an existing coding agent completes the task without changing stack or scope silently;
+- [ ] repository checks and owner review produce an honest acceptance result;
+- [ ] the next task is selected from completed dependencies.
 
 Record:
 
-- [ ] preparation time;
-- [ ] implementation retries;
-- [ ] scope escapes;
-- [ ] failures caught before review;
-- [ ] human review time;
-- [ ] final outcome and friction.
+- time and owner input needed to reach the first ready task;
+- number of decisions and tasks created before implementation;
+- task switches, scope changes and dependency violations;
+- implementation retries and check failures;
+- review time and owner understanding;
+- artifact maintenance and unnecessary ceremony.
 
-Exit: three honest baseline records exist.
+Exit: one useful vertical slice is accepted, blocked, dropped or honestly classified as inconclusive.
 
-## Milestone P3 — complete CycleWarden-assisted tasks
+## Milestone P3 — brownfield adoption pilot
 
-For three comparable tasks, use existing CycleWarden capabilities without adding optional platform features:
+Use one existing repository with real history and unfinished work.
 
-```text
-inspect / assess / handoff
-→ trusted-local implementation
-→ independent verification
-→ optional draft PR
-→ human review
-```
+Required outcomes:
 
-Runtime changes are permitted only when a concrete defect blocks a real task. Every such change must link to the task record that exposed it.
+- [ ] current product, core flow, stack and boundaries are recovered from evidence;
+- [ ] confirmed facts, owner statements, inference and unknowns are separated;
+- [ ] accepted architecture is preserved rather than redesigned during adoption;
+- [ ] contradictory source-of-truth claims are recorded;
+- [ ] one valuable dependency-valid task is selected;
+- [ ] exactly one task is active;
+- [ ] a fresh agent session can recover the active task and project direction;
+- [ ] the task reaches an honest final state.
 
-Record the same baseline metrics plus CycleWarden-specific setup and ceremony.
+Exit: the model helps continue an existing project without a broad cleanup or rewrite.
 
-Exit: three honest CycleWarden-assisted task records exist.
+## Milestone P4 — compare with simpler alternatives
 
-## Milestone P4 — compare outcomes
+For each pilot compare CycleWarden with:
 
-Summarize all six tasks:
+- concise `AGENTS.md` and one issue;
+- plain Markdown roadmap and ADRs;
+- Spec Kit or Kiro feature specs where available;
+- Taskmaster-style dependency tracking;
+- the coding agent's normal planning behavior.
 
-- [ ] median preparation time;
-- [ ] total implementation retries;
-- [ ] meaningful scope escapes;
-- [ ] failures caught before human review;
-- [ ] human review time;
-- [ ] abandoned or inconclusive tasks;
-- [ ] repeated CycleWarden friction;
-- [ ] repeated value not provided by direct agent usage.
+Evaluate:
 
-Do not treat code volume, CI complexity, number of records, or number of automated steps as product success.
+- [ ] project continuity across sessions;
+- [ ] decision clarity and stability;
+- [ ] dependency-aware next-task selection;
+- [ ] task-switch prevention;
+- [ ] owner understanding;
+- [ ] duplicate/stale documentation;
+- [ ] total setup and maintenance cost;
+- [ ] value not already supplied by another tool.
 
-Exit: a clear comparison exists with limitations and no unsupported causal claim.
+Exit: the project can state precisely which layer is unique and which layers should be integrated or dropped.
 
-## Milestone P5 — choose the smallest future
+## Milestone P5 — choose command scope
 
-Choose exactly one primary direction:
+For each candidate command choose **keep**, **integrate**, **manual** or **drop**.
 
-### A. Task preparation tool
+### `cw init`
 
-Use when context and bounded acceptance criteria create most of the value. Retain `prepare`; freeze delivery orchestration.
+Keep only if scaffolding and validation repeatedly improve greenfield shaping.
 
-### B. Verification quality gate
+### `cw adopt`
 
-Use when independent scope and check verification create most of the value. Retain `verify`; rely on external agents for implementation.
+Keep only if deterministic repository discovery and evidence labeling remove repeated brownfield work.
 
-### C. Thin prepare + verify workflow
+### `cw status`
 
-Use only when both capabilities repeatedly help and execution orchestration remains low-friction.
+Keep if one machine-readable summary reliably improves continuity across sessions.
 
-### D. Research prototype
+### `cw next`
 
-Use when direct coding-agent work performs as well or better. Preserve the repository, stop active product development, and reuse individual components only when another project needs them.
+Keep if dependency/blocker logic makes better next-task decisions than a plain checklist.
 
-Exit: README, package surface and active issues reflect the selected smallest direction.
+### `cw validate`
+
+Keep for deterministic rules such as dependency cycles, broken links, missing fields and multiple active tasks. Do not use it to pretend semantic product correctness is deterministic.
+
+Exit: only demonstrated commands enter implementation.
+
+## Milestone P6 — smallest deterministic CLI
+
+This milestone remains blocked until P2–P5 evidence exists.
+
+Allowed implementation:
+
+- [ ] scaffold accepted artifact templates;
+- [ ] parse project status and task metadata;
+- [ ] validate task IDs, statuses, dependencies and one-active-task rule;
+- [ ] print blockers and next ready task;
+- [ ] provide machine-readable output for coding agents;
+- [ ] add focused tests for state transitions and dependency errors.
+
+Constraints:
+
+- no model call inside the CLI;
+- no provider API keys;
+- no autonomous code implementation;
+- no database or hosted service;
+- no general workflow language;
+- no web dashboard;
+- no feature-level spec engine.
+
+Exit: the CLI automates only repeated deterministic work observed in pilots.
+
+## Milestone P7 — agent integration
+
+Consider only after the CLI is useful independently.
+
+Possible work:
+
+- generate a concise repository `AGENTS.md` entrypoint;
+- provide installable skill/command wrappers for Codex or Claude Code;
+- export a roadmap slice into Spec Kit or OpenSpec-compatible feature work;
+- read repository-owned verification commands;
+- add optional hooks that run deterministic validation.
+
+Do not make one IDE or model the source of truth.
 
 ## Frozen backlog
 
-The following work has no active milestone:
-
-- multi-project web dashboards;
-- hosted or multi-user product operation;
-- deployment, release and rollback automation;
-- product outcome dashboards;
+- autonomous implementation and publishing;
+- multi-agent roles, debate or voting;
+- model routing and provider abstraction;
+- hosted dashboards, accounts and multi-user SaaS;
+- deployment, release and rollback;
 - recursive learning and skill promotion;
-- MCP and A2A integration;
-- additional coding-agent adapters;
-- additional sandbox backends;
-- broad public research adapters;
-- provenance and persistence hardening beyond a real task blocker;
+- broad research providers;
+- general workflow authoring;
+- additional execution sandboxes;
+- feature-level SDD duplicated from mature tools;
 - architecture refactors justified only by completeness.
 
 ## Re-entry rule
 
-A frozen capability may return only when at least two real task records show the same material problem and the proposed capability is the smallest credible experiment for solving it.
+A frozen capability may return only when at least two real pilot/task records expose the same material problem and the proposed capability is the smallest credible solution.
+
+## Kill criteria
+
+Freeze CycleWarden as a research artifact when:
+
+- the protocol only reproduces existing tools;
+- `AGENTS.md` plus ordinary issues provides equivalent continuity;
+- the artifacts become stale faster than they help;
+- the owner still cannot explain the product, decisions, active task or next task;
+- ceremony delays useful implementation without preventing scope or sequencing failures;
+- a mature external product solves the full target problem more simply.
