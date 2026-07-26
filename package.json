@@ -13,7 +13,7 @@
     "lint": "pnpm --filter @cyclewarden/web lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "test:project-os": "node --test scripts/cw.test.mjs",
+    "test:project-os": "node --test scripts/cw.test.mjs scripts/cw.moneyflow.test.mjs",
     "test:e2e": "pnpm --filter @cyclewarden/web test:e2e",
     "test:sandbox:docker": "pnpm --filter @cyclewarden/evolution-core build && node scripts/test-sandbox-docker.mjs",
     "doctor": "node scripts/doctor.mjs",
