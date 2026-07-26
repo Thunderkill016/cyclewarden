@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "mode": "brownfield",
+  "project": {
+    "id": "moneyflow",
+    "name": "MoneyFlow",
+    "repository": "Thunderkill016/moneyflow",
+    "mission": "A calm, manual-first Vietnamese personal income-and-expense ledger that helps one person record transactions, know balances, understand monthly cash flow, correct mistakes, and export trustworthy data.",
+    "targetUser": "A Vietnamese individual managing their own money without accounting jargon, bank aggregation, or automated financial advice.",
+    "currentPhase": "manual readiness before seven-day self-use",
+    "firstCriticalFlow": [
+      "sign in or use the supported runtime mode",
+      "create or choose an account",
+      "record an income, expense, or balanced transfer",
+      "see balances and period reporting update correctly",
+      "correct or recover mistakes",
+      "export trustworthy data"
+    ],
+    "priorities": [
+      "financial correctness and ownership safety",
+      "reliable core transaction flow",
+      "mobile usability and accessibility",
+      "clear recovery from mistakes",
+      "maintainability and performance",
+      "visual polish",
+      "new feature breadth"
+    ],
+    "nonGoals": [
+      "bank synchronization or Open Banking",
+      "AI financial advice or autonomous money decisions",
+      "OCR as a core workflow",
+      "family or shared finance",
+      "business accounting, tax, or invoicing",
+      "investment or crypto tracking",
+      "a complete envelope-budgeting system",
+      "a native mobile app before the web product proves daily usefulness"
+    ]
+  },
+  "foundation": {
+    "frontend": "Next.js App Router with React and TypeScript",
+    "styling": "Tailwind CSS with repository-owned design tokens and reusable components",
+    "data": "Supabase PostgreSQL for authenticated mode and browser-local storage for demo mode",
+    "authentication": "Supabase Auth",
+    "validation": "Zod and database constraints",
+    "testing": [
+      "Node unit tests",
+      "pgTAP database and RLS tests",
+      "Playwright user-flow tests",
+      "responsive and accessibility UI audit"
+    ],
+    "deployment": "Vercel with explicit environment configuration"
+  },
+  "invariants": [
+    "VND is stored as integer đồng and never floating-point money",
+    "internal transfers balance and never count as income or expense",
+    "user-owned records are isolated by RLS and ownership constraints",
+    "destructive ledger actions remain recoverable",
+    "financial calculations live in testable domain modules rather than UI components",
+    "missing financial or planning data remains unknown and is never guessed",
+    "exports preserve Vietnamese text, integer values, and spreadsheet formula safety",
+    "NEXT_PUBLIC_APP_MODE is explicit and missing configuration must fail instead of changing modes silently"
+  ],
+  "sources": [
+    "README.md",
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    "docs/product/PRINCIPLES.md",
+    "docs/MVP_DEFINITION.md",
+    "issue #27",
+    "issue #81"
+  ],
+  "unknowns": [
+    "whether the real production email callback passes with an inbox controlled by the owner",
+    "whether exported CSV behavior is safe in the owner-selected end-user spreadsheet application",
+    "whether the primary transaction form remains usable with a real physical-phone keyboard",
+    "whether seven consecutive days of self-use expose reconciliation or provenance defects"
+  ]
+}
