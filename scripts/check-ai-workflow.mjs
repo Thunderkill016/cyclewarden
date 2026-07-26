@@ -1,4 +1,4 @@
-import { readFile, access } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 
 const required = [
   "AGENTS.md",
@@ -73,12 +73,13 @@ const required = [
   "fixtures/project-os/moneyflow/.cyclewarden/status.json",
 ];
 
-const missing = [];
+const errors = [];
+
 for (const file of required) {
   try {
     await access(file);
   } catch {
-    missing.push(file);
+    errors.push(`missing required workflow file: ${file}`);
   }
 }
 
@@ -92,104 +93,91 @@ const activeDocs = [
 ];
 
 const placeholderPattern = /\b(TODO|TBD|FIXME)\b|<name>|YYYY-MM-DD/;
-const unresolved = [];
 for (const file of activeDocs) {
   const content = await readFile(file, "utf8");
-  if (placeholderPattern.test(content)) unresolved.push(file);
+  if (placeholderPattern.test(content)) {
+    errors.push(`unresolved placeholder in active document: ${file}`);
+  }
 }
 
-const conceptChecks = [
-  {
-    file: "docs/ai/AUTONOMOUS_IMPROVEMENT.md",
-    patterns: [
-      { label: "autonomy levels", regex: /Autonomy levels/i },
-      { label: "project model", regex: /project model/i },
-      { label: "stop and escalation conditions", regex: /Stop and escalation conditions/i },
-    ],
-  },
-  {
-    file: "docs/ai/DISCOVERY_RESEARCH.md",
-    patterns: [
-      { label: "evidence ledger", regex: /evidence ledger/i },
-      { label: "contradiction", regex: /contradiction/i },
-      { label: "cheapest useful experiment", regex: /cheapest useful experiment/i },
-    ],
-  },
-  {
-    file: "AGENTS.md",
-    patterns: [
-      { label: "one-active-task rule", regex: /at most one project task is active/i },
-      { label: "no separate model provider", regex: /must not require a separate model provider/i },
-      { label: "Project OS test command", regex: /pnpm test:project-os/ },
-      { label: "repository state contract", regex: /\.cyclewarden\// },
-    ],
-  },
-  {
-    file: "PROJECT_OS_SCOPE.md",
-    patterns: [
-      { label: "one-active-task rule", regex: /at most one task may be `active`/i },
-      { label: "no separate model provider", regex: /requires no separate model provider/i },
-      { label: "deterministic CLI implementation", regex: /scripts\/cw\.mjs/ },
-      { label: "MoneyFlow brownfield evidence", regex: /Brownfield pilot evidence/i },
-    ],
-  },
-  {
-    file: "AI_WORKFLOW.md",
-    patterns: [
-      { label: "Project OS loop", regex: /Project OS loop/i },
-      { label: "one active task", regex: /exactly one task is active/i },
-      { label: "deterministic validation", regex: /Deterministic validation/i },
-    ],
-  },
-  {
-    file: "README.md",
-    patterns: [
-      { label: "free local product", regex: /free local project operating layer/i },
-      { label: "validate command", regex: /pnpm cw -- validate/ },
-      { label: "MoneyFlow pilot", regex: /brownfield pilot:\s*MoneyFlow/i },
-      { label: "no duplicate token spend", regex: /duplicate token spend/i },
-    ],
-  },
-  {
-    file: "ROADMAP.md",
-    patterns: [
-      { label: "MoneyFlow adoption milestone", regex: /MoneyFlow brownfield adoption/i },
-      { label: "deterministic CLI milestone", regex: /smallest deterministic CLI/i },
-      { label: "no model calls", regex: /no model calls or provider keys/i },
-    ],
-  },
-];
+const requiredLinks = {
+  "AGENTS.md": [
+    "PROJECT_OS_SCOPE.md",
+    "docs/project-os/PILOT_PROTOCOL.md",
+    "ROADMAP.md",
+    "scripts/cw.mjs",
+  ],
+  "README.md": [
+    "PROJECT_OS_SCOPE.md",
+    "docs/research/AI_PROJECT_OS_LANDSCAPE.md",
+    "docs/project-os/PILOT_PROTOCOL.md",
+    "PRACTICAL_SCOPE.md",
+  ],
+  "PROJECT_OS_SCOPE.md": [
+    "docs/research/AI_PROJECT_OS_LANDSCAPE.md",
+    "docs/project-os/PILOT_PROTOCOL.md",
+    "scripts/cw.mjs",
+  ],
+  "ROADMAP.md": [
+    "PROJECT_OS_SCOPE.md",
+    "docs/research/AI_PROJECT_OS_LANDSCAPE.md",
+    "PRACTICAL_SCOPE.md",
+  ],
+  "AI_WORKFLOW.md": [
+    "PROJECT_OS_SCOPE.md",
+    "docs/project-os/PILOT_PROTOCOL.md",
+    "ROADMAP.md",
+  ],
+};
 
-const incomplete = [];
-for (const check of conceptChecks) {
-  const content = await readFile(check.file, "utf8");
-  const missingConcepts = check.patterns
-    .filter(({ regex }) => !regex.test(content))
-    .map(({ label }) => label);
-  if (missingConcepts.length) incomplete.push({ file: check.file, missingConcepts });
-}
-
-if (missing.length || unresolved.length || incomplete.length) {
-  console.error("AI workflow validation failed.");
-
-  if (missing.length) {
-    console.error("\nMissing required files:");
-    for (const file of missing) console.error(`- ${file}`);
-  }
-
-  if (unresolved.length) {
-    console.error("\nUnresolved placeholders in active documents:");
-    for (const file of unresolved) console.error(`- ${file}`);
-  }
-
-  if (incomplete.length) {
-    console.error("\nRequired workflow concepts are missing:");
-    for (const item of incomplete) {
-      console.error(`- ${item.file}: ${item.missingConcepts.join(", ")}`);
+for (const [file, links] of Object.entries(requiredLinks)) {
+  const content = await readFile(file, "utf8");
+  for (const link of links) {
+    if (!content.includes(link)) {
+      errors.push(`${file} must reference ${link}`);
     }
   }
+}
 
+let packageJson;
+try {
+  packageJson = JSON.parse(await readFile("package.json", "utf8"));
+} catch (error) {
+  errors.push(`package.json could not be parsed: ${error.message}`);
+}
+
+if (packageJson) {
+  const scripts = packageJson.scripts ?? {};
+  if (scripts.cw !== "node scripts/cw.mjs") {
+    errors.push("package.json scripts.cw must invoke scripts/cw.mjs");
+  }
+  if (!String(scripts["test:project-os"] ?? "").includes("cw.test.mjs")) {
+    errors.push("package.json test:project-os must run the Project OS tests");
+  }
+  if (!String(scripts["test:project-os"] ?? "").includes("cw.moneyflow.test.mjs")) {
+    errors.push("package.json test:project-os must run the MoneyFlow pilot tests");
+  }
+  if (!String(scripts["check:ai"] ?? "").includes("test:project-os")) {
+    errors.push("package.json check:ai must include test:project-os");
+  }
+}
+
+for (const file of [
+  "fixtures/project-os/moneyflow/.cyclewarden/project.json",
+  "fixtures/project-os/moneyflow/.cyclewarden/roadmap.json",
+  "fixtures/project-os/moneyflow/.cyclewarden/status.json",
+]) {
+  try {
+    JSON.parse(await readFile(file, "utf8"));
+  } catch (error) {
+    errors.push(`${file} could not be parsed: ${error.message}`);
+  }
+}
+
+if (errors.length > 0) {
+  console.error("AI workflow validation failed.");
+  for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
 
-console.log(`AI workflow OK: ${required.length} required files present.`);
+console.log(`AI workflow OK: ${required.length} required files and stable Project OS contracts validated.`);
