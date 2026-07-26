@@ -2,16 +2,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CycleControls } from "./cycle-controls";
 import { getEvolutionMutationAccess } from "@/lib/evolution-access";
-import {
-  loadEvolutionWorkspace,
-  resolveEvolutionProjectRoot,
-} from "@/lib/evolution-workspace";
+import { loadEvolutionWorkspace } from "@/lib/evolution-workspace";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type PageProps = {
-  searchParams: Promise<{ cycle?: string }>;
+  searchParams: Promise<{ cycle?: string; project?: string }>;
 };
 
 function Badge({ children }: { children: ReactNode }) {
@@ -22,10 +19,16 @@ function Badge({ children }: { children: ReactNode }) {
   );
 }
 
+function workspaceHref(projectId: string, cycleId?: string): string {
+  const params = new URLSearchParams({ project: projectId });
+  if (cycleId) params.set("cycle", cycleId);
+  return `/app/evolution?${params.toString()}`;
+}
+
 export default async function EvolutionWorkspacePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const [workspace, mutationAccess] = await Promise.all([
-    loadEvolutionWorkspace(params.cycle),
+    loadEvolutionWorkspace(params.cycle, params.project),
     getEvolutionMutationAccess(),
   ]);
   const selected = workspace.selected;
@@ -51,7 +54,7 @@ export default async function EvolutionWorkspacePage({ searchParams }: PageProps
           <h1 className="mt-2 text-2xl font-semibold text-foreground">Evolution cycles</h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             Create and operate the bounded A2 research flow through the official Evolution Core CLI.
-            The CLI and web workspace share one journal, recovery path, policy and evidence model.
+            Each configured project keeps its own repository boundary and durable state root.
           </p>
         </div>
         <Link
@@ -62,16 +65,52 @@ export default async function EvolutionWorkspacePage({ searchParams }: PageProps
         </Link>
       </header>
 
+      {workspace.projects.length > 0 && (
+        <section className="mt-6 rounded-2xl border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+                Configured projects
+              </p>
+              <p className="mt-1 text-sm text-foreground">
+                {workspace.project?.label ?? "No project selected"}
+              </p>
+            </div>
+            <nav aria-label="Configured projects" className="flex flex-wrap gap-2">
+              {workspace.projects.map((project) => (
+                <Link
+                  key={project.id}
+                  href={workspaceHref(project.id)}
+                  className={`rounded-xl border px-3 py-2 text-sm transition-colors ${
+                    project.id === workspace.project?.id
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border bg-background text-muted hover:border-accent/60 hover:text-foreground"
+                  }`}
+                >
+                  {project.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-muted">
+            Project IDs are selected in the browser, but repository and state paths are resolved again
+            from the server-owned registry before every action.
+          </p>
+        </section>
+      )}
+
       <div className="mt-6 rounded-xl border border-border bg-card px-4 py-3 text-xs text-muted">
         State root: <code className="break-all text-foreground">{workspace.root}</code>
       </div>
 
-      <CycleControls
-        enabled={mutationAccess.allowed}
-        accessReason={mutationAccess.reason}
-        projectRoot={resolveEvolutionProjectRoot()}
-        selected={selected ? { cycleId: selected.cycleId, stage: selected.stage } : null}
-      />
+      {workspace.project && (
+        <CycleControls
+          enabled={mutationAccess.allowed}
+          accessReason={mutationAccess.reason}
+          project={workspace.project}
+          selected={selected ? { cycleId: selected.cycleId, stage: selected.stage } : null}
+        />
+      )}
 
       {workspace.error && (
         <div className="mt-6 rounded-xl border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-300">
@@ -99,7 +138,7 @@ pnpm evolve -- research-repository cyclewarden:cycle-001 --project-root .`}
             {workspace.summaries.map((cycle) => (
               <Link
                 key={cycle.cycleId}
-                href={`/app/evolution?cycle=${encodeURIComponent(cycle.cycleId)}`}
+                href={workspaceHref(workspace.project?.id ?? "default", cycle.cycleId)}
                 className={`block rounded-xl border p-4 transition-colors ${
                   cycle.cycleId === selected?.cycleId
                     ? "border-accent bg-accent/5"
