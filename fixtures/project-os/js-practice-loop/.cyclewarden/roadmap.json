@@ -24,17 +24,26 @@
     {
       "id": "JPL-001",
       "title": "Create and persist one JavaScript practice attempt",
-      "status": "active",
+      "status": "verify",
       "dependsOn": ["JPL-000"],
       "source": "first useful vertical slice",
       "scope": [
-        "empty state with one Create attempt action",
-        "form fields for title, exercise prompt, optional source, learner attempt and solved/stuck status",
-        "versioned localStorage repository",
+        "empty state and one create-attempt form",
+        "required fields for the JavaScript exercise and the learner's own attempt",
+        "versioned localStorage repository behind a storage boundary",
         "recent-attempt list",
         "saved attempt survives a full page reload",
-        "focused unit and browser tests"
+        "focused unit, build, browser and mobile screenshot evidence"
       ],
+      "scopeCorrection": {
+        "recordedAt": "2026-07-27",
+        "reason": "The shaping outcome requires only the exercise and the learner's own attempt. Title, source and solved/stuck fields were removed from JPL-001 because they do not contribute to the first useful create-save-reload flow.",
+        "deferredFields": [
+          "separate title",
+          "exercise source",
+          "solved or stuck status"
+        ]
+      },
       "outOfScope": [
         "AI hints or generated solutions",
         "executing JavaScript",
@@ -44,19 +53,33 @@
         "component libraries and broad design systems"
       ],
       "acceptance": [
-        "a learner can create one attempt using only required fields",
+        "a learner can create one attempt using the exercise and own-attempt fields",
         "invalid required fields show clear inline feedback",
         "saved data is written through the storage boundary rather than directly by UI components",
         "the attempt appears in the recent list",
         "the same attempt reappears after a full page reload",
-        "no answer, hint or executable code feature is present",
-        "the layout is usable at a 390 pixel viewport"
+        "learner text is rendered as plain text and no answer, hint or executable-code feature is present",
+        "the layout is usable at a mobile viewport"
       ],
       "requiredEvidence": [
         "unit tests for validation and storage serialization",
-        "Playwright create-save-reload flow",
-        "mobile screenshot of empty and saved states",
+        "production build",
+        "Playwright create-save-reload and plain-text safety flows",
+        "mobile screenshots of empty and saved states",
         "final diff review proving no backend, auth, AI or code-runner scope"
+      ],
+      "verificationStartedAt": "2026-07-27",
+      "automatedEvidence": [
+        "GitHub Actions run 30227650052 completed successfully on head 49cd7de0554be6733d012e32590a5ac9d7fe8f54.",
+        "The deterministic scope guard passed with no forbidden AI, backend, auth, analytics, router or code-execution dependency or source pattern.",
+        "Vitest domain and storage tests passed.",
+        "The TypeScript and Vite production build passed.",
+        "Playwright passed create-save-reload and malicious HTML/event-handler plain-text rendering proofs on a Pixel 7 profile.",
+        "Artifact 8639028319 contains empty-state and saved-state mobile screenshots."
+      ],
+      "manualEvidencePending": [
+        "owner reviews the empty and saved mobile states",
+        "owner records real exercises before any product-usefulness claim"
       ]
     },
     {
