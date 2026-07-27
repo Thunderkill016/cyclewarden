@@ -1,22 +1,28 @@
 {
   "schemaVersion": 1,
-  "phase": "manual-retry-slice",
+  "phase": "manual-retry-verification",
   "activeTaskId": "JPL-003",
   "lastCompletedTaskId": "JPL-002",
   "blockedTaskIds": ["JPL-004", "JPL-005"],
-  "blockers": [],
+  "blockers": [
+    {
+      "taskId": "JPL-003",
+      "type": "owner-acceptance",
+      "reason": "Automated domain, migration, build, browser, safety and mobile evidence passed. The owner must review both the hidden-work retry state and the comparison state before JPL-003 can become done."
+    }
+  ],
   "unresolvedDecisions": [
     "After at least five real retries, decide whether manual review remains sufficient or a simple fixed interval is justified.",
     "After real data exists, decide whether localStorage remains sufficient or a larger browser store is justified."
   ],
   "next": {
     "taskId": "JPL-003",
-    "reason": "The owner accepted the editable reflection slice. The next bounded risk is whether a learner can make a fresh retry before seeing previous work, using a manual queue rather than an unsupported schedule."
+    "reason": "Continue owner verification of the manual retry interaction. Do not start JPL-004 history, scheduling, analytics, backend or AI work."
   },
   "ownerSummary": {
     "whatIsBeingBuilt": "A private local JavaScript practice loop that preserves attempts, reflection and fresh retries without turning into an answer generator.",
-    "whyThisTaskNow": "Create-save-reload and editable reflection are accepted. The next useful learning behavior is trying again from memory before revealing prior work.",
-    "whatNotToDo": "Do not add fixed review intervals, due dates, notifications, AI hints, grading, code execution, analytics, backend, authentication, sync or JPL-004 mistake history during JPL-003.",
-    "whatComesAfter": "JPL-004 remains blocked until the manual retry flow is implemented, verified, used and accepted."
+    "whyThisTaskNow": "The manual retry implementation passed automated verification. The remaining work is to review whether hiding old work before submission and revealing it afterward feels correct.",
+    "whatNotToDo": "Do not start JPL-004, add fixed intervals, due dates, notifications, AI hints, grading, code execution, analytics, backend, authentication or sync before JPL-003 is accepted.",
+    "whatComesAfter": "JPL-004 remains blocked and also requires evidence from at least five real exercises, so acceptance of JPL-003 alone does not authorize immediate history/analytics implementation."
   }
 }
