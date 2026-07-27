@@ -1,0 +1,33 @@
+name: JS Practice Loop pilot
+
+on:
+  pull_request:
+    paths:
+      - "examples/js-practice-loop/**"
+      - ".github/workflows/js-practice-loop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/js-practice-loop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install exact pilot dependencies
+        run: npm install --no-audit --no-fund
+      - name: Unit tests
+        run: npm test
+      - name: Production build
+        run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Create-save-reload browser proof
+        run: npm run test:e2e
