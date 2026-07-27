@@ -86,7 +86,7 @@
     {
       "id": "JPL-002",
       "title": "Record the mistake and lesson learned",
-      "status": "active",
+      "status": "verify",
       "dependsOn": ["JPL-001"],
       "source": "second vertical slice",
       "scope": [
@@ -122,7 +122,21 @@
         "mobile screenshot of the saved reflection state",
         "final scope review proving no JPL-003 or platform expansion"
       ],
-      "activatedAt": "2026-07-27"
+      "activatedAt": "2026-07-27",
+      "verificationStartedAt": "2026-07-27",
+      "automatedEvidence": [
+        "GitHub Actions run 30228865620 completed successfully on head a685902f7d5cf9e0d714a7f21eeaa3e196694528.",
+        "The JPL-002 deterministic scope guard passed with no forbidden model, backend, analytics, router or execution surface.",
+        "Reflection validation, update, schema-v1 migration, schema-v2 persistence and no-duplicate edit tests passed.",
+        "The TypeScript and Vite production build passed.",
+        "Playwright passed add, reload and edit reflection behavior on a Pixel 7 profile.",
+        "Attempt and reflection HTML-like input remained inert plain text.",
+        "Artifact 8639415114 contains the saved-reflection mobile screenshot."
+      ],
+      "manualEvidencePending": [
+        "owner reviews the saved reflection mobile state",
+        "owner decides whether the mistake-and-lesson flow is acceptable before JPL-003 starts"
+      ]
     },
     {
       "id": "JPL-003",
