@@ -69,11 +69,11 @@ for (const file of await collectSourceFiles(join(root, "src"))) {
 }
 
 if (errors.length > 0) {
-  console.error("JPL-002 scope validation failed:");
+  console.error("JPL-003 scope validation failed:");
   for (const error of errors) {
     console.error(`- ${error}`);
   }
   process.exitCode = 1;
 } else {
-  console.log("JPL-002 scope validation passed.");
+  console.log("JPL-003 scope validation passed.");
 }
