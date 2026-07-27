@@ -70,13 +70,11 @@ test("keeps attempt and reflection text inert", async ({ page }) => {
   await expect(page.getByTestId("reflection-summary")).toContainText("<script>");
   await expect(page.locator(".attempt-card img, .attempt-card script")).toHaveCount(0);
 
-  const executed = await page.evaluate(
-    () =>
-      (window as typeof window & {
-        __jplExecuted?: boolean;
-        bad?: boolean;
-      }),
-  );
-  expect(executed.__jplExecuted).toBeUndefined();
-  expect(executed.bad).toBeUndefined();
+  const executed = await page.evaluate(() => ({
+    attempt: (window as typeof window & { __jplExecuted?: boolean })
+      .__jplExecuted,
+    reflection: (window as typeof window & { bad?: boolean }).bad,
+  }));
+  expect(executed.attempt).toBeUndefined();
+  expect(executed.reflection).toBeUndefined();
 });
