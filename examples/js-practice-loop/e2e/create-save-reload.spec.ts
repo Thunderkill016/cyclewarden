@@ -3,7 +3,9 @@ import { expect, test } from "@playwright/test";
 test("creates, saves and reloads one practice attempt", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Tự nghĩ trước, xem lời giải sau" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Tự nghĩ trước, xem lời giải sau" }),
+  ).toBeVisible();
   await expect(page.getByText("Chưa có lần làm nào")).toBeVisible();
 
   await page.getByLabel("Bài tập JavaScript").fill(
@@ -17,7 +19,9 @@ test("creates, saves and reloads one practice attempt", async ({ page }) => {
   const savedCard = page.getByTestId("attempt-card");
   await expect(savedCard).toContainText("Viết hàm cardCounter");
   await expect(savedCard).toContainText("Tôi sẽ dùng if để cộng 1");
-  await expect(page.getByText("Đã lưu phần tự làm trên thiết bị này.")).toBeVisible();
+  await expect(
+    page.getByText("Đã lưu phần tự làm trên thiết bị này."),
+  ).toBeVisible();
 
   await page.reload();
 
@@ -32,7 +36,9 @@ test("creates, saves and reloads one practice attempt", async ({ page }) => {
 test("does not execute learner text as HTML or JavaScript", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByLabel("Bài tập JavaScript").fill("Kiểm tra dữ liệu đầu vào an toàn");
+  await page
+    .getByLabel("Bài tập JavaScript")
+    .fill("Kiểm tra dữ liệu đầu vào an toàn");
   await page.getByLabel("Phần tự làm").fill(
     '<img src=x onerror="window.__jplExecuted = true">',
   );
@@ -40,7 +46,10 @@ test("does not execute learner text as HTML or JavaScript", async ({ page }) => 
 
   await expect(page.getByTestId("attempt-card")).toContainText("<img src=x");
   await expect(page.locator(".attempt-card img")).toHaveCount(0);
-  await expect(
-    page.evaluate(() => (window as typeof window & { __jplExecuted?: boolean }).__jplExecuted),
-  ).resolves.toBeUndefined();
+
+  const executed = await page.evaluate(
+    () =>
+      (window as typeof window & { __jplExecuted?: boolean }).__jplExecuted,
+  );
+  expect(executed).toBeUndefined();
 });
