@@ -1,35 +1,37 @@
 # JS Practice Loop agent instructions
 
-The active task is `JPL-002`: let the learner record and edit what was wrong and what they learned for an existing practice attempt.
+The active task is `JPL-003`: let the learner manually mark a reflected attempt, make a fresh retry while prior work is hidden, then compare after submission.
 
 ## Allowed scope
 
-- optional reflection fields on a saved attempt;
-- validation for both reflection fields;
-- a safe schema v1 to v2 local-storage migration;
-- add/edit reflection UI inside the existing attempt card;
-- focused domain, storage and Playwright tests;
-- mobile CSS needed for this bounded flow.
+- manual `needsRetry` state on a reflected attempt;
+- a fresh retry record appended to the same attempt;
+- schema v1/v2 loading and schema v3 writes;
+- a retry form that shows the exercise but hides the previous attempt, mistake and lesson;
+- reveal and comparison only after a valid fresh attempt is saved;
+- focused domain, migration, browser and mobile evidence.
 
 ## Forbidden scope
 
 Do not add:
 
-- AI hints, generated answers or model-provider calls;
+- AI hints, generated answers, grading or model-provider calls;
 - code execution, `eval`, `Function`, iframe sandboxes or HTML injection;
-- authentication, backend APIs, Supabase, Firebase or cloud databases;
-- sync, deployment, analytics, streaks or review scheduling;
-- mistake taxonomy, scores, dashboards or gamification;
-- routers, broad navigation or component libraries;
-- JPL-003 retry behavior or later roadmap slices.
+- fixed review intervals, due dates, notifications or spaced repetition;
+- mistake taxonomy, scores, analytics, streaks or gamification;
+- authentication, backend APIs, Supabase, Firebase, cloud databases or sync;
+- routers, dashboards, broad navigation or component libraries;
+- JPL-004 history/grouping behavior or later roadmap slices.
 
 ## Architecture rules
 
 - UI components must not access `localStorage` directly.
-- Existing schema-v1 attempts must load without data loss.
-- New writes use schema version 2.
+- Existing schema-v1 and schema-v2 attempts must load without data loss.
+- New writes use schema version 3.
 - Learner text must be rendered as text, never as HTML.
-- Editing a reflection updates the same attempt instead of creating a duplicate.
+- A retry appends to the same attempt instead of duplicating the original.
+- Previous attempt and reflection text must not be rendered while the fresh retry form is active.
+- Review selection is manual; do not invent a schedule.
 
 ## Verification
 
@@ -41,4 +43,4 @@ npm run build
 npm run test:e2e
 ```
 
-Report exact results. Automated checks may move JPL-002 to `verify`; only the owner may accept it as `done`.
+Report exact results. Automated checks may move JPL-003 to `verify`; only the owner may accept it as `done`.
