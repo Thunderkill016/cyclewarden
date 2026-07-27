@@ -39,7 +39,7 @@ jobs:
       - name: Install Hubcode and Codex CLIs
         run: npm install -g @hubcode/cli@2.8.4 @openai/codex
 
-      - name: Record versions
+      - name: Record versions and authentication state
         shell: bash
         run: |
           mkdir -p artifacts
@@ -51,6 +51,7 @@ jobs:
             pnpm --version
             hubcode --version || true
             codex --version || true
+            codex login status || true
             echo '```'
           } | tee artifacts/hubcode-smoke.md
 
@@ -80,17 +81,34 @@ jobs:
           echo "Hubcode run exit code: ${code}" | tee -a artifacts/hubcode-smoke.md
           exit "$code"
 
-      - name: Capture final state
+      - name: Capture agent and daemon diagnostics
         if: ${{ always() }}
         shell: bash
         run: |
+          set +e
+          agent_id="$(hubcode ls -a -g --json | jq -r '.[0].id // empty')"
           {
+            echo
+            echo "## Agent diagnostics"
+            echo
+            echo "Agent ID: ${agent_id:-none}"
+            if [ -n "$agent_id" ]; then
+              echo '```text'
+              hubcode logs "$agent_id" --tail 100 || true
+              echo '```'
+            fi
+            echo
+            echo "## Daemon log tail"
+            echo
+            echo '```text'
+            tail -n 160 /tmp/hubcode/daemon.log || true
+            echo '```'
             echo
             echo "## Final state"
             echo
             echo '```text'
             git worktree list || true
-            hubcode ls -a --json || true
+            hubcode ls -a -g --json || true
             hubcode daemon status || true
             echo '```'
           } | tee -a artifacts/hubcode-smoke.md
