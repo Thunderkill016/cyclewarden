@@ -142,7 +142,7 @@
     {
       "id": "JPL-003",
       "title": "Retry a reflected mistake before revealing previous work",
-      "status": "active",
+      "status": "verify",
       "dependsOn": ["JPL-002"],
       "source": "third vertical slice",
       "scopeCorrection": {
@@ -190,7 +190,23 @@
         "mobile screenshot of the fresh retry and comparison states",
         "scope review proving no scheduler, AI, backend or JPL-004 analytics"
       ],
-      "activatedAt": "2026-07-27"
+      "activatedAt": "2026-07-27",
+      "verificationStartedAt": "2026-07-27",
+      "automatedEvidence": [
+        "AI workflow check run 30232806679 and JS Practice Loop run 30232806674 completed successfully on head 2859b7b9138124e5c29bc9f9f9e7d17ce6415d08.",
+        "Retry validation, append, no-duplicate and schema-v2 to schema-v3 migration tests passed.",
+        "The TypeScript and Vite production build passed.",
+        "Playwright proved previous attempt and reflection text are absent from the DOM during a fresh retry.",
+        "Playwright passed empty validation, save, reveal, comparison and full-reload persistence.",
+        "Attempt, reflection and retry HTML-like content remained inert plain text.",
+        "Artifact 8640638887 contains fresh-retry and comparison mobile screenshots.",
+        "A stale reflection-status bug discovered by the browser test was fixed before the successful run."
+      ],
+      "manualEvidencePending": [
+        "owner reviews the fresh-retry state where previous work is hidden",
+        "owner reviews the comparison state after the retry is saved",
+        "owner accepts or rejects the manual retry interaction before JPL-004 starts"
+      ]
     },
     {
       "id": "JPL-004",
