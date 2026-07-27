@@ -1,10 +1,11 @@
 import type {
   PracticeAttempt,
   PracticeReflection,
+  PracticeRetry,
 } from "../domain/practice";
 
 const STORAGE_KEY = "js-practice-loop.attempts";
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 interface PersistedPracticeState {
   schemaVersion: typeof SCHEMA_VERSION;
@@ -26,6 +27,19 @@ function isReflection(value: unknown): value is PracticeReflection {
     typeof candidate.mistake === "string" &&
     typeof candidate.lessonLearned === "string" &&
     typeof candidate.updatedAt === "string"
+  );
+}
+
+function isRetry(value: unknown): value is PracticeRetry {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.ownAttempt === "string" &&
+    typeof candidate.createdAt === "string"
   );
 }
 
@@ -51,18 +65,31 @@ function normalizeAttempt(value: unknown): PracticeAttempt | null {
     createdAt: candidate.createdAt,
   };
 
-  if (candidate.reflection === undefined) {
-    return attempt;
+  if (candidate.reflection !== undefined) {
+    if (!isReflection(candidate.reflection)) {
+      return null;
+    }
+    attempt.reflection = candidate.reflection;
   }
 
-  if (!isReflection(candidate.reflection)) {
-    return null;
+  if (candidate.needsRetry !== undefined) {
+    if (typeof candidate.needsRetry !== "boolean") {
+      return null;
+    }
+    attempt.needsRetry = candidate.needsRetry;
   }
 
-  return {
-    ...attempt,
-    reflection: candidate.reflection,
-  };
+  if (candidate.retries !== undefined) {
+    if (
+      !Array.isArray(candidate.retries) ||
+      !candidate.retries.every(isRetry)
+    ) {
+      return null;
+    }
+    attempt.retries = candidate.retries;
+  }
+
+  return attempt;
 }
 
 function emptyState(): PersistedPracticeState {
@@ -79,7 +106,7 @@ function readState(storage: StorageLike): PersistedPracticeState {
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     if (
-      !new Set([1, SCHEMA_VERSION]).has(Number(parsed.schemaVersion)) ||
+      !new Set([1, 2, SCHEMA_VERSION]).has(Number(parsed.schemaVersion)) ||
       !Array.isArray(parsed.attempts)
     ) {
       return emptyState();
