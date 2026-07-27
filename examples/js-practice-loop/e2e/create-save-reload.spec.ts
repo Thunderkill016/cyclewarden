@@ -25,7 +25,7 @@ test(
     await createReflectedAttempt(page);
 
     await page.getByRole("button", { name: "Đánh dấu cần làm lại" }).click();
-    await expect(page.getByText("Cần làm lại")).toBeVisible();
+    await expect(page.getByText("Cần làm lại", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Làm lại ngay" }).click();
 
     await expect(page.getByTestId("retry-fresh-state")).toBeVisible();
