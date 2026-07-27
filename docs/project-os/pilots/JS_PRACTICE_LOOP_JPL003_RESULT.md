@@ -45,6 +45,8 @@ The slice did not add:
 
 AI workflow check run `30232806679` and JS Practice Loop run `30232806674` passed on head `2859b7b9138124e5c29bc9f9f9e7d17ce6415d08`.
 
+The final lifecycle runs `30232985689` and `30232985685` also passed with JPL-003 in `verify` state.
+
 Evidence includes:
 
 - deterministic scope guard;
@@ -56,19 +58,26 @@ Evidence includes:
 - empty retry validation;
 - save, reveal, comparison and reload persistence;
 - inert plain-text handling for attempt, reflection and retry content;
-- fresh-retry and comparison mobile screenshots in artifact `8640638887`.
+- fresh-retry and comparison mobile screenshots in artifact `8640690757`.
 
 ## Defect found through use
 
 The first browser run found that a stale reflection success message took precedence over the retry success message. The implementation now clears stale status when changing workflow and prioritizes the active retry result. The successful run was completed only after that fix.
 
-## Current lifecycle state
+## Owner acceptance
 
-JPL-003 is `verify`, not `done`.
+The owner reviewed the fresh-retry and comparison states and responded `OK` on 2026-07-27.
 
-The remaining gate is owner review of:
+JPL-003 is therefore `done`. This acceptance confirms the bounded interaction is satisfactory; it does not prove learning effectiveness or justify an automatic review schedule.
 
-- the state where previous work is hidden;
-- the state where prior work and the fresh retry are shown together.
+## Evidence hold
 
-JPL-004 remains blocked. It also requires evidence from at least five real exercises, so JPL-003 acceptance alone does not justify implementing analytics or grouping immediately.
+There is currently no active implementation task.
+
+JPL-004 remains blocked even though its dependency is complete. Its proposed mistake-history design requires observations from at least five real JavaScript exercises. Until that evidence exists, CycleWarden must not invent labels, grouping, scoring or analytics merely to keep development moving.
+
+The next valid action is real use of the accepted loop, followed by one of three explicit decisions:
+
+1. activate a bounded JPL-004 supported by observed repeated mistakes;
+2. reshape JPL-004 around what the evidence actually shows;
+3. drop JPL-004 if the history view is unnecessary.
