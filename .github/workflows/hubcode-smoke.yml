@@ -1,0 +1,99 @@
+name: Hubcode Pilot Smoke
+
+on:
+  push:
+    branches: [agent/hubcode-pilot]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Install and exercise Hubcode
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HUBCODE_HOME: ${{ runner.temp }}/hubcode
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Hubcode and Codex CLIs
+        run: npm install -g @hubcode/cli@2.8.4 @openai/codex
+
+      - name: Record installed versions
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          {
+            echo "## Installed versions"
+            echo
+            echo '```text'
+            node --version
+            pnpm --version
+            hubcode --version || true
+            codex --version || true
+            echo '```'
+          } | tee artifacts/hubcode-smoke.md
+
+      - name: Start Hubcode daemon
+        shell: bash
+        run: |
+          set -o pipefail
+          hubcode daemon start 2>&1 | tee -a artifacts/hubcode-smoke.md
+          hubcode daemon status 2>&1 | tee -a artifacts/hubcode-smoke.md
+          hubcode ls -a --json 2>&1 | tee -a artifacts/hubcode-smoke.md || true
+
+      - name: Run Codex verifier through Hubcode
+        id: verifier
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          echo >> artifacts/hubcode-smoke.md
+          echo "## Hubcode verifier attempt" | tee -a artifacts/hubcode-smoke.md
+          timeout 360s hubcode run \
+            --provider codex \
+            --worktree hubcode-ci-smoke \
+            "Read AGENTS.md, GitHub issue #68, and docs/practical/HUBCODE_PILOT.md. Do not edit files. Verify that hubcode.json is valid, that the documented responsibility split is internally consistent, and that this repository remains human-merge-only. Report accept, reject, or blocked with evidence." \
+            2>&1 | tee -a artifacts/hubcode-smoke.md
+          code=${PIPESTATUS[0]}
+          echo >> artifacts/hubcode-smoke.md
+          echo "Hubcode run exit code: ${code}" | tee -a artifacts/hubcode-smoke.md
+          echo "exit_code=${code}" >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+      - name: Capture worktree and daemon state
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo
+            echo "## Final state"
+            echo
+            echo '```text'
+            git worktree list || true
+            hubcode ls -a --json || true
+            hubcode daemon status || true
+            echo '```'
+          } | tee -a artifacts/hubcode-smoke.md
+
+      - name: Upload smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hubcode-smoke-report
+          path: artifacts/hubcode-smoke.md
+          if-no-files-found: error
+          retention-days: 7
