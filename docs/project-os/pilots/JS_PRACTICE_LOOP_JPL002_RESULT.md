@@ -1,59 +1,69 @@
-# JS Practice Loop — JPL-002 implementation result
+# JS Practice Loop — JPL-002 result
 
-## Starting contract
+## Outcome
 
-`JPL-002` adds one bounded capability to an accepted JPL-001 attempt: the learner records what was wrong and what they learned, then can edit that reflection later.
+JPL-002 added an editable reflection to an existing JavaScript practice attempt:
 
-## Implementation
+- `Sai ở đâu?`
+- `Học được gì?`
 
-The existing local-only React application now supports:
+The reflection is stored with the original attempt, survives reload and can be edited without creating a duplicate attempt.
 
-- two required reflection fields;
-- inline validation;
-- add and edit behavior on the same attempt;
-- schema-version-1 loading without data loss;
-- schema-version-2 writes;
-- persistence after reload;
-- plain-text rendering for attempt and reflection content.
+## Compatibility
 
-The repository boundary remains the only layer that accesses browser storage.
+JPL-001 wrote storage schema version 1. JPL-002:
+
+- reads valid version-1 records without data loss;
+- supplies empty reflection fields during migration;
+- writes schema version 2 on the next save;
+- continues to fail closed for malformed or incompatible state.
 
 ## Scope retained
 
-No AI, generated answer, code execution, authentication, backend, cloud database, sync, analytics, scoring, mistake taxonomy, retry scheduling, dashboard, gamification, router or component library was added.
+The slice did not add:
+
+- AI hints or generated answers;
+- code execution;
+- mistake taxonomy, scoring or analytics;
+- retry scheduling or spaced repetition;
+- authentication, backend, cloud database or sync;
+- dashboard, gamification, router or component library.
 
 ## Automated evidence
 
-GitHub Actions run `30228865620` passed on commit `a685902f7d5cf9e0d714a7f21eeaa3e196694528`:
+The implementation passed:
 
 - deterministic scope guard;
 - reflection validation and update tests;
 - schema-v1 migration and schema-v2 persistence tests;
-- edit-without-duplicate test;
+- edit-without-duplicate tests;
 - TypeScript and Vite production build;
-- Playwright add → reload → edit reflection flow;
-- attempt and reflection HTML-like input remaining inert text;
-- Pixel 7 saved-reflection screenshot.
+- Playwright add, reload and edit reflection flow;
+- plain-text safety proof;
+- required Pixel 7 screenshot evidence.
 
-Artifact `8639415114` contains the mobile screenshot.
+Relevant successful runs:
 
-## Current lifecycle state
+- `30228865620`
+- `30229006358`
 
-`JPL-002` is `verify`, not `done`.
+Final screenshot artifact: `8639463916`.
 
-The automated evidence is complete. Owner review of the saved reflection state is still required. `JPL-003` remains blocked and must not start before explicit acceptance.
+## Owner acceptance
 
-## What this proves
+The owner asked where the reflection text came from. The implementation clarified that all exercise, attempt, mistake and lesson content is entered manually; no AI generates or fills those fields.
 
-This slice shows that CycleWarden can:
+After that clarification, the owner said to continue. This is recorded as acceptance of the bounded JPL-002 slice on `2026-07-27`.
 
-1. preserve an accepted prior slice;
-2. select the dependency-ready next task;
-3. keep the implementation inside a narrow contract;
-4. require a real storage migration when the data model changes;
-5. collect automated evidence;
-6. stop again at owner acceptance.
+Acceptance confirms the interaction is satisfactory. It does not prove that reflection improves learning outcomes.
 
-## What this does not prove
+## Next decision
 
-It does not prove that reflection improves learning outcomes. That requires real use across multiple exercises.
+JPL-003 is active, but fixed review scheduling is not justified yet. The retry slice therefore uses a manual review queue:
+
+1. explicitly mark a reflected attempt as needing another try;
+2. start a fresh attempt while prior work is hidden;
+3. submit the fresh attempt;
+4. reveal previous work for comparison.
+
+Fixed intervals, due dates, notifications and spaced-repetition scoring remain deferred until at least five real retries provide evidence.
