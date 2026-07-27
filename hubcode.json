@@ -1,8 +1,8 @@
 {
   "worktree": {
     "setup": [
-      "pnpm install --frozen-lockfile",
-      "if [ -f \"$HUBCODE_SOURCE_CHECKOUT_PATH/apps/web/.env.local\" ]; then cp \"$HUBCODE_SOURCE_CHECKOUT_PATH/apps/web/.env.local\" \"$HUBCODE_WORKTREE_PATH/apps/web/.env.local\"; fi"
+      "set -euo pipefail; pnpm install --frozen-lockfile",
+      "set -euo pipefail; if [ -f \"$HUBCODE_SOURCE_CHECKOUT_PATH/apps/web/.env.local\" ]; then cp \"$HUBCODE_SOURCE_CHECKOUT_PATH/apps/web/.env.local\" \"$HUBCODE_WORKTREE_PATH/apps/web/.env.local\"; fi"
     ]
   }
 }
