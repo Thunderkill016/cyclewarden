@@ -34,7 +34,7 @@ It does **not** add AI, code execution, accounts, backend APIs, cloud databases,
 npm install
 npm test
 npm run build
-+npx playwright install chromium
+npx playwright install chromium
 npm run test:e2e
 ```
 
