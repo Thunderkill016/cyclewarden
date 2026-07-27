@@ -1,13 +1,16 @@
 import { FormEvent, useMemo, useState } from "react";
 
 import {
+  appendPracticeRetry,
   createPracticeAttempt,
+  markPracticeAttemptForRetry,
   type PracticeAttempt,
   type PracticeReflectionErrors,
   type PracticeValidationErrors,
   updatePracticeReflection,
   validatePracticeAttempt,
   validatePracticeReflection,
+  validatePracticeRetry,
 } from "./domain/practice";
 import { LocalPracticeRepository } from "./storage/practiceRepository";
 
@@ -34,6 +37,13 @@ export function App() {
   const [reflectionErrors, setReflectionErrors] =
     useState<PracticeReflectionErrors>({});
   const [reflectionStatus, setReflectionStatus] = useState<{
+    attemptId: string;
+    message: string;
+  } | null>(null);
+  const [retryingAttemptId, setRetryingAttemptId] = useState<string | null>(null);
+  const [freshAttempt, setFreshAttempt] = useState("");
+  const [retryError, setRetryError] = useState("");
+  const [retryStatus, setRetryStatus] = useState<{
     attemptId: string;
     message: string;
   } | null>(null);
@@ -103,14 +113,64 @@ export function App() {
     });
   }
 
+  function markForRetry(attempt: PracticeAttempt) {
+    repository.save(markPracticeAttemptForRetry(attempt));
+    refreshAttempts();
+    setRetryStatus({
+      attemptId: attempt.id,
+      message: "Đã thêm vào danh sách cần làm lại.",
+    });
+  }
+
+  function startRetry(attempt: PracticeAttempt) {
+    setRetryingAttemptId(attempt.id);
+    setEditingAttemptId(null);
+    setFreshAttempt("");
+    setRetryError("");
+    setRetryStatus(null);
+  }
+
+  function cancelRetry() {
+    setRetryingAttemptId(null);
+    setFreshAttempt("");
+    setRetryError("");
+  }
+
+  function handleRetrySubmit(
+    event: FormEvent<HTMLFormElement>,
+    attempt: PracticeAttempt,
+  ) {
+    event.preventDefault();
+
+    const nextErrors = validatePracticeRetry({ ownAttempt: freshAttempt });
+    setRetryError(nextErrors.ownAttempt ?? "");
+    setRetryStatus(null);
+
+    if (nextErrors.ownAttempt) {
+      return;
+    }
+
+    repository.save(
+      appendPracticeRetry(attempt, { ownAttempt: freshAttempt }),
+    );
+    refreshAttempts();
+    setRetryingAttemptId(null);
+    setFreshAttempt("");
+    setRetryError("");
+    setRetryStatus({
+      attemptId: attempt.id,
+      message: "Đã lưu lần thử mới. Bây giờ bạn có thể so sánh với phần cũ.",
+    });
+  }
+
   return (
     <main className="page-shell">
       <header className="hero">
         <p className="eyebrow">JS Practice Loop</p>
-        <h1>Tự nghĩ trước, rút kinh nghiệm sau</h1>
+        <h1>Tự nghĩ, rút kinh nghiệm, rồi thử lại</h1>
         <p>
-          Ghi lại đề bài, phần bạn đã tự làm, lỗi sai và điều học được. Ứng dụng
-          chỉ lưu văn bản trên thiết bị này và không chạy code.
+          Ghi phần tự làm, lỗi sai và bài học. Khi làm lại, ứng dụng sẽ ẩn phần
+          cũ cho tới khi bạn nộp một lần thử mới.
         </p>
       </header>
 
@@ -186,8 +246,8 @@ export function App() {
       <section className="attempts-section" aria-labelledby="attempts-title">
         <div className="section-heading">
           <div>
-            <p className="step-label">Bước 2</p>
-            <h2 id="attempts-title">Rút kinh nghiệm từ lần làm</h2>
+            <p className="step-label">Bước 2–3</p>
+            <h2 id="attempts-title">Rút kinh nghiệm và làm lại</h2>
           </div>
           <span className="count-badge">{attempts.length}</span>
         </div>
@@ -204,131 +264,218 @@ export function App() {
           <ol className="attempt-list">
             {attempts.map((attempt) => {
               const isEditing = editingAttemptId === attempt.id;
+              const isRetrying = retryingAttemptId === attempt.id;
               const mistakeId = `mistake-${attempt.id}`;
               const lessonId = `lesson-${attempt.id}`;
+              const retryId = `retry-${attempt.id}`;
 
               return (
                 <li key={attempt.id}>
                   <article className="attempt-card" data-testid="attempt-card">
-                    <p className="attempt-date">
-                      {formatCreatedAt(attempt.createdAt)}
-                    </p>
+                    <div className="attempt-meta-row">
+                      <p className="attempt-date">
+                        {formatCreatedAt(attempt.createdAt)}
+                      </p>
+                      {attempt.needsRetry && !isRetrying ? (
+                        <span className="retry-badge">Cần làm lại</span>
+                      ) : null}
+                    </div>
                     <h3>{attempt.prompt}</h3>
-                    <pre>{attempt.ownAttempt}</pre>
 
-                    {attempt.reflection ? (
-                      <div
-                        className="reflection-summary"
-                        data-testid="reflection-summary"
-                      >
-                        <div className="reflection-block">
-                          <h4>Sai ở đâu?</h4>
-                          <p>{attempt.reflection.mistake}</p>
-                        </div>
-                        <div className="reflection-block">
-                          <h4>Học được gì?</h4>
-                          <p>{attempt.reflection.lessonLearned}</p>
-                        </div>
+                    {isRetrying ? (
+                      <div className="retry-panel" data-testid="retry-fresh-state">
+                        <p className="retry-privacy-note">
+                          Phần tự làm, lỗi sai và bài học trước đang được ẩn. Hãy
+                          thử lại từ trí nhớ trước.
+                        </p>
+                        <form
+                          onSubmit={(event) => handleRetrySubmit(event, attempt)}
+                          noValidate
+                        >
+                          <div className="field-group">
+                            <label htmlFor={retryId}>Lần thử mới</label>
+                            <textarea
+                              id={retryId}
+                              rows={7}
+                              value={freshAttempt}
+                              onChange={(event) =>
+                                setFreshAttempt(event.target.value)
+                              }
+                              aria-invalid={Boolean(retryError)}
+                              aria-describedby={
+                                retryError ? `${retryId}-error` : `${retryId}-help`
+                              }
+                              placeholder="Viết lại cách giải hoặc code mới mà không xem phần cũ."
+                              spellCheck={false}
+                            />
+                            {retryError ? (
+                              <p
+                                id={`${retryId}-error`}
+                                className="field-error"
+                                role="alert"
+                              >
+                                {retryError}
+                              </p>
+                            ) : (
+                              <p id={`${retryId}-help`} className="field-help">
+                                Chỉ sau khi lưu, phần trước mới được hiện lại để so
+                                sánh.
+                              </p>
+                            )}
+                          </div>
+                          <div className="reflection-actions">
+                            <button className="reflection-save" type="submit">
+                              Lưu lần thử mới
+                            </button>
+                            <button
+                              className="text-action"
+                              type="button"
+                              onClick={cancelRetry}
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        </form>
                       </div>
                     ) : (
-                      <p className="reflection-empty">
-                        Chưa ghi lỗi sai và điều học được.
-                      </p>
-                    )}
+                      <>
+                        <pre data-testid="original-attempt">{attempt.ownAttempt}</pre>
 
-                    {isEditing ? (
-                      <form
-                        className="reflection-form"
-                        onSubmit={(event) =>
-                          handleReflectionSubmit(event, attempt)
-                        }
-                        noValidate
-                      >
-                        <div className="field-group">
-                          <label htmlFor={mistakeId}>Sai ở đâu?</label>
-                          <textarea
-                            id={mistakeId}
-                            rows={4}
-                            value={mistake}
-                            onChange={(event) => setMistake(event.target.value)}
-                            aria-invalid={Boolean(reflectionErrors.mistake)}
-                            aria-describedby={
-                              reflectionErrors.mistake
-                                ? `${mistakeId}-error`
-                                : undefined
-                            }
-                            placeholder="Ví dụ: Tôi gom cả lá 10 vào nhóm cộng điểm."
-                          />
-                          {reflectionErrors.mistake ? (
-                            <p
-                              id={`${mistakeId}-error`}
-                              className="field-error"
-                              role="alert"
-                            >
-                              {reflectionErrors.mistake}
-                            </p>
-                          ) : null}
-                        </div>
-
-                        <div className="field-group">
-                          <label htmlFor={lessonId}>Học được gì?</label>
-                          <textarea
-                            id={lessonId}
-                            rows={4}
-                            value={lessonLearned}
-                            onChange={(event) =>
-                              setLessonLearned(event.target.value)
-                            }
-                            aria-invalid={Boolean(
-                              reflectionErrors.lessonLearned,
-                            )}
-                            aria-describedby={
-                              reflectionErrors.lessonLearned
-                                ? `${lessonId}-error`
-                                : undefined
-                            }
-                            placeholder="Ví dụ: Phải tách rõ ba nhóm lá trước khi viết điều kiện."
-                          />
-                          {reflectionErrors.lessonLearned ? (
-                            <p
-                              id={`${lessonId}-error`}
-                              className="field-error"
-                              role="alert"
-                            >
-                              {reflectionErrors.lessonLearned}
-                            </p>
-                          ) : null}
-                        </div>
-
-                        <div className="reflection-actions">
-                          <button className="reflection-save" type="submit">
-                            Lưu phản tư
-                          </button>
-                          <button
-                            className="text-action"
-                            type="button"
-                            onClick={cancelReflection}
+                        {attempt.reflection ? (
+                          <div
+                            className="reflection-summary"
+                            data-testid="reflection-summary"
                           >
-                            Hủy
-                          </button>
-                        </div>
-                      </form>
-                    ) : (
-                      <button
-                        className="secondary-action"
-                        type="button"
-                        onClick={() => startReflection(attempt)}
-                      >
-                        {attempt.reflection
-                          ? "Chỉnh sửa phản tư"
-                          : "Ghi lỗi và bài học"}
-                      </button>
+                            <div className="reflection-block">
+                              <h4>Sai ở đâu?</h4>
+                              <p>{attempt.reflection.mistake}</p>
+                            </div>
+                            <div className="reflection-block">
+                              <h4>Học được gì?</h4>
+                              <p>{attempt.reflection.lessonLearned}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="reflection-empty">
+                            Chưa ghi lỗi sai và điều học được.
+                          </p>
+                        )}
+
+                        {(attempt.retries?.length ?? 0) > 0 ? (
+                          <div className="retry-history" data-testid="retry-history">
+                            <h4>Các lần thử lại</h4>
+                            <ol>
+                              {attempt.retries?.map((retry, index) => (
+                                <li key={retry.id}>
+                                  <p className="attempt-date">
+                                    Lần {index + 1} · {formatCreatedAt(retry.createdAt)}
+                                  </p>
+                                  <pre>{retry.ownAttempt}</pre>
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        ) : null}
+
+                        {isEditing ? (
+                          <form
+                            className="reflection-form"
+                            onSubmit={(event) =>
+                              handleReflectionSubmit(event, attempt)
+                            }
+                            noValidate
+                          >
+                            <div className="field-group">
+                              <label htmlFor={mistakeId}>Sai ở đâu?</label>
+                              <textarea
+                                id={mistakeId}
+                                rows={4}
+                                value={mistake}
+                                onChange={(event) => setMistake(event.target.value)}
+                                aria-invalid={Boolean(reflectionErrors.mistake)}
+                              />
+                              {reflectionErrors.mistake ? (
+                                <p className="field-error" role="alert">
+                                  {reflectionErrors.mistake}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div className="field-group">
+                              <label htmlFor={lessonId}>Học được gì?</label>
+                              <textarea
+                                id={lessonId}
+                                rows={4}
+                                value={lessonLearned}
+                                onChange={(event) =>
+                                  setLessonLearned(event.target.value)
+                                }
+                                aria-invalid={Boolean(
+                                  reflectionErrors.lessonLearned,
+                                )}
+                              />
+                              {reflectionErrors.lessonLearned ? (
+                                <p className="field-error" role="alert">
+                                  {reflectionErrors.lessonLearned}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div className="reflection-actions">
+                              <button className="reflection-save" type="submit">
+                                Lưu phản tư
+                              </button>
+                              <button
+                                className="text-action"
+                                type="button"
+                                onClick={cancelReflection}
+                              >
+                                Hủy
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <div className="card-actions">
+                            <button
+                              className="secondary-action"
+                              type="button"
+                              onClick={() => startReflection(attempt)}
+                            >
+                              {attempt.reflection
+                                ? "Chỉnh sửa phản tư"
+                                : "Ghi lỗi và bài học"}
+                            </button>
+
+                            {attempt.reflection ? (
+                              attempt.needsRetry ? (
+                                <button
+                                  className="retry-action"
+                                  type="button"
+                                  onClick={() => startRetry(attempt)}
+                                >
+                                  Làm lại ngay
+                                </button>
+                              ) : (
+                                <button
+                                  className="retry-action"
+                                  type="button"
+                                  onClick={() => markForRetry(attempt)}
+                                >
+                                  Đánh dấu cần làm lại
+                                </button>
+                              )
+                            ) : null}
+                          </div>
+                        )}
+                      </>
                     )}
 
                     <p className="save-status" aria-live="polite">
                       {reflectionStatus?.attemptId === attempt.id
                         ? reflectionStatus.message
-                        : ""}
+                        : retryStatus?.attemptId === attempt.id
+                          ? retryStatus.message
+                          : ""}
                     </p>
                   </article>
                 </li>
