@@ -142,7 +142,7 @@
     {
       "id": "JPL-003",
       "title": "Retry a reflected mistake before revealing previous work",
-      "status": "verify",
+      "status": "done",
       "dependsOn": ["JPL-002"],
       "source": "third vertical slice",
       "scopeCorrection": {
@@ -200,12 +200,13 @@
         "Playwright passed empty validation, save, reveal, comparison and full-reload persistence.",
         "Attempt, reflection and retry HTML-like content remained inert plain text.",
         "Artifact 8640638887 contains fresh-retry and comparison mobile screenshots.",
-        "A stale reflection-status bug discovered by the browser test was fixed before the successful run."
+        "A stale reflection-status bug discovered by the browser test was fixed before the successful run.",
+        "Final lifecycle runs 30232985689 and 30232985685 passed with JPL-003 in verify state."
       ],
-      "manualEvidencePending": [
-        "owner reviews the fresh-retry state where previous work is hidden",
-        "owner reviews the comparison state after the retry is saved",
-        "owner accepts or rejects the manual retry interaction before JPL-004 starts"
+      "acceptedAt": "2026-07-27",
+      "ownerAcceptance": [
+        "The owner reviewed the fresh-retry and comparison states and responded OK.",
+        "Acceptance confirms the manual retry interaction is satisfactory; it does not provide the five real-exercise evidence required for JPL-004."
       ]
     },
     {
@@ -222,7 +223,8 @@
         "grouping tests",
         "browser history flow",
         "evidence from at least five real exercises"
-      ]
+      ],
+      "blockedReason": "The dependency is complete, but the product does not yet have evidence from at least five real exercises. Do not invent a taxonomy or history UI before real repeated mistakes exist."
     },
     {
       "id": "JPL-005",
