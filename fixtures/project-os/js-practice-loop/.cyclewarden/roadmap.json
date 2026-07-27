@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "tasks": [
+    {
+      "id": "JPL-000",
+      "title": "Shape the JS Practice Loop product and foundation",
+      "status": "done",
+      "dependsOn": [],
+      "source": "greenfield pilot",
+      "acceptance": [
+        "one target user and one learning problem are explicit",
+        "the first useful flow is bounded",
+        "non-goals prevent course-platform and AI-tutor expansion",
+        "frontend, storage, testing, auth, backend, design and architecture decisions are recorded with minimal scope"
+      ],
+      "requiredEvidence": [
+        ".cyclewarden/project.json",
+        ".cyclewarden/roadmap.json",
+        ".cyclewarden/status.json",
+        ".cyclewarden/README.md"
+      ],
+      "completedAt": "2026-07-27"
+    },
+    {
+      "id": "JPL-001",
+      "title": "Create and persist one JavaScript practice attempt",
+      "status": "active",
+      "dependsOn": ["JPL-000"],
+      "source": "first useful vertical slice",
+      "scope": [
+        "empty state with one Create attempt action",
+        "form fields for title, exercise prompt, optional source, learner attempt and solved/stuck status",
+        "versioned localStorage repository",
+        "recent-attempt list",
+        "saved attempt survives a full page reload",
+        "focused unit and browser tests"
+      ],
+      "outOfScope": [
+        "AI hints or generated solutions",
+        "executing JavaScript",
+        "accounts, backend, database, sync or deployment",
+        "mistake classification and review scheduling",
+        "dashboard metrics, streaks or gamification",
+        "component libraries and broad design systems"
+      ],
+      "acceptance": [
+        "a learner can create one attempt using only required fields",
+        "invalid required fields show clear inline feedback",
+        "saved data is written through the storage boundary rather than directly by UI components",
+        "the attempt appears in the recent list",
+        "the same attempt reappears after a full page reload",
+        "no answer, hint or executable code feature is present",
+        "the layout is usable at a 390 pixel viewport"
+      ],
+      "requiredEvidence": [
+        "unit tests for validation and storage serialization",
+        "Playwright create-save-reload flow",
+        "mobile screenshot of empty and saved states",
+        "final diff review proving no backend, auth, AI or code-runner scope"
+      ]
+    },
+    {
+      "id": "JPL-002",
+      "title": "Record the mistake and lesson learned",
+      "status": "blocked",
+      "dependsOn": ["JPL-001"],
+      "source": "second vertical slice",
+      "acceptance": [
+        "the learner can add what was wrong and what they learned",
+        "reflection remains editable",
+        "existing attempts migrate or load safely"
+      ],
+      "requiredEvidence": [
+        "domain and storage migration tests",
+        "browser flow from saved attempt to reflection"
+      ]
+    },
+    {
+      "id": "JPL-003",
+      "title": "Retry a due mistake without showing the previous answer first",
+      "status": "blocked",
+      "dependsOn": ["JPL-002"],
+      "source": "third vertical slice",
+      "acceptance": [
+        "the learner can mark an item for review",
+        "a due item asks for a fresh attempt before revealing prior reflection",
+        "review timing remains simple and explainable"
+      ],
+      "requiredEvidence": [
+        "review-selection unit tests",
+        "browser retry flow",
+        "owner decision on manual versus fixed review intervals"
+      ]
+    },
+    {
+      "id": "JPL-004",
+      "title": "Show a small history of repeated mistakes",
+      "status": "blocked",
+      "dependsOn": ["JPL-003"],
+      "source": "fourth vertical slice",
+      "acceptance": [
+        "the learner can see attempts grouped by a small explicit mistake label",
+        "history is factual and avoids scores or unsupported learning claims"
+      ],
+      "requiredEvidence": [
+        "grouping tests",
+        "browser history flow",
+        "evidence from at least five real exercises"
+      ]
+    },
+    {
+      "id": "JPL-005",
+      "title": "Export and restore a local backup",
+      "status": "blocked",
+      "dependsOn": ["JPL-004"],
+      "source": "data ownership slice",
+      "acceptance": [
+        "the learner can export versioned JSON",
+        "a valid backup restores attempts without duplicates",
+        "invalid or incompatible files fail safely"
+      ],
+      "requiredEvidence": [
+        "round-trip and malformed-import tests",
+        "manual export/import proof"
+      ]
+    }
+  ]
+}
