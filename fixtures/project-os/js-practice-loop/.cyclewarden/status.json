@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "phase": "first-useful-slice",
+  "activeTaskId": "JPL-001",
+  "lastCompletedTaskId": "JPL-000",
+  "blockedTaskIds": ["JPL-002", "JPL-003", "JPL-004", "JPL-005"],
+  "blockers": [],
+  "unresolvedDecisions": [
+    "After five real exercises, decide whether review timing should remain manual or use a simple fixed interval.",
+    "After real data exists, decide whether localStorage remains sufficient or a larger browser store is justified."
+  ],
+  "next": {
+    "taskId": "JPL-001",
+    "reason": "It is the only active dependency-ready task and proves the smallest complete learning flow before reflection, review, analytics, backend or AI features are considered."
+  },
+  "ownerSummary": {
+    "whatIsBeingBuilt": "A private local JavaScript practice log that preserves the learner's own attempts and mistakes.",
+    "whyThisTaskNow": "The first risk is not review scheduling or AI quality; it is whether the learner will record and recover one real attempt without the product becoming another answer generator.",
+    "whatNotToDo": "Do not add AI hints, code execution, authentication, backend, sync, dashboards, streaks or review algorithms during JPL-001.",
+    "whatComesAfter": "JPL-002 may add mistake and lesson reflection only after the create-save-reload flow is verified and accepted."
+  }
+}
