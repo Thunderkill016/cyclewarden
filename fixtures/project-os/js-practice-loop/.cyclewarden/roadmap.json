@@ -24,7 +24,7 @@
     {
       "id": "JPL-001",
       "title": "Create and persist one JavaScript practice attempt",
-      "status": "verify",
+      "status": "done",
       "dependsOn": ["JPL-000"],
       "source": "first useful vertical slice",
       "scope": [
@@ -77,15 +77,16 @@
         "Playwright passed create-save-reload and malicious HTML/event-handler plain-text rendering proofs on a Pixel 7 profile.",
         "Artifact 8639028319 contains empty-state and saved-state mobile screenshots."
       ],
-      "manualEvidencePending": [
-        "owner reviews the empty and saved mobile states",
-        "owner records real exercises before any product-usefulness claim"
+      "acceptedAt": "2026-07-27",
+      "ownerAcceptance": [
+        "The owner reviewed the empty and saved mobile states and explicitly accepted JPL-001.",
+        "Acceptance confirms the bounded slice is satisfactory; it does not yet prove that the product improves learning outcomes."
       ]
     },
     {
       "id": "JPL-002",
       "title": "Record the mistake and lesson learned",
-      "status": "blocked",
+      "status": "active",
       "dependsOn": ["JPL-001"],
       "source": "second vertical slice",
       "acceptance": [
@@ -96,7 +97,8 @@
       "requiredEvidence": [
         "domain and storage migration tests",
         "browser flow from saved attempt to reflection"
-      ]
+      ],
+      "activatedAt": "2026-07-27"
     },
     {
       "id": "JPL-003",
