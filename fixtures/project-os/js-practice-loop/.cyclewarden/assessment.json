@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "problem": {
+    "statement": "The owner sometimes asks AI to solve JavaScript exercises too early and loses the chance to practise independent reasoning.",
+    "frequencyEvidence": "Not established before implementation.",
+    "currentWorkaround": "Use freeCodeCamp exercises and optionally record mistakes in Markdown or another existing notes tool.",
+    "costOfCurrentWorkaround": "Low. The workaround requires no custom application or maintenance."
+  },
+  "existingSolutions": [
+    {
+      "name": "freeCodeCamp",
+      "fit": "Already supplies JavaScript exercises and a learning sequence."
+    },
+    {
+      "name": "Markdown or notes app",
+      "fit": "Can record the attempt, mistake and lesson with much less product and maintenance overhead."
+    }
+  ],
+  "manualTest": {
+    "requiredBeforeBuild": true,
+    "performedBeforeBuild": false,
+    "betterTest": "Use one Markdown practice log for at least five real exercises and check whether recording and retrying is useful enough to justify software."
+  },
+  "usageCost": {
+    "observation": "The custom app asks the learner to manually enter several fields and maintain a separate workflow.",
+    "verdict": "The interaction and maintenance cost is not justified by the demonstrated benefit."
+  },
+  "decision": {
+    "value": "stop",
+    "decidedAt": "2026-07-27",
+    "reason": "The technical workflow passed, but the product was not practically useful enough compared with existing free and simpler alternatives."
+  },
+  "killCriteriaTriggered": [
+    "an existing free product and a simple note solve the problem adequately",
+    "the no-code workaround was not tested before implementation",
+    "daily input cost is high relative to demonstrated value",
+    "the idea remained plausible rather than evidence-backed"
+  ]
+}
