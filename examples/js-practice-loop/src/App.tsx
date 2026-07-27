@@ -78,6 +78,7 @@ export function App() {
     setLessonLearned(attempt.reflection?.lessonLearned ?? "");
     setReflectionErrors({});
     setReflectionStatus(null);
+    setRetryStatus(null);
   }
 
   function cancelReflection() {
@@ -97,6 +98,7 @@ export function App() {
     const nextErrors = validatePracticeReflection(input);
     setReflectionErrors(nextErrors);
     setReflectionStatus(null);
+    setRetryStatus(null);
 
     if (Object.keys(nextErrors).length > 0) {
       return;
@@ -116,6 +118,7 @@ export function App() {
   function markForRetry(attempt: PracticeAttempt) {
     repository.save(markPracticeAttemptForRetry(attempt));
     refreshAttempts();
+    setReflectionStatus(null);
     setRetryStatus({
       attemptId: attempt.id,
       message: "Đã thêm vào danh sách cần làm lại.",
@@ -127,6 +130,7 @@ export function App() {
     setEditingAttemptId(null);
     setFreshAttempt("");
     setRetryError("");
+    setReflectionStatus(null);
     setRetryStatus(null);
   }
 
@@ -144,6 +148,7 @@ export function App() {
 
     const nextErrors = validatePracticeRetry({ ownAttempt: freshAttempt });
     setRetryError(nextErrors.ownAttempt ?? "");
+    setReflectionStatus(null);
     setRetryStatus(null);
 
     if (nextErrors.ownAttempt) {
@@ -471,10 +476,10 @@ export function App() {
                     )}
 
                     <p className="save-status" aria-live="polite">
-                      {reflectionStatus?.attemptId === attempt.id
-                        ? reflectionStatus.message
-                        : retryStatus?.attemptId === attempt.id
-                          ? retryStatus.message
+                      {retryStatus?.attemptId === attempt.id
+                        ? retryStatus.message
+                        : reflectionStatus?.attemptId === attempt.id
+                          ? reflectionStatus.message
                           : ""}
                     </p>
                   </article>
