@@ -18,6 +18,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: agent/hubcode-pilot
+
+      - name: Normalize Git branch metadata
+        shell: bash
+        run: |
+          git remote set-head origin main
+          git branch --show-current
+          git remote show origin
 
       - uses: pnpm/action-setup@v4
         with:
@@ -63,6 +71,7 @@ jobs:
           echo "## Hubcode verifier attempt" | tee -a artifacts/hubcode-smoke.md
           timeout 360s hubcode run \
             --provider codex \
+            --base agent/hubcode-pilot \
             --worktree hubcode-ci-smoke \
             "Read AGENTS.md, GitHub issue #68, and docs/practical/HUBCODE_PILOT.md. Do not edit files. Verify that hubcode.json is valid, that the documented responsibility split is internally consistent, and that this repository remains human-merge-only. Report accept, reject, or blocked with evidence." \
             2>&1 | tee -a artifacts/hubcode-smoke.md
