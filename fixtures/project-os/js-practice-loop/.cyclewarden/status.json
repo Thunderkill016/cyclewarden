@@ -1,28 +1,22 @@
 {
   "schemaVersion": 1,
-  "phase": "reflection-verification",
-  "activeTaskId": "JPL-002",
-  "lastCompletedTaskId": "JPL-001",
-  "blockedTaskIds": ["JPL-003", "JPL-004", "JPL-005"],
-  "blockers": [
-    {
-      "taskId": "JPL-002",
-      "type": "owner-acceptance",
-      "reason": "Automated migration, domain, build, browser, safety and mobile screenshot evidence passed. The owner must review the reflection UI before JPL-002 can become done."
-    }
-  ],
+  "phase": "manual-retry-slice",
+  "activeTaskId": "JPL-003",
+  "lastCompletedTaskId": "JPL-002",
+  "blockedTaskIds": ["JPL-004", "JPL-005"],
+  "blockers": [],
   "unresolvedDecisions": [
-    "After five real exercises, decide whether review timing should remain manual or use a simple fixed interval.",
+    "After at least five real retries, decide whether manual review remains sufficient or a simple fixed interval is justified.",
     "After real data exists, decide whether localStorage remains sufficient or a larger browser store is justified."
   ],
   "next": {
-    "taskId": "JPL-002",
-    "reason": "Continue verification and owner acceptance. Do not start retry scheduling, analytics, backend or AI work."
+    "taskId": "JPL-003",
+    "reason": "The owner accepted the editable reflection slice. The next bounded risk is whether a learner can make a fresh retry before seeing previous work, using a manual queue rather than an unsupported schedule."
   },
   "ownerSummary": {
-    "whatIsBeingBuilt": "A private local JavaScript practice log that preserves the learner's attempt, mistakes and lessons before AI provides a solution.",
-    "whyThisTaskNow": "Editable reflection and schema migration passed automated verification. The remaining step is owner review, not another feature.",
-    "whatNotToDo": "Do not start JPL-003, add mistake scoring, backend, authentication, sync, AI hints, code execution, dashboard or gamification before JPL-002 is accepted.",
-    "whatComesAfter": "JPL-003 may add a fresh retry flow only after the owner accepts JPL-002 and it becomes done."
+    "whatIsBeingBuilt": "A private local JavaScript practice loop that preserves attempts, reflection and fresh retries without turning into an answer generator.",
+    "whyThisTaskNow": "Create-save-reload and editable reflection are accepted. The next useful learning behavior is trying again from memory before revealing prior work.",
+    "whatNotToDo": "Do not add fixed review intervals, due dates, notifications, AI hints, grading, code execution, analytics, backend, authentication, sync or JPL-004 mistake history during JPL-003.",
+    "whatComesAfter": "JPL-004 remains blocked until the manual retry flow is implemented, verified, used and accepted."
   }
 }
