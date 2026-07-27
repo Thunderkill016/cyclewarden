@@ -39,8 +39,9 @@ npm install -g @hubcode/cli
 hubcode
 ```
 
-Hubcode manages an already-installed agent CLI. Verify `codex` or `claude` works
-before launching the first task.
+Hubcode manages an already-installed agent CLI. Run `codex login status` or the
+provider's equivalent and verify a direct agent command works before launching
+the first task.
 
 ## Repository bootstrap
 
@@ -71,6 +72,42 @@ configured by Hubcode.
 
 The verifier must not be the implementation session. A failed check is evidence,
 not permission to weaken the check.
+
+## Headless smoke result — 2026-07-27
+
+The pilot was executed on a clean GitHub Actions Ubuntu 24.04 runner to test the
+control-plane mechanics without using a developer machine.
+
+Observed versions:
+
+- Node.js `22.23.1`;
+- pnpm `9.15.0`;
+- Hubcode CLI and daemon `2.8.4`;
+- Codex CLI `0.145.0`.
+
+Observed behavior:
+
+1. Hubcode installed and started its local daemon successfully.
+2. The daemon detected the installed Codex CLI.
+3. Hubcode created an isolated `hubcode-ci-smoke` Git worktree from
+   `agent/hubcode-pilot`.
+4. Hubcode created a persistent Codex agent record tied to that worktree.
+5. The agent failed before reading the repository because the disposable runner
+   had no Codex OAuth session or API key. The provider returned HTTP `401` with
+   `Missing bearer or basic authentication in header`.
+6. `hubcode run` returned process exit code `0` even though the recorded agent
+   status was `error`. Automation must therefore inspect the agent status or
+   timeline instead of treating the command exit code as sufficient proof.
+
+Verdict: **blocked by provider authentication, not rejected**. The smoke run
+validated daemon startup, provider discovery, branch resolution, worktree
+creation, and agent-state persistence. It did not validate prompt execution,
+repository understanding, implementation, or independent verification. Those
+must be tested on an owner-controlled machine where Codex or Claude Code is
+already authenticated.
+
+The temporary CI workflows used to collect this evidence were removed after the
+run. They are not part of the proposed integration.
 
 ## Workflow for the next real CycleWarden task
 
