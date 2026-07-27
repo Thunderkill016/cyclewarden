@@ -1,22 +1,28 @@
 {
   "schemaVersion": 1,
-  "phase": "first-useful-slice",
+  "phase": "first-slice-verification",
   "activeTaskId": "JPL-001",
   "lastCompletedTaskId": "JPL-000",
   "blockedTaskIds": ["JPL-002", "JPL-003", "JPL-004", "JPL-005"],
-  "blockers": [],
+  "blockers": [
+    {
+      "taskId": "JPL-001",
+      "type": "owner-acceptance",
+      "reason": "Automated checks and mobile screenshots passed. The owner must review the result before JPL-001 can become done."
+    }
+  ],
   "unresolvedDecisions": [
     "After five real exercises, decide whether review timing should remain manual or use a simple fixed interval.",
     "After real data exists, decide whether localStorage remains sufficient or a larger browser store is justified."
   ],
   "next": {
     "taskId": "JPL-001",
-    "reason": "It is the only active dependency-ready task and proves the smallest complete learning flow before reflection, review, analytics, backend or AI features are considered."
+    "reason": "Continue verification and owner acceptance. Do not start reflection, review scheduling, analytics, backend or AI work."
   },
   "ownerSummary": {
-    "whatIsBeingBuilt": "A private local JavaScript practice log that preserves the learner's own attempts and mistakes.",
-    "whyThisTaskNow": "The first risk is not review scheduling or AI quality; it is whether the learner will record and recover one real attempt without the product becoming another answer generator.",
-    "whatNotToDo": "Do not add AI hints, code execution, authentication, backend, sync, dashboards, streaks or review algorithms during JPL-001.",
-    "whatComesAfter": "JPL-002 may add mistake and lesson reflection only after the create-save-reload flow is verified and accepted."
+    "whatIsBeingBuilt": "A private local JavaScript practice log that preserves the learner's own attempt before AI provides a solution.",
+    "whyThisTaskNow": "The create-save-reload implementation, scope guard, unit tests, production build, browser safety proof and mobile screenshots passed. The remaining step is owner review, not another feature.",
+    "whatNotToDo": "Do not add title/source/status fields back without a demonstrated need, and do not start JPL-002 or add AI, code execution, authentication, backend, sync, dashboards, streaks or review algorithms.",
+    "whatComesAfter": "JPL-002 may add mistake and lesson reflection only after the owner accepts JPL-001 and the first slice is marked done."
   }
 }
