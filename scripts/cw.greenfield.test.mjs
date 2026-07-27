@@ -16,14 +16,14 @@ test("JS Practice Loop greenfield project is structurally valid", async () => {
   assert.deepEqual(validateProject(model), []);
 });
 
-test("JS Practice Loop advances to the manual retry slice after reflection acceptance", async () => {
+test("JS Practice Loop keeps JPL-003 current through owner verification", async () => {
   const model = await loadProject(fixture);
   const next = selectNextTask(model);
 
   assert.equal(next.task.id, "JPL-003");
-  assert.equal(next.task.status, "active");
+  assert.equal(next.task.status, "verify");
   assert.match(next.task.title, /retry a reflected mistake/i);
-  assert.match(next.reason, /current active task/i);
+  assert.match(next.reason, /owner acceptance/i);
 });
 
 test("JS Practice Loop records JPL-002 acceptance without claiming learning effectiveness", async () => {
@@ -32,7 +32,7 @@ test("JS Practice Loop records JPL-002 acceptance without claiming learning effe
   const reflection = model.roadmap.tasks.find((task) => task.id === "JPL-002");
 
   assert.equal(status.currentTask.id, "JPL-003");
-  assert.equal(status.currentTask.status, "active");
+  assert.equal(status.currentTask.status, "verify");
   assert.equal(
     model.roadmap.tasks.filter((task) =>
       new Set(["active", "verify"]).has(task.status),
@@ -53,11 +53,11 @@ test("JS Practice Loop records JPL-002 acceptance without claiming learning effe
   );
 });
 
-test("JPL-003 stays bounded to a manual fresh-retry flow", async () => {
+test("JPL-003 stays bounded to a verified manual fresh-retry flow", async () => {
   const model = await loadProject(fixture);
   const retry = model.roadmap.tasks.find((task) => task.id === "JPL-003");
 
-  assert.equal(retry.status, "active");
+  assert.equal(retry.status, "verify");
   assert.deepEqual(retry.dependsOn, ["JPL-002"]);
   assert.equal(retry.scopeCorrection.decision, "manual review only");
   assert.ok(
@@ -69,6 +69,12 @@ test("JPL-003 stays bounded to a manual fresh-retry flow", async () => {
   assert.ok(retry.outOfScope.some((item) => /fixed intervals/i.test(item)));
   assert.ok(retry.outOfScope.some((item) => /AI hints/i.test(item)));
   assert.ok(retry.outOfScope.some((item) => /backend/i.test(item)));
+  assert.ok(
+    retry.automatedEvidence.some((item) => /30232806674/i.test(item)),
+  );
+  assert.ok(
+    retry.manualEvidencePending.some((item) => /fresh-retry state/i.test(item)),
+  );
 });
 
 test("JS Practice Loop keeps later learning features dependency-blocked", async () => {
@@ -77,7 +83,7 @@ test("JS Practice Loop keeps later learning features dependency-blocked", async 
 
   assert.equal(byId.get("JPL-001").status, "done");
   assert.equal(byId.get("JPL-002").status, "done");
-  assert.equal(byId.get("JPL-003").status, "active");
+  assert.equal(byId.get("JPL-003").status, "verify");
   assert.equal(byId.get("JPL-004").status, "blocked");
   assert.deepEqual(byId.get("JPL-004").dependsOn, ["JPL-003"]);
   assert.equal(byId.get("JPL-005").status, "blocked");
