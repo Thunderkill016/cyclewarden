@@ -16,14 +16,14 @@ test("JS Practice Loop greenfield project is structurally valid", async () => {
   assert.deepEqual(validateProject(model), []);
 });
 
-test("JS Practice Loop advances to the bounded reflection slice after owner acceptance", async () => {
+test("JS Practice Loop keeps JPL-002 current through owner verification", async () => {
   const model = await loadProject(fixture);
   const next = selectNextTask(model);
 
   assert.equal(next.task.id, "JPL-002");
-  assert.equal(next.task.status, "active");
+  assert.equal(next.task.status, "verify");
   assert.match(next.task.title, /record the mistake and lesson learned/i);
-  assert.match(next.reason, /current active task/i);
+  assert.match(next.reason, /owner acceptance/i);
 });
 
 test("JS Practice Loop records JPL-001 acceptance without claiming learning effectiveness", async () => {
@@ -33,7 +33,7 @@ test("JS Practice Loop records JPL-001 acceptance without claiming learning effe
   const first = model.roadmap.tasks.find((task) => task.id === "JPL-001");
 
   assert.equal(status.currentTask.id, "JPL-002");
-  assert.equal(status.currentTask.status, "active");
+  assert.equal(status.currentTask.status, "verify");
   assert.equal(
     model.roadmap.tasks.filter((task) =>
       new Set(["active", "verify"]).has(task.status),
@@ -62,13 +62,19 @@ test("JPL-002 stays bounded to editable reflection and migration", async () => {
   const model = await loadProject(fixture);
   const reflection = model.roadmap.tasks.find((task) => task.id === "JPL-002");
 
-  assert.equal(reflection.status, "active");
+  assert.equal(reflection.status, "verify");
   assert.deepEqual(reflection.dependsOn, ["JPL-001"]);
   assert.ok(reflection.scope.some((item) => /schema-version-1/i.test(item)));
   assert.ok(reflection.scope.some((item) => /edit both reflection fields/i.test(item)));
   assert.ok(reflection.outOfScope.some((item) => /retry scheduling/i.test(item)));
   assert.ok(reflection.outOfScope.some((item) => /AI hints/i.test(item)));
   assert.ok(reflection.outOfScope.some((item) => /backend/i.test(item)));
+  assert.ok(
+    reflection.automatedEvidence.some((item) => /30228865620/i.test(item)),
+  );
+  assert.ok(
+    reflection.manualEvidencePending.some((item) => /owner reviews/i.test(item)),
+  );
 });
 
 test("JS Practice Loop keeps later learning features dependency-blocked", async () => {
@@ -76,7 +82,7 @@ test("JS Practice Loop keeps later learning features dependency-blocked", async 
   const byId = new Map(model.roadmap.tasks.map((task) => [task.id, task]));
 
   assert.equal(byId.get("JPL-001").status, "done");
-  assert.equal(byId.get("JPL-002").status, "active");
+  assert.equal(byId.get("JPL-002").status, "verify");
   assert.equal(byId.get("JPL-003").status, "blocked");
   assert.deepEqual(byId.get("JPL-003").dependsOn, ["JPL-002"]);
   assert.equal(byId.get("JPL-004").status, "blocked");
