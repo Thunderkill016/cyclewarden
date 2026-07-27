@@ -38,6 +38,12 @@ The useful surface today is:
 4. require a different verifier before accepting the change;
 5. optionally publish the exact verified commit as a draft pull request.
 
+## Hubcode development pilot
+
+[Issue #68](https://github.com/Thunderkill016/cyclewarden/issues/68) tests Hubcode as the external control plane for developing CycleWarden with Codex or Claude Code. The repository-level [`hubcode.json`](hubcode.json) bootstraps isolated worktrees, while [`docs/practical/HUBCODE_PILOT.md`](docs/practical/HUBCODE_PILOT.md) defines the implementation, independent verification, evidence, and human-review workflow.
+
+During this pilot, CycleWarden does not rebuild Hubcode's agent-session manager, worktree orchestration, or Kanban surface. Hubcode remains a development tool rather than an application runtime dependency.
+
 ## Practical validation
 
 Issue #57 compares:
@@ -171,6 +177,7 @@ pnpm deliver -- publish <cycle-id> \
 | --- | --- |
 | [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md) | Active product direction and frozen boundaries |
 | [`docs/practical/TASK_RECORD_TEMPLATE.md`](docs/practical/TASK_RECORD_TEMPLATE.md) | Evidence template for the six-task comparison |
+| [`docs/practical/HUBCODE_PILOT.md`](docs/practical/HUBCODE_PILOT.md) | Hubcode setup, worker-verifier workflow, success criteria, and kill criteria |
 | [`ROADMAP.md`](ROADMAP.md) | Current practical validation roadmap |
 | [`docs/evolution/GOVERNED_DELIVERY.md`](docs/evolution/GOVERNED_DELIVERY.md) | Trusted-local execution and verification contract |
 | [`docs/CAPABILITIES.json`](docs/CAPABILITIES.json) | Machine-readable technical capability evidence |
