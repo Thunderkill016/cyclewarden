@@ -39,6 +39,27 @@ For every non-trivial change:
 
 Use a fresh agent session for independent review when practical.
 
+## Hubcode worktrees
+
+When a task is launched through Hubcode:
+
+- Treat the linked GitHub issue and Hubcode task card as the active task boundary.
+  Stop and report the conflict if they disagree.
+- Treat the Hubcode worktree as an isolated, disposable branch. Do not modify the
+  source checkout or another worktree.
+- Use one implementation session and a fresh independent verification session.
+  The implementer must not approve its own work.
+- Use Hubcode only as the development control plane. Do not add Hubcode as an
+  application runtime dependency.
+- Do not rebuild agent-session management, worktree orchestration, or a Kanban
+  surface inside CycleWarden unless the active issue explicitly tests a proven
+  Hubcode gap.
+- Never merge or deploy from an agent session. The human owner keeps the final
+  decision.
+
+The pilot workflow and success criteria live in
+`docs/practical/HUBCODE_PILOT.md`.
+
 ## Open-ended improvement requests
 
 Do not immediately clean up or rewrite the repository.
