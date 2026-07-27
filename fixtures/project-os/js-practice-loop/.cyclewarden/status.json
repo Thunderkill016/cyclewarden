@@ -1,29 +1,25 @@
 {
   "schemaVersion": 1,
-  "phase": "real-use-evidence",
+  "phase": "stopped-product-not-worth-building",
   "activeTaskId": null,
   "lastCompletedTaskId": "JPL-003",
-  "blockedTaskIds": ["JPL-004", "JPL-005"],
-  "blockers": [
-    {
-      "taskId": "JPL-004",
-      "type": "product-evidence",
-      "reason": "JPL-004 requires evidence from at least five real exercises. There is not yet enough real data to justify mistake labels, grouping or a history interface."
-    }
-  ],
-  "unresolvedDecisions": [
-    "After at least five real retries, decide whether manual review remains sufficient or a simple fixed interval is justified.",
-    "After at least five real exercises, decide whether repeated mistakes form a useful small explicit label set.",
-    "After real data exists, decide whether localStorage remains sufficient or a larger browser store is justified."
-  ],
+  "blockedTaskIds": [],
+  "blockers": [],
+  "unresolvedDecisions": [],
   "next": {
     "taskId": null,
-    "reason": "No implementation task is currently valid. Use the accepted loop on at least five real JavaScript exercises and record non-sensitive observations before deciding whether JPL-004 should exist."
+    "reason": "Project stopped by owner decision. Do not select or create another implementation task for JS Practice Loop."
   },
   "ownerSummary": {
-    "whatIsBeingBuilt": "A private local JavaScript practice loop that preserves attempts, reflection and fresh retries without turning into an answer generator.",
-    "whyThisTaskNow": "JPL-003 was accepted. The correct next step is real use, not another feature, because the proposed history slice depends on observing repeated mistakes across at least five exercises.",
-    "whatNotToDo": "Do not build JPL-004 labels, grouping, analytics, scheduling, AI, backend, authentication or sync before the evidence threshold is met and reviewed.",
-    "whatComesAfter": "After at least five real exercises, review the observations and either activate a bounded JPL-004, reshape it, or drop it."
+    "whatIsBeingBuilt": "Nothing further. JS Practice Loop is retained only as a technical CycleWarden pilot.",
+    "whyThisTaskNow": "The owner judged the product insufficiently useful despite successful implementation and verification.",
+    "whatNotToDo": "Do not build JPL-004, JPL-005, scheduling, analytics, AI, backend, authentication or any other product feature.",
+    "whatComesAfter": "Use this failure to add a build-or-not assessment gate to CycleWarden before another greenfield implementation."
+  },
+  "productOutcome": {
+    "decision": "stop",
+    "decidedAt": "2026-07-27",
+    "technicalWorkflow": "pass",
+    "productUsefulness": "fail"
   }
 }
