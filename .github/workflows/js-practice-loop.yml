@@ -46,7 +46,7 @@ jobs:
           exit 1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Reflection browser proof
+      - name: Hidden-work retry browser proof
         run: npm run test:e2e
       - name: Require mobile screenshot evidence
         run: test -n "$(find test-results -name '*.png' -print -quit)"
