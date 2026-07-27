@@ -1,22 +1,28 @@
 {
   "schemaVersion": 1,
-  "phase": "reflection-slice",
+  "phase": "reflection-verification",
   "activeTaskId": "JPL-002",
   "lastCompletedTaskId": "JPL-001",
   "blockedTaskIds": ["JPL-003", "JPL-004", "JPL-005"],
-  "blockers": [],
+  "blockers": [
+    {
+      "taskId": "JPL-002",
+      "type": "owner-acceptance",
+      "reason": "Automated migration, domain, build, browser, safety and mobile screenshot evidence passed. The owner must review the reflection UI before JPL-002 can become done."
+    }
+  ],
   "unresolvedDecisions": [
     "After five real exercises, decide whether review timing should remain manual or use a simple fixed interval.",
     "After real data exists, decide whether localStorage remains sufficient or a larger browser store is justified."
   ],
   "next": {
     "taskId": "JPL-002",
-    "reason": "The owner accepted JPL-001. The only current task is editable mistake-and-lesson reflection with safe local-data migration."
+    "reason": "Continue verification and owner acceptance. Do not start retry scheduling, analytics, backend or AI work."
   },
   "ownerSummary": {
     "whatIsBeingBuilt": "A private local JavaScript practice log that preserves the learner's attempt, mistakes and lessons before AI provides a solution.",
-    "whyThisTaskNow": "Create-save-reload is accepted. The next learning risk is whether a learner can turn one attempt into a concrete mistake and lesson without expanding into retry scheduling, analytics or AI.",
-    "whatNotToDo": "Do not start JPL-003, add mistake scoring, backend, authentication, sync, AI hints, code execution, dashboard or gamification during JPL-002.",
-    "whatComesAfter": "JPL-003 may add a fresh retry flow only after JPL-002 is implemented, verified and accepted."
+    "whyThisTaskNow": "Editable reflection and schema migration passed automated verification. The remaining step is owner review, not another feature.",
+    "whatNotToDo": "Do not start JPL-003, add mistake scoring, backend, authentication, sync, AI hints, code execution, dashboard or gamification before JPL-002 is accepted.",
+    "whatComesAfter": "JPL-003 may add a fresh retry flow only after the owner accepts JPL-002 and it becomes done."
   }
 }
