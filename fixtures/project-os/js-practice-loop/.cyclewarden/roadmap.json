@@ -24,17 +24,26 @@
     {
       "id": "JPL-001",
       "title": "Create and persist one JavaScript practice attempt",
-      "status": "active",
+      "status": "done",
       "dependsOn": ["JPL-000"],
       "source": "first useful vertical slice",
       "scope": [
-        "empty state with one Create attempt action",
-        "form fields for title, exercise prompt, optional source, learner attempt and solved/stuck status",
-        "versioned localStorage repository",
+        "empty state and one create-attempt form",
+        "required fields for the JavaScript exercise and the learner's own attempt",
+        "versioned localStorage repository behind a storage boundary",
         "recent-attempt list",
         "saved attempt survives a full page reload",
-        "focused unit and browser tests"
+        "focused unit, build, browser and mobile screenshot evidence"
       ],
+      "scopeCorrection": {
+        "recordedAt": "2026-07-27",
+        "reason": "The shaping outcome requires only the exercise and the learner's own attempt. Title, source and solved/stuck fields were removed from JPL-001 because they do not contribute to the first useful create-save-reload flow.",
+        "deferredFields": [
+          "separate title",
+          "exercise source",
+          "solved or stuck status"
+        ]
+      },
       "outOfScope": [
         "AI hints or generated solutions",
         "executing JavaScript",
@@ -44,36 +53,76 @@
         "component libraries and broad design systems"
       ],
       "acceptance": [
-        "a learner can create one attempt using only required fields",
+        "a learner can create one attempt using the exercise and own-attempt fields",
         "invalid required fields show clear inline feedback",
         "saved data is written through the storage boundary rather than directly by UI components",
         "the attempt appears in the recent list",
         "the same attempt reappears after a full page reload",
-        "no answer, hint or executable code feature is present",
-        "the layout is usable at a 390 pixel viewport"
+        "learner text is rendered as plain text and no answer, hint or executable-code feature is present",
+        "the layout is usable at a mobile viewport"
       ],
       "requiredEvidence": [
         "unit tests for validation and storage serialization",
-        "Playwright create-save-reload flow",
-        "mobile screenshot of empty and saved states",
+        "production build",
+        "Playwright create-save-reload and plain-text safety flows",
+        "mobile screenshots of empty and saved states",
         "final diff review proving no backend, auth, AI or code-runner scope"
+      ],
+      "verificationStartedAt": "2026-07-27",
+      "automatedEvidence": [
+        "GitHub Actions run 30227650052 completed successfully on head 49cd7de0554be6733d012e32590a5ac9d7fe8f54.",
+        "The deterministic scope guard passed with no forbidden AI, backend, auth, analytics, router or code-execution dependency or source pattern.",
+        "Vitest domain and storage tests passed.",
+        "The TypeScript and Vite production build passed.",
+        "Playwright passed create-save-reload and malicious HTML/event-handler plain-text rendering proofs on a Pixel 7 profile.",
+        "Artifact 8639028319 contains empty-state and saved-state mobile screenshots."
+      ],
+      "acceptedAt": "2026-07-27",
+      "ownerAcceptance": [
+        "The owner reviewed the empty and saved mobile states and explicitly accepted JPL-001.",
+        "Acceptance confirms the bounded slice is satisfactory; it does not yet prove that the product improves learning outcomes."
       ]
     },
     {
       "id": "JPL-002",
       "title": "Record the mistake and lesson learned",
-      "status": "blocked",
+      "status": "active",
       "dependsOn": ["JPL-001"],
       "source": "second vertical slice",
+      "scope": [
+        "add what was wrong to an existing attempt",
+        "add what the learner learned",
+        "edit both reflection fields without duplicating the attempt",
+        "load schema-version-1 attempts safely and write schema version 2",
+        "focused migration, domain, browser and mobile evidence"
+      ],
+      "outOfScope": [
+        "AI hints or generated answers",
+        "executing learner code",
+        "mistake taxonomy, scoring or analytics",
+        "retry scheduling or spaced repetition",
+        "accounts, backend, database, sync or deployment",
+        "gamification, dashboard or broad navigation"
+      ],
       "acceptance": [
         "the learner can add what was wrong and what they learned",
-        "reflection remains editable",
-        "existing attempts migrate or load safely"
+        "both reflection fields show clear validation",
+        "reflection remains editable and updates the same attempt",
+        "existing schema-version-1 attempts load without data loss",
+        "new writes use schema version 2",
+        "attempt and reflection text remain inert plain text",
+        "the reflection flow is usable at a mobile viewport"
       ],
       "requiredEvidence": [
-        "domain and storage migration tests",
-        "browser flow from saved attempt to reflection"
-      ]
+        "domain validation and update tests",
+        "storage migration and no-duplicate edit tests",
+        "production build",
+        "Playwright add-reload-edit reflection flow",
+        "plain-text safety proof",
+        "mobile screenshot of the saved reflection state",
+        "final scope review proving no JPL-003 or platform expansion"
+      ],
+      "activatedAt": "2026-07-27"
     },
     {
       "id": "JPL-003",
