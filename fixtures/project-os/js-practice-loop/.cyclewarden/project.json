@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "mode": "greenfield",
+  "project": {
+    "id": "js-practice-loop",
+    "name": "JS Practice Loop",
+    "mission": "Help one beginner learn JavaScript by attempting exercises independently, recording what went wrong, and returning to the same mistake later without turning the product into another course platform or AI answer generator.",
+    "targetUser": "The owner: a Vietnamese beginner learning JavaScript who often becomes stuck, asks AI for the full solution, and then retains too little of the reasoning.",
+    "currentPhase": "first useful vertical slice",
+    "firstCriticalFlow": [
+      "open an empty personal practice log",
+      "create one exercise record with prompt and source",
+      "write the learner's own attempt and short explanation",
+      "mark the attempt as solved or stuck",
+      "save it locally",
+      "reload the page and recover the same attempt"
+    ],
+    "successSignals": [
+      "the learner records at least five real exercises without asking the app to generate answers",
+      "saved attempts survive reload without manual repair",
+      "the learner can identify a repeated mistake from their own records"
+    ],
+    "nonGoals": [
+      "a full JavaScript curriculum",
+      "an AI tutor or answer generator",
+      "a browser code runner or sandbox",
+      "social features, leaderboards, accounts, subscriptions, or teams",
+      "cross-device sync in the first version",
+      "a native mobile app",
+      "automatic spaced-repetition algorithms before real usage shows a need"
+    ]
+  },
+  "design": {
+    "approach": "mobile-first single-column utility",
+    "screens": [
+      "Today / recent attempts",
+      "New practice attempt",
+      "Attempt detail"
+    ],
+    "principles": [
+      "one primary action per screen",
+      "the learner's attempt appears before any reflection or hint",
+      "plain Vietnamese labels and no gamification pressure",
+      "empty, saved, validation-error, and reload states are explicit",
+      "no navigation system until more than three top-level destinations exist"
+    ],
+    "componentLibrary": "none for the first slice; use semantic HTML and small repository-owned components"
+  },
+  "foundation": {
+    "frontend": "React with TypeScript using the official Vite React TypeScript template",
+    "styling": "plain CSS with design tokens; no Tailwind or component library in the first slice",
+    "data": "versioned JSON in browser localStorage behind a small repository interface",
+    "authentication": "none; single-user local tool",
+    "backend": "none",
+    "validation": "small typed validation functions at the form and storage boundaries",
+    "testing": [
+      "Vitest unit tests for domain and storage behavior",
+      "Playwright for the create-save-reload user flow"
+    ],
+    "deployment": "static hosting only after the local flow passes"
+  },
+  "architecture": {
+    "boundaries": [
+      "src/domain for attempt and status rules",
+      "src/storage for versioned persistence",
+      "src/features/practice for UI flows",
+      "src/components for repeated presentation only"
+    ],
+    "rules": [
+      "UI components do not read or write localStorage directly",
+      "exercise prompts and attempts are treated as plain text, never rendered as HTML",
+      "the app never executes learner code",
+      "storage schema changes require an explicit migration or reset decision",
+      "no framework, database, auth, or AI provider may be added without a recorded repeated need"
+    ]
+  },
+  "sources": [
+    "owner learning history and stated difficulty retaining solutions produced by AI",
+    "Anki Manual: active recall and spaced repetition",
+    "Vite official guide: React TypeScript template",
+    "MDN Web Storage API",
+    "Playwright official documentation"
+  ],
+  "unknowns": [
+    "whether recording attempts changes the owner's learning behavior",
+    "whether localStorage remains sufficient after real use",
+    "whether review scheduling should be manual or follow a simple fixed interval",
+    "whether the learner wants code snippets stored as plain text"
+  ],
+  "killCriteria": [
+    "stop if the first useful flow cannot remain local-only and bounded",
+    "stop if the owner does not record five real exercises",
+    "drop any feature that mainly duplicates an existing course or flashcard tool",
+    "do not add AI answer generation because it recreates the original learning problem"
+  ]
+}
