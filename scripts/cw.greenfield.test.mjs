@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { resolve } from "node:path";
 import test from "node:test";
 
+import { loadProject } from "./cw.mjs";
 import {
-  loadProject,
   projectStatus,
   selectNextTask,
   validateProject,
-} from "./cw.mjs";
+} from "./cw-cli.mjs";
 
 const fixture = resolve("fixtures/project-os/js-practice-loop");
 
@@ -21,8 +21,9 @@ test("JS Practice Loop advances to the bounded reflection slice after owner acce
   const next = selectNextTask(model);
 
   assert.equal(next.task.id, "JPL-002");
+  assert.equal(next.task.status, "active");
   assert.match(next.task.title, /record the mistake and lesson learned/i);
-  assert.equal(next.reason, "Continue the current active task before starting another task.");
+  assert.match(next.reason, /current active task/i);
 });
 
 test("JS Practice Loop records JPL-001 acceptance without claiming learning effectiveness", async () => {
@@ -31,19 +32,45 @@ test("JS Practice Loop records JPL-001 acceptance without claiming learning effe
   const project = model.project;
   const first = model.roadmap.tasks.find((task) => task.id === "JPL-001");
 
-  assert.equal(status.activeTask.id, "JPL-002");
-  assert.equal(model.roadmap.tasks.filter((task) => task.status === "active").length, 1);
+  assert.equal(status.currentTask.id, "JPL-002");
+  assert.equal(status.currentTask.status, "active");
+  assert.equal(
+    model.roadmap.tasks.filter((task) =>
+      new Set(["active", "verify"]).has(task.status),
+    ).length,
+    1,
+  );
   assert.equal(first.status, "done");
   assert.equal(first.acceptedAt, "2026-07-27");
-  assert.ok(first.ownerAcceptance.some((item) => /explicitly accepted JPL-001/i.test(item)));
-  assert.ok(first.ownerAcceptance.some((item) => /does not yet prove.*improves learning outcomes/i.test(item)));
+  assert.ok(
+    first.ownerAcceptance.some((item) =>
+      /explicitly accepted JPL-001/i.test(item),
+    ),
+  );
+  assert.ok(
+    first.ownerAcceptance.some((item) =>
+      /does not yet prove.*improves learning outcomes/i.test(item),
+    ),
+  );
   assert.equal(project.foundation.backend, "none");
   assert.equal(project.foundation.authentication, "none; single-user local tool");
   assert.match(project.foundation.data, /localStorage/i);
   assert.match(project.design.componentLibrary, /none for the first slice/i);
-  assert.ok(project.project.nonGoals.some((item) => /AI tutor or answer generator/i.test(item)));
-  assert.ok(first.outOfScope.some((item) => /accounts, backend, database, sync or deployment/i.test(item)));
-  assert.ok(first.outOfScope.some((item) => /AI hints or generated solutions/i.test(item)));
+  assert.ok(
+    project.project.nonGoals.some((item) =>
+      /AI tutor or answer generator/i.test(item),
+    ),
+  );
+  assert.ok(
+    first.outOfScope.some((item) =>
+      /accounts, backend, database, sync or deployment/i.test(item),
+    ),
+  );
+  assert.ok(
+    first.outOfScope.some((item) =>
+      /AI hints or generated solutions/i.test(item),
+    ),
+  );
 });
 
 test("JS Practice Loop keeps later learning features dependency-blocked", async () => {
