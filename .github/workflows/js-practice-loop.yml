@@ -46,3 +46,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Create-save-reload browser proof
         run: npm run test:e2e
+      - name: Require mobile screenshot evidence
+        run: test -n "$(find test-results -name '*.png' -print -quit)"
+      - name: Upload mobile screenshot evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-practice-loop-mobile-evidence
+          path: examples/js-practice-loop/test-results/**/*.png
+          if-no-files-found: error
+          retention-days: 14
