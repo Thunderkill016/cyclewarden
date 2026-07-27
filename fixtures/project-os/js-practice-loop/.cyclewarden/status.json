@@ -1,28 +1,22 @@
 {
   "schemaVersion": 1,
-  "phase": "first-slice-verification",
-  "activeTaskId": "JPL-001",
-  "lastCompletedTaskId": "JPL-000",
-  "blockedTaskIds": ["JPL-002", "JPL-003", "JPL-004", "JPL-005"],
-  "blockers": [
-    {
-      "taskId": "JPL-001",
-      "type": "owner-acceptance",
-      "reason": "Automated checks and mobile screenshots passed. The owner must review the result before JPL-001 can become done."
-    }
-  ],
+  "phase": "reflection-slice",
+  "activeTaskId": "JPL-002",
+  "lastCompletedTaskId": "JPL-001",
+  "blockedTaskIds": ["JPL-003", "JPL-004", "JPL-005"],
+  "blockers": [],
   "unresolvedDecisions": [
     "After five real exercises, decide whether review timing should remain manual or use a simple fixed interval.",
     "After real data exists, decide whether localStorage remains sufficient or a larger browser store is justified."
   ],
   "next": {
-    "taskId": "JPL-001",
-    "reason": "Continue verification and owner acceptance. Do not start reflection, review scheduling, analytics, backend or AI work."
+    "taskId": "JPL-002",
+    "reason": "The owner accepted JPL-001 after automated checks and mobile review. The next bounded slice is recording what was wrong and what the learner learned."
   },
   "ownerSummary": {
-    "whatIsBeingBuilt": "A private local JavaScript practice log that preserves the learner's own attempt before AI provides a solution.",
-    "whyThisTaskNow": "The create-save-reload implementation, scope guard, unit tests, production build, browser safety proof and mobile screenshots passed. The remaining step is owner review, not another feature.",
-    "whatNotToDo": "Do not add title/source/status fields back without a demonstrated need, and do not start JPL-002 or add AI, code execution, authentication, backend, sync, dashboards, streaks or review algorithms.",
-    "whatComesAfter": "JPL-002 may add mistake and lesson reflection only after the owner accepts JPL-001 and the first slice is marked done."
+    "whatIsBeingBuilt": "A private local JavaScript practice log that preserves the learner's attempt, mistakes and lessons before AI provides a solution.",
+    "whyThisTaskNow": "The create-save-reload slice is complete and accepted. The next learning risk is whether the learner can turn a failed attempt into an explicit mistake and lesson without adding AI, scoring or review scheduling.",
+    "whatNotToDo": "Do not start retry scheduling, mistake analytics, backend, authentication, sync, AI hints, code execution or gamification during JPL-002.",
+    "whatComesAfter": "JPL-003 may add a fresh retry flow only after the mistake-and-lesson reflection is implemented, verified and accepted."
   }
 }
