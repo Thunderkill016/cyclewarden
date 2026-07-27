@@ -12,7 +12,7 @@ The initial roadmap fixture listed separate title, source and solved/stuck field
 
 They were removed explicitly from JPL-001 and recorded as deferred, rather than silently omitted or added to the product without evidence.
 
-The accepted verification scope is now:
+The accepted scope was:
 
 - JavaScript exercise text;
 - learner's own attempt text;
@@ -48,11 +48,19 @@ GitHub Actions run `30227650052` passed on commit `49cd7de0554be6733d012e32590a5
 
 Artifact `8639028319` contains the empty and saved Pixel 7 viewport states.
 
+## Owner acceptance
+
+On `2026-07-27`, the owner reviewed the empty and saved mobile states and explicitly accepted `JPL-001`.
+
+The task is now `done`. This acceptance confirms that the bounded create-save-reload slice is satisfactory. It does not prove that JS Practice Loop improves learning outcomes; that claim still requires real exercise use over time.
+
+`JPL-002 — Record the mistake and lesson learned` is now the only active task. Retry scheduling, analytics, backend, authentication, sync, AI hints, code execution and gamification remain out of scope.
+
 ## Pilot finding: verification was not represented correctly
 
 The implementation exposed a CycleWarden lifecycle defect. The schema allowed `verify`, but the original CLI only treated `active` as current work. A task could therefore disappear from `status` and `next` while waiting for owner acceptance.
 
-Draft PR #65 corrects this by treating `active` and `verify` as mutually exclusive current-task states. JPL-001 remains current in `verify`; JPL-002 stays blocked.
+Draft PR #65 corrects this by treating `active` and `verify` as mutually exclusive current-task states. The real acceptance transition then moved `JPL-001` from `verify` to `done` and activated `JPL-002`.
 
 ## What this proves
 
@@ -64,11 +72,12 @@ The pilot now demonstrates:
 4. scoped coding-agent handoff;
 5. deterministic scope enforcement;
 6. automated implementation verification;
-7. preservation of owner acceptance as a separate gate;
-8. a real CW defect discovered and fixed from use.
+7. owner acceptance as a separate gate;
+8. deterministic advancement to the next dependency-ready task;
+9. a real CW defect discovered and fixed from use.
 
 ## What this does not prove
 
-It does not prove the product improves learning. That requires the owner to review the UI and use it for real exercises.
+It does not prove the product improves learning. That requires the owner to record and revisit real exercises.
 
-JPL-001 must not become `done` and JPL-002 must not start until the owner accepts the first slice.
+It also does not prove every future slice is valuable. `JPL-002` must remain bounded to editable mistake-and-lesson reflection and pass its own evidence and owner-acceptance cycle.
