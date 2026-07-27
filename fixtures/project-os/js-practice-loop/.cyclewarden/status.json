@@ -1,28 +1,29 @@
 {
   "schemaVersion": 1,
-  "phase": "manual-retry-verification",
-  "activeTaskId": "JPL-003",
-  "lastCompletedTaskId": "JPL-002",
+  "phase": "real-use-evidence",
+  "activeTaskId": null,
+  "lastCompletedTaskId": "JPL-003",
   "blockedTaskIds": ["JPL-004", "JPL-005"],
   "blockers": [
     {
-      "taskId": "JPL-003",
-      "type": "owner-acceptance",
-      "reason": "Automated domain, migration, build, browser, safety and mobile evidence passed. The owner must review both the hidden-work retry state and the comparison state before JPL-003 can become done."
+      "taskId": "JPL-004",
+      "type": "product-evidence",
+      "reason": "JPL-004 requires evidence from at least five real exercises. There is not yet enough real data to justify mistake labels, grouping or a history interface."
     }
   ],
   "unresolvedDecisions": [
     "After at least five real retries, decide whether manual review remains sufficient or a simple fixed interval is justified.",
+    "After at least five real exercises, decide whether repeated mistakes form a useful small explicit label set.",
     "After real data exists, decide whether localStorage remains sufficient or a larger browser store is justified."
   ],
   "next": {
-    "taskId": "JPL-003",
-    "reason": "Continue owner verification of the manual retry interaction. Do not start JPL-004 history, scheduling, analytics, backend or AI work."
+    "taskId": null,
+    "reason": "No implementation task is currently valid. Use the accepted loop on at least five real JavaScript exercises and record non-sensitive observations before deciding whether JPL-004 should exist."
   },
   "ownerSummary": {
     "whatIsBeingBuilt": "A private local JavaScript practice loop that preserves attempts, reflection and fresh retries without turning into an answer generator.",
-    "whyThisTaskNow": "The manual retry implementation passed automated verification. The remaining work is to review whether hiding old work before submission and revealing it afterward feels correct.",
-    "whatNotToDo": "Do not start JPL-004, add fixed intervals, due dates, notifications, AI hints, grading, code execution, analytics, backend, authentication or sync before JPL-003 is accepted.",
-    "whatComesAfter": "JPL-004 remains blocked and also requires evidence from at least five real exercises, so acceptance of JPL-003 alone does not authorize immediate history/analytics implementation."
+    "whyThisTaskNow": "JPL-003 was accepted. The correct next step is real use, not another feature, because the proposed history slice depends on observing repeated mistakes across at least five exercises.",
+    "whatNotToDo": "Do not build JPL-004 labels, grouping, analytics, scheduling, AI, backend, authentication or sync before the evidence threshold is met and reviewed.",
+    "whatComesAfter": "After at least five real exercises, review the observations and either activate a bounded JPL-004, reshape it, or drop it."
   }
 }
