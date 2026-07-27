@@ -3,6 +3,8 @@ name: Hubcode Pilot Smoke
 on:
   push:
     branches: [agent/hubcode-pilot]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
