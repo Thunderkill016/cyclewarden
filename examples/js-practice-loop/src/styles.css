@@ -1,0 +1,265 @@
+:root {
+  color: #17211b;
+  background: #f2f5f1;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --surface: #ffffff;
+  --surface-muted: #e9efe9;
+  --border: #cad6cc;
+  --text-muted: #5c6b61;
+  --primary: #146c43;
+  --primary-strong: #0b5432;
+  --focus: #1f78d1;
+  --error: #a12929;
+  --shadow: 0 16px 40px rgb(20 50 34 / 10%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+button,
+textarea {
+  border-radius: 14px;
+}
+
+button:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.page-shell {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.hero {
+  padding: 20px 4px 28px;
+}
+
+.hero h1,
+.section-heading h2,
+.attempt-card h3,
+.empty-state h3 {
+  margin: 0;
+}
+
+.hero h1 {
+  max-width: 13ch;
+  font-size: clamp(2.25rem, 10vw, 4.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.hero > p:last-child {
+  max-width: 58ch;
+  margin: 18px 0 0;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.eyebrow,
+.step-label {
+  margin: 0 0 8px;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.panel,
+.attempts-section {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.panel {
+  padding: 22px;
+}
+
+.attempts-section {
+  margin-top: 22px;
+  padding: 22px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.section-heading h2 {
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.local-badge,
+.count-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--primary-strong);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.local-badge {
+  padding: 8px 10px;
+}
+
+.count-badge {
+  min-width: 36px;
+  padding: 8px;
+  text-align: center;
+}
+
+.field-group + .field-group {
+  margin-top: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+
+textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #aebbb0;
+  background: #fbfcfb;
+  color: inherit;
+  padding: 14px 15px;
+  line-height: 1.55;
+}
+
+textarea[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.field-help,
+.field-error,
+.save-status {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.field-help {
+  color: var(--text-muted);
+}
+
+.field-error {
+  color: var(--error);
+  font-weight: 700;
+}
+
+.primary-action {
+  width: 100%;
+  margin-top: 24px;
+  border: 0;
+  background: var(--primary);
+  color: white;
+  padding: 15px 18px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.primary-action:hover {
+  background: var(--primary-strong);
+}
+
+.save-status {
+  min-height: 1.35rem;
+  color: var(--primary-strong);
+  font-weight: 700;
+}
+
+.empty-state {
+  border: 1px dashed var(--border);
+  border-radius: 18px;
+  background: #f8faf8;
+  padding: 24px;
+}
+
+.empty-state p {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.attempt-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attempt-card {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  background: #fcfdfc;
+}
+
+.attempt-date {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.attempt-card h3 {
+  font-size: 1.05rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.attempt-card pre {
+  margin: 14px 0 0;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: #18231d;
+  color: #eef7f0;
+  padding: 14px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 640px) {
+  .page-shell {
+    padding: 48px 24px 88px;
+  }
+
+  .panel,
+  .attempts-section {
+    padding: 30px;
+  }
+}
