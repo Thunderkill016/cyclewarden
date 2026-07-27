@@ -20,8 +20,33 @@ const ASSESSMENT_DECISIONS = new Set([
   "use-existing",
   "manual",
   "stop",
+  "existing-project",
+]);
+const ASSESSMENT_SCOPES = new Set([
+  "greenfield-project",
+  "existing-project-adoption",
+]);
+const EVIDENCE_TYPES = new Set([
+  "owner-observation",
+  "user-research",
+  "repository",
+  "analytics",
+  "support-log",
+  "manual-test",
+  "existing-solution",
+  "external-method",
+  "inference",
+]);
+const DIRECT_PRODUCT_EVIDENCE = new Set([
+  "owner-observation",
+  "user-research",
+  "repository",
+  "analytics",
+  "support-log",
+  "manual-test",
 ]);
 const IMPLEMENTATION_STATUSES = new Set(["ready", "active", "verify"]);
+const UNLOCKING_DECISIONS = new Set(["build", "existing-project"]);
 
 function nonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -50,25 +75,39 @@ async function writeJson(path, value) {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-function createAssessmentScaffold(mode) {
+function greenfieldAssessment() {
   return {
     schemaVersion: ASSESSMENT_SCHEMA_VERSION,
+    scope: "greenfield-project",
+    methodSources: [
+      "docs/project-os/EVIDENCE_BASE.md",
+      "docs/project-os/ASSESSMENT_PROTOCOL.md",
+    ],
+    evidence: [],
     problem: {
       statement: "Describe the repeated problem in observable terms.",
-      frequencyEvidence: "unknown",
-      currentWorkaround: "Describe how the owner handles the problem today.",
-      workaroundCost: "unknown",
+      currentWorkaround: "Describe how the user handles the problem today.",
+      frequency: "unknown",
+      currentCost: "unknown",
     },
     existingSolutions: [],
     manualTest: {
       status: "not-run",
-      method: "Describe the smallest no-code or manual test that could disprove the need to build.",
+      method: "Describe the cheapest reliable no-code or manual test.",
       result: "unknown",
+      evidenceIds: [],
+      exemptionReason: null,
+    },
+    successMeasures: [],
+    appetite: {
+      value: "unknown",
+      reason: "unknown",
     },
     usageCost: {
       interactionCost: "unknown",
       maintenanceCost: "unknown",
     },
+    noGos: [],
     killCriteria: [
       "an existing product solves the problem adequately",
       "a manual workflow is good enough",
@@ -77,14 +116,73 @@ function createAssessmentScaffold(mode) {
     ],
     decision: {
       value: "pending",
-      reason:
-        mode === "brownfield"
-          ? "Decide whether further project investment is justified before activating new implementation work."
-          : "Assess necessity before shaping or implementing a custom product.",
+      reason: "Assessment evidence is incomplete.",
+      evidenceIds: [],
       decidedAt: null,
     },
-    buildEvidence: [],
   };
+}
+
+function brownfieldAssessment() {
+  return {
+    schemaVersion: ASSESSMENT_SCHEMA_VERSION,
+    scope: "existing-project-adoption",
+    methodSources: [
+      "docs/project-os/EVIDENCE_BASE.md",
+      "docs/project-os/ASSESSMENT_PROTOCOL.md",
+    ],
+    evidence: [
+      {
+        id: "E1",
+        type: "repository",
+        source: ".",
+        claim: "The owner explicitly adopted an existing repository into CycleWarden.",
+        observedAt: null,
+      },
+    ],
+    problem: {
+      statement: "Recover current project truth and unfinished work from repository evidence.",
+      currentWorkaround: "Coding-agent sessions inspect the repository independently and may lose project sequencing.",
+      frequency: "existing repository",
+      currentCost: "unknown until adoption is mapped",
+    },
+    existingSolutions: [],
+    manualTest: {
+      status: "exempt",
+      method: "Not applicable to existence of an already-running repository.",
+      result: "CycleWarden will map current work without validating a new broad initiative.",
+      evidenceIds: ["E1"],
+      exemptionReason: "The project already exists; future major initiatives still require their own assessment.",
+    },
+    successMeasures: [
+      "a fresh session can recover current project purpose, blocker, and next valid task",
+    ],
+    appetite: {
+      value: "repository mapping only",
+      reason: "Adoption must not silently authorize a redesign or new platform initiative.",
+    },
+    usageCost: {
+      interactionCost: "maintain a small repository-local state model",
+      maintenanceCost: "must remain lower than ordinary issue and AGENTS.md workflows",
+    },
+    noGos: [
+      "treat existing-project adoption as proof that a new broad initiative is valuable",
+    ],
+    killCriteria: [
+      "project state requires more maintenance than the continuity it provides",
+      "AGENTS.md plus ordinary issues provides the same result",
+    ],
+    decision: {
+      value: "existing-project",
+      reason: "Adopt the existing repository and recover current work from repository evidence.",
+      evidenceIds: ["E1"],
+      decidedAt: null,
+    },
+  };
+}
+
+function createAssessmentScaffold(mode) {
+  return mode === "brownfield" ? brownfieldAssessment() : greenfieldAssessment();
 }
 
 function parseRoot(argv) {
@@ -101,27 +199,29 @@ async function applyAssessmentScaffold(root, mode) {
     readJson(statusPath),
   ]);
 
-  for (const task of roadmap.tasks ?? []) {
-    if (IMPLEMENTATION_STATUSES.has(task.status)) task.status = "proposed";
-  }
+  if (mode === "greenfield") {
+    for (const task of roadmap.tasks ?? []) {
+      if (IMPLEMENTATION_STATUSES.has(task.status)) task.status = "proposed";
+    }
 
-  status.phase = "assessment";
-  status.activeTaskId = null;
-  status.blockedTaskIds = [];
-  status.blockers = [];
-  status.unresolvedDecisions = [
-    "Complete the build-or-not assessment and record an explicit decision.",
-  ];
-  status.next = {
-    taskId: null,
-    reason: "Assessment is pending. No implementation task may start.",
-  };
-  status.ownerSummary = {
-    whatIsBeingBuilt: "Not decided yet.",
-    whyThisTaskNow: "The project must prove that building is better than using an existing or manual solution.",
-    whatNotToDo: "Do not activate implementation, choose a stack or expand the roadmap before the assessment decision is build.",
-    whatComesAfter: "Choose build, use-existing, manual or stop from evidence. Only build unlocks implementation tasks.",
-  };
+    status.phase = "assessment";
+    status.activeTaskId = null;
+    status.blockedTaskIds = [];
+    status.blockers = [];
+    status.unresolvedDecisions = [
+      "Complete the evidence-backed build-or-not assessment.",
+    ];
+    status.next = {
+      taskId: null,
+      reason: "Assessment is pending. No implementation task may start.",
+    };
+    status.ownerSummary = {
+      whatIsBeingBuilt: "Not decided yet.",
+      whyThisTaskNow: "The project must prove that software is better than an existing or manual solution.",
+      whatNotToDo: "Do not activate implementation, choose a stack, or expand the roadmap before the assessment decision is build.",
+      whatComesAfter: "Choose build, use-existing, manual, or stop from traceable evidence.",
+    };
+  }
 
   await Promise.all([
     writeJson(assessmentPath(root), createAssessmentScaffold(mode)),
@@ -147,6 +247,55 @@ export async function loadAssessedProject(root) {
   return { ...model, assessment };
 }
 
+function validateEvidence(assessment, errors) {
+  if (!Array.isArray(assessment?.evidence)) {
+    errors.push("assessment.evidence must be an array");
+    return new Map();
+  }
+
+  const byId = new Map();
+  for (const [index, item] of assessment.evidence.entries()) {
+    const prefix = `assessment.evidence[${index}]`;
+    if (!nonEmptyString(item?.id)) {
+      errors.push(`${prefix}.id is required`);
+      continue;
+    }
+    if (byId.has(item.id)) errors.push(`duplicate assessment evidence id: ${item.id}`);
+    byId.set(item.id, item);
+    if (!EVIDENCE_TYPES.has(item.type)) {
+      errors.push(`${item.id}.type must be one of ${[...EVIDENCE_TYPES].join(", ")}`);
+    }
+    if (!nonEmptyString(item.source)) errors.push(`${item.id}.source is required`);
+    if (!nonEmptyString(item.claim)) errors.push(`${item.id}.claim is required`);
+  }
+  return byId;
+}
+
+function validateExistingSolutions(assessment, errors) {
+  if (!Array.isArray(assessment?.existingSolutions)) {
+    errors.push("assessment.existingSolutions must be an array");
+    return;
+  }
+  for (const [index, solution] of assessment.existingSolutions.entries()) {
+    const prefix = `assessment.existingSolutions[${index}]`;
+    if (!nonEmptyString(solution?.name)) errors.push(`${prefix}.name is required`);
+    if (!nonEmptyString(solution?.source)) errors.push(`${prefix}.source is required`);
+    if (!nonEmptyString(solution?.fit)) errors.push(`${prefix}.fit is required`);
+    if (!nonEmptyString(solution?.limitation)) errors.push(`${prefix}.limitation is required`);
+  }
+}
+
+function evidenceIdsExist(ids, byId, field, errors) {
+  if (!Array.isArray(ids)) {
+    errors.push(`${field} must be an array`);
+    return [];
+  }
+  for (const id of ids) {
+    if (!byId.has(id)) errors.push(`${field} references missing evidence ${id}`);
+  }
+  return ids.filter((id) => byId.has(id));
+}
+
 export function validateAssessment(model) {
   const errors = [];
   const assessment = model.assessment;
@@ -154,18 +303,32 @@ export function validateAssessment(model) {
   if (assessment?.schemaVersion !== ASSESSMENT_SCHEMA_VERSION) {
     errors.push(`assessment.json schemaVersion must be ${ASSESSMENT_SCHEMA_VERSION}`);
   }
+  if (!ASSESSMENT_SCOPES.has(assessment?.scope)) {
+    errors.push(`assessment.scope must be one of ${[...ASSESSMENT_SCOPES].join(", ")}`);
+  }
+  if (!Array.isArray(assessment?.methodSources) || assessment.methodSources.length === 0) {
+    errors.push("assessment.methodSources must reference the evidence policy and protocol");
+  }
   if (!nonEmptyString(assessment?.problem?.statement)) {
     errors.push("assessment.problem.statement is required");
   }
   if (!nonEmptyString(assessment?.problem?.currentWorkaround)) {
     errors.push("assessment.problem.currentWorkaround is required");
   }
-  if (!Array.isArray(assessment?.existingSolutions)) {
-    errors.push("assessment.existingSolutions must be an array");
-  }
+
+  const evidenceById = validateEvidence(assessment, errors);
+  validateExistingSolutions(assessment, errors);
+
   if (!assessment?.manualTest || typeof assessment.manualTest !== "object") {
     errors.push("assessment.manualTest is required");
   }
+  if (!Array.isArray(assessment?.successMeasures)) {
+    errors.push("assessment.successMeasures must be an array");
+  }
+  if (!nonEmptyString(assessment?.appetite?.value)) {
+    errors.push("assessment.appetite.value is required");
+  }
+  if (!Array.isArray(assessment?.noGos)) errors.push("assessment.noGos must be an array");
   if (!Array.isArray(assessment?.killCriteria) || assessment.killCriteria.length === 0) {
     errors.push("assessment.killCriteria must contain at least one criterion");
   }
@@ -179,25 +342,77 @@ export function validateAssessment(model) {
   if (!nonEmptyString(assessment?.decision?.reason)) {
     errors.push("assessment.decision.reason is required");
   }
-  if (decision === "build") {
-    if (!Array.isArray(assessment?.buildEvidence) || assessment.buildEvidence.length === 0) {
-      errors.push("assessment.buildEvidence is required when decision is build");
+  const decisionEvidenceIds = evidenceIdsExist(
+    assessment?.decision?.evidenceIds,
+    evidenceById,
+    "assessment.decision.evidenceIds",
+    errors,
+  );
+
+  if (decision === "existing-project") {
+    if (model.project?.mode !== "brownfield") {
+      errors.push("existing-project decision is only valid for brownfield mode");
+    }
+    const hasRepositoryEvidence = decisionEvidenceIds.some(
+      (id) => evidenceById.get(id)?.type === "repository",
+    );
+    if (!hasRepositoryEvidence) {
+      errors.push("existing-project decision requires repository evidence");
     }
   }
 
-  if (decision !== "build") {
-    const implementationTasks = (model.roadmap?.tasks ?? []).filter((task) =>
+  if (decision === "build") {
+    if (assessment?.scope !== "greenfield-project") {
+      errors.push("build decision currently applies only to greenfield-project assessment");
+    }
+    if (assessment.existingSolutions.length === 0) {
+      errors.push("build decision requires review of at least one existing or simpler solution");
+    }
+    const manualStatus = assessment?.manualTest?.status;
+    if (!new Set(["completed", "exempt"]).has(manualStatus)) {
+      errors.push("build decision requires a completed manual test or documented exemption");
+    }
+    if (manualStatus === "completed") {
+      const manualIds = evidenceIdsExist(
+        assessment.manualTest.evidenceIds,
+        evidenceById,
+        "assessment.manualTest.evidenceIds",
+        errors,
+      );
+      if (!manualIds.some((id) => evidenceById.get(id)?.type === "manual-test")) {
+        errors.push("completed manual test must reference manual-test evidence");
+      }
+    }
+    if (manualStatus === "exempt" && !nonEmptyString(assessment.manualTest.exemptionReason)) {
+      errors.push("manual-test exemption requires exemptionReason");
+    }
+    if (assessment.successMeasures.length === 0) {
+      errors.push("build decision requires at least one success measure");
+    }
+    if (assessment.appetite.value === "unknown") {
+      errors.push("build decision requires an explicit appetite");
+    }
+    const directEvidence = decisionEvidenceIds.some((id) =>
+      DIRECT_PRODUCT_EVIDENCE.has(evidenceById.get(id)?.type),
+    );
+    if (!directEvidence) {
+      errors.push("build decision requires direct product evidence; inference or method guidance alone is insufficient");
+    }
+  }
+
+  if (!UNLOCKING_DECISIONS.has(decision)) {
+    const currentTasks = (model.roadmap?.tasks ?? []).filter((task) =>
       IMPLEMENTATION_STATUSES.has(task.status),
     );
-    if (implementationTasks.length > 0) {
+    if (currentTasks.length > 0) {
       errors.push(
-        `assessment decision ${decision ?? "unknown"} cannot have implementation tasks: ${implementationTasks
+        `assessment decision ${decision ?? "unknown"} cannot have implementation tasks: ${currentTasks
           .map((task) => `${task.id} [${task.status}]`)
           .join(", ")}`,
       );
     }
     if ((model.status?.activeTaskId ?? null) !== null) {
-      errors.push("status.activeTaskId must be null unless assessment decision is build");
+      errors.push("status.activeTaskId must be null unless assessment permits implementation");
     }
   }
 
@@ -211,7 +426,7 @@ export function validateProject(model) {
 function assessmentStopReason(assessment) {
   const decision = assessment.decision.value;
   if (decision === "pending") {
-    return "Assessment is pending. Compare existing solutions and run the smallest manual test before building.";
+    return "Assessment is pending. Gather product evidence, review simpler solutions, and run the cheapest reliable test before building.";
   }
   if (decision === "use-existing") {
     return `Use an existing solution instead of building. ${assessment.decision.reason}`;
@@ -223,7 +438,7 @@ function assessmentStopReason(assessment) {
 }
 
 export function selectNextTask(model) {
-  if (model.assessment.decision.value !== "build") {
+  if (!UNLOCKING_DECISIONS.has(model.assessment.decision.value)) {
     return {
       task: null,
       reason: assessmentStopReason(model.assessment),
@@ -235,7 +450,7 @@ export function selectNextTask(model) {
 
 export function projectStatus(model) {
   const decision = model.assessment.decision.value;
-  if (decision === "build") {
+  if (UNLOCKING_DECISIONS.has(decision)) {
     return {
       ...lifecycleProjectStatus(model),
       assessment: model.assessment.decision,
@@ -259,9 +474,10 @@ function printAssessment(assessment) {
   console.log(`Reason: ${assessment.decision.reason}`);
   console.log(`Problem: ${assessment.problem.statement}`);
   console.log(`Current workaround: ${assessment.problem.currentWorkaround}`);
-  console.log(`Manual test: ${assessment.manualTest.status} — ${assessment.manualTest.method}`);
+  console.log(`Evidence items: ${assessment.evidence.length}`);
   console.log(`Existing solutions reviewed: ${assessment.existingSolutions.length}`);
-  console.log(`Build evidence items: ${assessment.buildEvidence.length}`);
+  console.log(`Manual test: ${assessment.manualTest.status} — ${assessment.manualTest.method}`);
+  console.log(`Success measures: ${assessment.successMeasures.length}`);
 }
 
 function printStatus(status) {
@@ -269,17 +485,26 @@ function printStatus(status) {
   console.log(`Mode: ${status.mode}`);
   console.log(`Phase: ${status.phase}`);
   console.log(`Assessment: ${status.assessment.value}`);
-  console.log(`Current: ${status.currentTask ? `${status.currentTask.id} — ${status.currentTask.title} [${status.currentTask.status}]` : "none"}`);
-  console.log(`Next: ${status.next.id ? `${status.next.id} — ${status.next.title}` : status.next.reason}`);
+  console.log(
+    `Current: ${
+      status.currentTask
+        ? `${status.currentTask.id} — ${status.currentTask.title} [${status.currentTask.status}]`
+        : "none"
+    }`,
+  );
+  console.log(
+    `Next: ${status.next.id ? `${status.next.id} — ${status.next.title}` : status.next.reason}`,
+  );
 }
 
 function parseCli(argv) {
   const [command, ...rest] = argv;
   const options = { json: false };
   const positional = [];
-  for (const value of rest) {
+  for (let index = 0; index < rest.length; index += 1) {
+    const value = rest[index];
     if (value === "--json") options.json = true;
-    else if (value === "--name") break;
+    else if (value === "--name") index += 1;
     else positional.push(value);
   }
   return { command, root: positional[0] ?? process.cwd(), options };
@@ -295,11 +520,13 @@ export async function runCli(argv = process.argv.slice(2)) {
   if (command === "init" || command === "adopt") {
     const result = await runLifecycleCli(argv);
     if (result !== 0) return result;
-    await applyAssessmentScaffold(
-      parseRoot(argv),
-      command === "adopt" ? "brownfield" : "greenfield",
+    const mode = command === "adopt" ? "brownfield" : "greenfield";
+    await applyAssessmentScaffold(parseRoot(argv), mode);
+    console.log(
+      mode === "greenfield"
+        ? "Build-or-not assessment created. Implementation remains locked until evidence supports build."
+        : "Existing repository adopted. New broad initiatives still require their own assessment.",
     );
-    console.log("Build-or-not assessment created. Implementation remains locked until decision is build.");
     return 0;
   }
 
