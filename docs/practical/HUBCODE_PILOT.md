@@ -52,7 +52,9 @@ worktree to:
 2. copy `apps/web/.env.local` from the source checkout when that local file
    exists.
 
-Secrets remain local and untracked. Do not add `.env.local` to Git.
+Both commands run with fail-fast shell behavior so dependency or copy errors are
+visible instead of leaving a partially prepared worktree. Secrets remain local
+and untracked. Do not add `.env.local` to Git.
 
 ## First validation run
 
