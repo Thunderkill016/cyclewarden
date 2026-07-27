@@ -16,23 +16,27 @@ test("JS Practice Loop greenfield project is structurally valid", async () => {
   assert.deepEqual(validateProject(model), []);
 });
 
-test("JS Practice Loop selects the smallest complete first slice", async () => {
+test("JS Practice Loop advances to the bounded reflection slice after owner acceptance", async () => {
   const model = await loadProject(fixture);
   const next = selectNextTask(model);
 
-  assert.equal(next.task.id, "JPL-001");
-  assert.match(next.task.title, /create and persist one JavaScript practice attempt/i);
+  assert.equal(next.task.id, "JPL-002");
+  assert.match(next.task.title, /record the mistake and lesson learned/i);
   assert.equal(next.reason, "Continue the current active task before starting another task.");
 });
 
-test("JS Practice Loop prevents premature platform expansion", async () => {
+test("JS Practice Loop records JPL-001 acceptance without claiming learning effectiveness", async () => {
   const model = await loadProject(fixture);
   const status = projectStatus(model);
   const project = model.project;
   const first = model.roadmap.tasks.find((task) => task.id === "JPL-001");
 
-  assert.equal(status.activeTask.id, "JPL-001");
+  assert.equal(status.activeTask.id, "JPL-002");
   assert.equal(model.roadmap.tasks.filter((task) => task.status === "active").length, 1);
+  assert.equal(first.status, "done");
+  assert.equal(first.acceptedAt, "2026-07-27");
+  assert.ok(first.ownerAcceptance.some((item) => /explicitly accepted JPL-001/i.test(item)));
+  assert.ok(first.ownerAcceptance.some((item) => /does not yet prove.*improves learning outcomes/i.test(item)));
   assert.equal(project.foundation.backend, "none");
   assert.equal(project.foundation.authentication, "none; single-user local tool");
   assert.match(project.foundation.data, /localStorage/i);
@@ -46,7 +50,8 @@ test("JS Practice Loop keeps later learning features dependency-blocked", async 
   const model = await loadProject(fixture);
   const byId = new Map(model.roadmap.tasks.map((task) => [task.id, task]));
 
-  assert.equal(byId.get("JPL-002").status, "blocked");
+  assert.equal(byId.get("JPL-001").status, "done");
+  assert.equal(byId.get("JPL-002").status, "active");
   assert.deepEqual(byId.get("JPL-002").dependsOn, ["JPL-001"]);
   assert.equal(byId.get("JPL-003").status, "blocked");
   assert.deepEqual(byId.get("JPL-003").dependsOn, ["JPL-002"]);
