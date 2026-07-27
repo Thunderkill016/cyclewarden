@@ -1,123 +1,222 @@
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 
-permissions:
-  contents: read
+env:
+  # Stable host for cookies + Playwright (P2 e2e harden)
+  PLAYWRIGHT_HOST: 127.0.0.1
+  PORT: "3000"
 
 jobs:
-  hubcode-pilot-smoke:
-    name: Hubcode / Codex control-plane smoke
+  test-and-build:
+    name: Test & Build
     runs-on: ubuntu-latest
-    timeout-minutes: 12
-    env:
-      HUBCODE_HOME: /tmp/hubcode
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: agent/hubcode-pilot
-
-      - name: Normalize Git branch metadata
-        shell: bash
-        run: |
-          git remote set-head origin main
-          git branch --show-current
-          git remote show origin
-
       - uses: pnpm/action-setup@v4
         with:
           version: 9.15.0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm doctor || true
+      - run: pnpm check:deploy || true
 
-      - name: Install Hubcode and Codex CLIs
-        run: npm install -g @hubcode/cli@2.8.4 @openai/codex
+  evolution-core-standalone:
+    name: Evolution Core standalone / Node ${{ matrix.node }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Workspace package typecheck
+        run: pnpm --filter @cyclewarden/evolution-core typecheck
+      - name: Workspace package tests
+        run: pnpm --filter @cyclewarden/evolution-core test
+      - name: Clean standalone install, pack and consumer proof
+        run: node scripts/test-evolution-core-standalone.mjs
 
-      - name: Record versions and authentication state
-        shell: bash
-        run: |
-          mkdir -p artifacts
-          {
-            echo "## Installed versions"
-            echo
-            echo '```text'
-            node --version
-            pnpm --version
-            hubcode --version || true
-            codex --version || true
-            codex login status || true
-            echo '```'
-          } | tee artifacts/hubcode-smoke.md
-
-      - name: Start Hubcode daemon
-        shell: bash
-        run: |
-          set -o pipefail
-          hubcode daemon start 2>&1 | tee -a artifacts/hubcode-smoke.md
-          hubcode daemon status 2>&1 | tee -a artifacts/hubcode-smoke.md
-          hubcode ls -a --json 2>&1 | tee -a artifacts/hubcode-smoke.md || true
-
-      - name: Attempt read-only Codex verifier through Hubcode
-        continue-on-error: true
-        shell: bash
-        run: |
-          set +e
-          echo >> artifacts/hubcode-smoke.md
-          echo "## Hubcode verifier attempt" | tee -a artifacts/hubcode-smoke.md
-          timeout 360s hubcode run \
-            --provider codex \
-            --base agent/hubcode-pilot \
-            --worktree hubcode-ci-smoke \
-            "Read AGENTS.md, GitHub issue #68, and docs/practical/HUBCODE_PILOT.md. Do not edit files. Verify that hubcode.json is valid, that the documented responsibility split is internally consistent, and that this repository remains human-merge-only. Report accept, reject, or blocked with evidence." \
-            2>&1 | tee -a artifacts/hubcode-smoke.md
-          code=${PIPESTATUS[0]}
-          echo >> artifacts/hubcode-smoke.md
-          echo "Hubcode run exit code: ${code}" | tee -a artifacts/hubcode-smoke.md
-          exit "$code"
-
-      - name: Capture agent and daemon diagnostics
-        if: ${{ always() }}
-        shell: bash
-        run: |
-          set +e
-          agent_id="$(hubcode ls -a -g --json | jq -r '.[0].id // empty')"
-          {
-            echo
-            echo "## Agent diagnostics"
-            echo
-            echo "Agent ID: ${agent_id:-none}"
-            if [ -n "$agent_id" ]; then
-              echo '```text'
-              hubcode logs "$agent_id" --tail 100 || true
-              echo '```'
-            fi
-            echo
-            echo "## Daemon log tail"
-            echo
-            echo '```text'
-            tail -n 160 /tmp/hubcode/daemon.log || true
-            echo '```'
-            echo
-            echo "## Final state"
-            echo
-            echo '```text'
-            git worktree list || true
-            hubcode ls -a -g --json || true
-            hubcode daemon status || true
-            echo '```'
-          } | tee -a artifacts/hubcode-smoke.md
-
-      - name: Upload Hubcode smoke report
+  evolution-engine-proof:
+    name: Evolution Engine Proof
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build Evolution Engine
+        run: pnpm --filter @cyclewarden/evolution-core build
+      - name: Dogfood CycleWarden assessment
+        run: node scripts/test-evolution-cli.mjs
+      - name: Upload Evolution dogfood diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: hubcode-smoke-report
-          path: artifacts/hubcode-smoke.md
-          if-no-files-found: error
+          name: evolution-dogfood-diagnostics
+          if-no-files-found: warn
           retention-days: 7
+          path: artifacts/evolution-dogfood-report.json
+      - name: Assess pinned external repository
+        run: node scripts/test-evolution-external-repo.mjs
+      - name: Run fixed named-candidate research proof
+        run: node scripts/test-candidate-research.mjs
+      - name: Upload named-candidate research proof
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-research-proof
+          if-no-files-found: warn
+          retention-days: 14
+          path: artifacts/candidate-research-proof.json
+      - name: Run deterministic public-search proof
+        run: node scripts/test-public-search.mjs
+      - name: Upload public-search proof
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-search-proof
+          if-no-files-found: warn
+          retention-days: 14
+          path: artifacts/public-search-proof.json
+
+  sandbox-docker-proof:
+    name: Sandbox / hostile Docker proof
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build Evolution Engine
+        run: pnpm --filter @cyclewarden/evolution-core build
+      - name: Explicitly provision local sandbox image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker pull node:22-bookworm-slim
+          image_id="$(docker image inspect node:22-bookworm-slim --format '{{.Id}}')"
+          [[ "$image_id" =~ ^sha256:[a-f0-9]{64}$ ]]
+          echo "CYCLEWARDEN_SANDBOX_IMAGE=$image_id" >> "$GITHUB_ENV"
+      - name: Run hostile sandbox fixture
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          node scripts/test-sandbox-docker.mjs 2>&1 | tee artifacts/sandbox-docker-proof.log
+        env:
+          CYCLEWARDEN_HOST_SECRET: ci-secret-must-not-enter-sandbox
+      - name: Upload hostile sandbox diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-docker-proof
+          if-no-files-found: warn
+          retention-days: 7
+          path: artifacts/sandbox-docker-proof.log
+
+  e2e-demo:
+    name: E2E / demo mode
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm --filter @cyclewarden/web exec playwright install chromium --with-deps
+      - name: E2E smoke (demo)
+        run: pnpm test:e2e
+        env:
+          CI: true
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+
+  e2e-portable-pg:
+    name: E2E / portable-pg
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cyclewarden
+          POSTGRES_PASSWORD: cyclewarden
+          POSTGRES_DB: cyclewarden
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate database
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: postgresql://cyclewarden:cyclewarden@localhost:5432/cyclewarden
+      - name: Install Playwright Chromium
+        run: pnpm --filter @cyclewarden/web exec playwright install chromium --with-deps
+      - name: E2E auth + isolation
+        run: pnpm test:e2e
+        env:
+          CI: true
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+          BETTER_AUTH_URL: http://127.0.0.1:3000
+          DATABASE_URL: postgresql://cyclewarden:cyclewarden@localhost:5432/cyclewarden
+          BETTER_AUTH_SECRET: ci-test-secret-at-least-32-characters-long!!
+          AUTH_ADAPTER: better-auth
+      - name: Upload portable-pg Playwright evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: portable-pg-playwright-evidence
+          if-no-files-found: warn
+          retention-days: 7
+          path: |
+            apps/web/test-results
+            apps/web/playwright-report
