@@ -66,7 +66,9 @@ const required = [
   "scripts/create-cyclewarden.mjs",
   "scripts/test-create-cyclewarden.mjs",
   "scripts/cw.mjs",
+  "scripts/cw-cli.mjs",
   "scripts/cw.test.mjs",
+  "scripts/cw.verify.test.mjs",
   "scripts/cw.moneyflow.test.mjs",
   "fixtures/project-os/moneyflow/.cyclewarden/project.json",
   "fixtures/project-os/moneyflow/.cyclewarden/roadmap.json",
@@ -148,11 +150,14 @@ try {
 
 if (packageJson) {
   const scripts = packageJson.scripts ?? {};
-  if (scripts.cw !== "node scripts/cw.mjs") {
-    errors.push("package.json scripts.cw must invoke scripts/cw.mjs");
+  if (scripts.cw !== "node scripts/cw-cli.mjs") {
+    errors.push("package.json scripts.cw must invoke scripts/cw-cli.mjs");
   }
   if (!String(scripts["test:project-os"] ?? "").includes("cw.test.mjs")) {
     errors.push("package.json test:project-os must run the Project OS tests");
+  }
+  if (!String(scripts["test:project-os"] ?? "").includes("cw.verify.test.mjs")) {
+    errors.push("package.json test:project-os must run verify lifecycle tests");
   }
   if (!String(scripts["test:project-os"] ?? "").includes("cw.moneyflow.test.mjs")) {
     errors.push("package.json test:project-os must run the MoneyFlow pilot tests");
@@ -180,4 +185,6 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log(`AI workflow OK: ${required.length} required files and stable Project OS contracts validated.`);
+console.log(
+  `AI workflow OK: ${required.length} required files and stable Project OS contracts validated.`,
+);
