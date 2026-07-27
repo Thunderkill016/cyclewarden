@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run",
+    "check:scope": "node scripts/check-scope.mjs",
+    "test": "npm run check:scope && vitest run",
     "test:e2e": "playwright test"
   },
   "dependencies": {
