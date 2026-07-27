@@ -4,12 +4,20 @@ export interface PracticeReflection {
   updatedAt: string;
 }
 
+export interface PracticeRetry {
+  id: string;
+  ownAttempt: string;
+  createdAt: string;
+}
+
 export interface PracticeAttempt {
   id: string;
   prompt: string;
   ownAttempt: string;
   createdAt: string;
   reflection?: PracticeReflection;
+  needsRetry?: boolean;
+  retries?: PracticeRetry[];
 }
 
 export interface NewPracticeAttempt {
@@ -30,6 +38,14 @@ export interface PracticeReflectionInput {
 export interface PracticeReflectionErrors {
   mistake?: string;
   lessonLearned?: string;
+}
+
+export interface PracticeRetryInput {
+  ownAttempt: string;
+}
+
+export interface PracticeRetryErrors {
+  ownAttempt?: string;
 }
 
 export function validatePracticeAttempt(
@@ -62,6 +78,18 @@ export function validatePracticeReflection(
   }
 
   return errors;
+}
+
+export function validatePracticeRetry(
+  input: PracticeRetryInput,
+): PracticeRetryErrors {
+  if (input.ownAttempt.trim().length < 3) {
+    return {
+      ownAttempt: "Hãy tự viết một lần thử mới trước khi xem lại phần cũ.",
+    };
+  }
+
+  return {};
 }
 
 export function createPracticeAttempt(
@@ -108,5 +136,50 @@ export function updatePracticeReflection(
       lessonLearned: input.lessonLearned.trim(),
       updatedAt: now().toISOString(),
     },
+  };
+}
+
+export function markPracticeAttemptForRetry(
+  attempt: PracticeAttempt,
+): PracticeAttempt {
+  if (!attempt.reflection) {
+    throw new Error("A reflection is required before retrying an attempt.");
+  }
+
+  return {
+    ...attempt,
+    needsRetry: true,
+  };
+}
+
+export function appendPracticeRetry(
+  attempt: PracticeAttempt,
+  input: PracticeRetryInput,
+  options: {
+    createId?: () => string;
+    now?: () => Date;
+  } = {},
+): PracticeAttempt {
+  if (!attempt.reflection) {
+    throw new Error("A reflection is required before retrying an attempt.");
+  }
+
+  const errors = validatePracticeRetry(input);
+  if (Object.keys(errors).length > 0) {
+    throw new Error("Practice retry is invalid.");
+  }
+
+  const createId = options.createId ?? (() => crypto.randomUUID());
+  const now = options.now ?? (() => new Date());
+  const retry: PracticeRetry = {
+    id: createId(),
+    ownAttempt: input.ownAttempt.trim(),
+    createdAt: now().toISOString(),
+  };
+
+  return {
+    ...attempt,
+    needsRetry: false,
+    retries: [...(attempt.retries ?? []), retry],
   };
 }
