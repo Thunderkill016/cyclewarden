@@ -63,8 +63,8 @@ jobs:
         run: |
           cat workflow-check.log
           exit 1
-      - name: Test Project OS CLI and MoneyFlow pilot
-        run: node --test scripts/cw.test.mjs scripts/cw.moneyflow.test.mjs
+      - name: Test Project OS CLI and pilots
+        run: npm run test:project-os
       - run: node scripts/test-capabilities.mjs
       - run: node scripts/check-external-systems.mjs
       - run: node scripts/test-external-systems.mjs
