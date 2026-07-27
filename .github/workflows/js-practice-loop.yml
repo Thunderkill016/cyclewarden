@@ -1,0 +1,59 @@
+name: JS Practice Loop pilot
+
+on:
+  pull_request:
+    paths:
+      - "examples/js-practice-loop/**"
+      - "fixtures/project-os/js-practice-loop/**"
+      - "scripts/cw.greenfield.test.mjs"
+      - ".github/workflows/js-practice-loop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/js-practice-loop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install exact pilot dependencies
+        run: npm install --no-audit --no-fund
+      - name: Scope and unit tests
+        run: npm test
+      - name: Production build
+        id: build
+        continue-on-error: true
+        run: npm run build > build.log 2>&1
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-practice-loop-build-log
+          path: examples/js-practice-loop/build.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Fail when production build is invalid
+        if: steps.build.outcome == 'failure'
+        run: |
+          cat build.log
+          exit 1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Reflection browser proof
+        run: npm run test:e2e
+      - name: Require mobile screenshot evidence
+        run: test -n "$(find test-results -name '*.png' -print -quit)"
+      - name: Upload mobile screenshot evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-practice-loop-mobile-evidence
+          path: examples/js-practice-loop/test-results/**/*.png
+          if-no-files-found: error
+          retention-days: 14
