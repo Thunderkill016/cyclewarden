@@ -1,7 +1,7 @@
 # Forge live-controls verification
 
-SOURCE_COMMIT=907edaf09f5cceb98ac887dfdc547a0d66c1452f
-OVERALL_STATUS=1
+SOURCE_COMMIT=544e7bb74eda0742e4aeee77eaccb18c84abee73
+OVERALL_STATUS=0
 
 ## Frozen install
 Scope: all 14 workspace projects
@@ -9,10 +9,10 @@ Lockfile is up to date, resolution step is skipped
 Progress: resolved 1, reused 0, downloaded 0, added 0
 Packages: +425
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Progress: resolved 425, reused 0, downloaded 39, added 26
-Progress: resolved 425, reused 0, downloaded 67, added 54
-Progress: resolved 425, reused 0, downloaded 90, added 78
-Progress: resolved 425, reused 0, downloaded 291, added 285
+Progress: resolved 425, reused 0, downloaded 38, added 27
+Progress: resolved 425, reused 0, downloaded 55, added 45
+Progress: resolved 425, reused 0, downloaded 107, added 94
+Progress: resolved 425, reused 0, downloaded 375, added 368
 Progress: resolved 425, reused 0, downloaded 425, added 425, done
 .../node_modules/unrs-resolver postinstall$ node postinstall.js
 .../node_modules/unrs-resolver postinstall: Done
@@ -20,7 +20,7 @@ Progress: resolved 425, reused 0, downloaded 425, added 425, done
 devDependencies:
 + postgres 3.4.9
 
-Done in 5.5s
+Done in 5.3s
 STATUS=0
 
 ## Forge domain build
@@ -45,12 +45,12 @@ STATUS=0
 
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/cyclewarden/cyclewarden/apps/web[39m
 
- [32m✓[39m src/lib/forge/run-event-projection.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/lib/forge/run-event-projection.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
 [2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
-[2m   Start at [22m 20:11:29
-[2m   Duration [22m 633ms[2m (transform 83ms, setup 0ms, import 503ms, tests 6ms, environment 0ms)[22m
+[2m   Start at [22m 20:15:40
+[2m   Duration [22m 586ms[2m (transform 72ms, setup 0ms, import 452ms, tests 7ms, environment 0ms)[22m
 
 STATUS=0
 
@@ -70,7 +70,7 @@ https://nextjs.org/telemetry
    Creating an optimized production build ...
 <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (106kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
 <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (253kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
- ⚠ Compiled with warnings in 2.3s
+ ⚠ Compiled with warnings in 2.4s
 
 ../../node_modules/.pnpm/@supabase+supabase-js@2.110.2/node_modules/@supabase/supabase-js/dist/index.mjs
 A Node.js API is used (process.version at line: 27) which is not supported in the Edge Runtime.
@@ -103,17 +103,47 @@ Import trace for requested module:
 ../../node_modules/.pnpm/better-auth@1.6.23_drizzle-orm@0.45.2_@upstash+redis@1.38.0_kysely@0.29.3_postgres@3.4.9__nex_nqtlj4s252nic5nmjncobud7iu/node_modules/better-auth/dist/crypto/jwt.mjs
 ../../node_modules/.pnpm/better-auth@1.6.23_drizzle-orm@0.45.2_@upstash+redis@1.38.0_kysely@0.29.3_postgres@3.4.9__nex_nqtlj4s252nic5nmjncobud7iu/node_modules/better-auth/dist/cookies/index.mjs
 
- ✓ Compiled successfully in 21.0s
+ ✓ Compiled successfully in 21.2s
    Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/15) ...
+   Generating static pages (3/15) 
+   Generating static pages (7/15) 
+   Generating static pages (11/15) 
+ ✓ Generating static pages (15/15)
+   Finalizing page optimization ...
+   Collecting build traces ...
 
-Failed to compile.
+Route (app)                                            Size  First Load JS
+┌ ƒ /                                                 167 B         106 kB
+├ ƒ /_not-found                                       151 B         102 kB
+├ ƒ /api/auth/[...all]                                151 B         102 kB
+├ ƒ /api/forge/repositories                           151 B         102 kB
+├ ƒ /api/forge/runs                                   151 B         102 kB
+├ ƒ /api/forge/runs/[runId]                           151 B         102 kB
+├ ƒ /api/forge/runs/[runId]/approvals/[approvalId]    151 B         102 kB
+├ ƒ /api/forge/runs/[runId]/commands                  151 B         102 kB
+├ ƒ /api/forge/runs/[runId]/events                    151 B         102 kB
+├ ƒ /api/health                                       151 B         102 kB
+├ ƒ /app                                              167 B         106 kB
+├ ƒ /app/billing                                      752 B         106 kB
+├ ƒ /app/evolution                                  2.58 kB         108 kB
+├ ƒ /app/evolution/delivery                         2.31 kB         108 kB
+├ ƒ /app/forge                                      2.62 kB         108 kB
+├ ƒ /app/forge/runs/[runId]                          3.4 kB         109 kB
+├ ƒ /app/notes                                        958 B         107 kB
+├ ƒ /app/profile                                    1.41 kB         107 kB
+├ ƒ /auth/callback                                    151 B         102 kB
+└ ƒ /login                                          2.31 kB         108 kB
++ First Load JS shared by all                        102 kB
+  ├ chunks/57013018-763e7778b9cc9a20.js             54.2 kB
+  ├ chunks/912-51647069041ac5c7.js                  46.1 kB
+  └ other shared chunks (total)                     1.92 kB
 
-./src/lib/forge/run-control-service.ts
-112:20  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
 
-info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
-/home/runner/work/cyclewarden/cyclewarden/apps/web:
- ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @cyclewarden/web@0.1.0 build: `next build`
-Exit status 1
-STATUS=1
+ƒ Middleware                                        91.1 kB
+
+ƒ  (Dynamic)  server-rendered on demand
+
+STATUS=0
 
