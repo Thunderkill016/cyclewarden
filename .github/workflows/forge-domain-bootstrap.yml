@@ -6,9 +6,13 @@ on:
       - agent/atoryn-forge-domain-foundation
     paths:
       - .github/workflows/forge-domain-bootstrap.yml
+  pull_request:
+    branches:
+      - agent/atoryn-forge-spec-foundation
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   validate:
