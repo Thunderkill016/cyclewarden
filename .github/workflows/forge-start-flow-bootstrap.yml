@@ -77,10 +77,24 @@ jobs:
           pnpm --filter @cyclewarden/forge-application test
           pnpm --filter @cyclewarden/forge-application build
 
-      - name: Typecheck and test web start flow
+      - name: Typecheck web start flow
+        run: pnpm --filter @cyclewarden/web typecheck
+
+      - name: Test web start flow
+        shell: bash
         run: |
-          pnpm --filter @cyclewarden/web typecheck
-          pnpm --filter @cyclewarden/web test
+          set -o pipefail
+          mkdir -p artifacts
+          pnpm --filter @cyclewarden/web test 2>&1 | tee artifacts/web-test.log
+
+      - name: Upload web test diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-web-test-diagnostics
+          if-no-files-found: warn
+          retention-days: 7
+          path: artifacts/web-test.log
 
       - name: Build web application
         run: pnpm --filter @cyclewarden/web build
