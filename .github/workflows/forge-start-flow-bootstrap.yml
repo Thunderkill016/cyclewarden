@@ -41,5 +41,8 @@ jobs:
       - name: Install from synchronized lockfile
         run: pnpm install --frozen-lockfile
 
+      - name: Build required Forge domain artifact
+        run: pnpm --filter @cyclewarden/forge-domain build
+
       - name: Build only the web application
         run: pnpm --filter @cyclewarden/web build
