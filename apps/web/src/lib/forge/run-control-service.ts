@@ -75,14 +75,14 @@ export interface ForgeRunView {
   approvals: ForgeApprovalView[];
 }
 
-export type ForgeCommandResult = {
+export interface ForgeCommandResult {
   runId: string;
   state: ForgeRunState;
   version: number;
   events: ForgeRunEventView[];
   approval?: ForgeApprovalView;
   replayed?: boolean;
-};
+}
 
 export class ForgeRunControlError extends Error {
   constructor(
@@ -101,6 +101,16 @@ export class ForgeRunControlError extends Error {
     super(message);
     this.name = "ForgeRunControlError";
   }
+}
+
+type PostgresRows = readonly (object | undefined)[];
+
+/** Shared callable subset implemented by both postgres.js Sql and TransactionSql. */
+interface QueryableSql {
+  <T extends PostgresRows = Record<string, unknown>[]>(
+    strings: TemplateStringsArray,
+    ...parameters: any[]
+  ): Promise<T>;
 }
 
 interface AuthorizedRunRow {
@@ -157,7 +167,7 @@ interface IdempotencyRow {
   response: ForgeCommandResult | null;
 }
 
-const RUN_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const INSTRUCTION_STATES = new Set<ForgeRunState>([
   "queued",
   "provisioning",
@@ -185,9 +195,9 @@ function requireSql(): Sql {
   return sql;
 }
 
-function assertRunId(runId: string): void {
-  if (!RUN_ID.test(runId)) {
-    throw new ForgeRunControlError("INVALID_RUN_ID", "Run ID is invalid.", 400);
+function assertUuid(value: string, label = "Run ID"): void {
+  if (!UUID.test(value)) {
+    throw new ForgeRunControlError("INVALID_RUN_ID", `${label} is invalid.`, 400);
   }
 }
 
@@ -238,8 +248,12 @@ function mapApproval(row: ApprovalRow): ForgeApprovalView {
   };
 }
 
-async function getAuthorizedRun(sql: Sql, actor: ForgeActor, runId: string): Promise<AuthorizedRunRow> {
-  assertRunId(runId);
+async function getAuthorizedRun(
+  sql: QueryableSql,
+  actor: ForgeActor,
+  runId: string,
+): Promise<AuthorizedRunRow> {
+  assertUuid(runId);
   const rows = await sql<AuthorizedRunRow[]>`
     SELECT r.id, r.workspace_id, r.task_id, r.iteration, r.state,
            r.event_sequence, r.version, r.base_branch, r.agent_provider,
@@ -267,7 +281,7 @@ async function getAuthorizedRun(sql: Sql, actor: ForgeActor, runId: string): Pro
 }
 
 async function readEvents(
-  sql: Sql,
+  sql: QueryableSql,
   workspaceId: string,
   runId: string,
   afterSequence: number,
@@ -289,7 +303,7 @@ async function readEvents(
 }
 
 async function readApprovals(
-  sql: Sql,
+  sql: QueryableSql,
   workspaceId: string,
   runId: string,
 ): Promise<ForgeApprovalView[]> {
@@ -358,7 +372,7 @@ export async function getForgeRunEvents(
 }
 
 async function claimCommand(
-  sql: Sql,
+  sql: QueryableSql,
   input: {
     workspaceId: string;
     operation: string;
@@ -410,7 +424,7 @@ async function claimCommand(
 }
 
 async function completeCommand(
-  sql: Sql,
+  sql: QueryableSql,
   input: {
     workspaceId: string;
     operation: string;
@@ -542,12 +556,6 @@ export async function addForgeInstruction(input: {
       const approvalRow = approvalRows[0];
       if (!approvalRow) throw new Error("Approval insert returned no row");
       approval = mapApproval(approvalRow);
-      const approvalPayload = {
-        approvalId: approval.id,
-        summary: approval.summary,
-        riskLevel: approval.riskLevel,
-        version: approval.version,
-      };
       const approvalEvents = await transaction<EventRow[]>`
         INSERT INTO forge_run_events (
           run_id, workspace_id, sequence, type, actor_type,
@@ -559,7 +567,12 @@ export async function addForgeInstruction(input: {
           'approval.requested',
           'system',
           null,
-          ${JSON.stringify(approvalPayload)}::jsonb,
+          ${JSON.stringify({
+            approvalId: approval.id,
+            summary: approval.summary,
+            riskLevel: approval.riskLevel,
+            version: approval.version,
+          })}::jsonb,
           1
         )
         RETURNING id, sequence, type, actor_type, actor_id, payload, created_at
@@ -729,7 +742,7 @@ export async function resolveForgeApproval(input: {
   decision: "approved" | "rejected";
   reason: string;
 }): Promise<ForgeCommandResult> {
-  assertRunId(input.approvalId);
+  assertUuid(input.approvalId, "Approval ID");
   if (!Number.isInteger(input.expectedVersion) || input.expectedVersion < 0) {
     throw new ForgeRunControlError("INVALID_COMMAND", "Approval version is invalid.", 400);
   }
@@ -800,12 +813,6 @@ export async function resolveForgeApproval(input: {
     if (!current) {
       throw new ForgeRunControlError("NOT_FOUND_OR_UNAUTHORIZED", "Run was not found.", 404);
     }
-    const eventPayload = {
-      approvalId: resolved.id,
-      status: resolved.status,
-      version: resolved.version,
-      reason,
-    };
     const eventRows = await transaction<EventRow[]>`
       INSERT INTO forge_run_events (
         run_id, workspace_id, sequence, type, actor_type,
@@ -817,7 +824,12 @@ export async function resolveForgeApproval(input: {
         'approval.resolved',
         'user',
         ${input.actor.id},
-        ${JSON.stringify(eventPayload)}::jsonb,
+        ${JSON.stringify({
+          approvalId: resolved.id,
+          status: resolved.status,
+          version: resolved.version,
+          reason,
+        })}::jsonb,
         1
       )
       RETURNING id, sequence, type, actor_type, actor_id, payload, created_at
