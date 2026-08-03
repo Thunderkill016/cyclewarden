@@ -1,0 +1,59 @@
+name: Forge domain bootstrap
+
+on:
+  push:
+    branches:
+      - agent/atoryn-forge-domain-foundation
+    paths:
+      - .github/workflows/forge-domain-bootstrap.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/atoryn-forge-domain-foundation
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Synchronize lockfile
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+
+      - name: Verify frozen installation
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck Forge domain
+        run: pnpm --filter @cyclewarden/forge-domain typecheck
+
+      - name: Test Forge domain
+        run: pnpm --filter @cyclewarden/forge-domain test
+
+      - name: Build Forge domain
+        run: pnpm --filter @cyclewarden/forge-domain build
+
+      - name: Commit synchronized lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo "Lockfile already synchronized."
+            exit 0
+          fi
+          git commit -m "Sync Forge domain workspace lockfile"
+          git push origin HEAD:agent/atoryn-forge-domain-foundation
