@@ -187,7 +187,7 @@ All mutations require idempotency keys and workspace authorization. Provider cal
 5. Event feed, reconnect, cancellation, and approval.
 6. Validation, diff, review, and publication.
 7. Responsive/mobile hardening and bilingual copy.
-8. Convergence against specification.
+8. Final evidence review against the specification.
 
 ## Deferred Decisions
 

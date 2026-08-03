@@ -3,7 +3,7 @@ Sync Impact Report
 - Version change: none -> 1.0.0
 - Added principles: Web-First Control Plane; Developer-First Product; Provider-Neutral Core; Durable Remote Execution; Human-Governed Risk; Evidence-Based Completion; Auditable Runs; Bilingual Product Boundary; Open Extension Model; Incremental Full-Stack Delivery
 - Added sections: Platform Constraints; Delivery Workflow; Governance
-- Pending template propagation: Spec Kit templates will be installed or refreshed when the official CLI is run locally.
+- Template propagation: official Spec Kit v0.8.15 Codex skills, templates, scripts, manifests, bundled workflow, and Git extension synchronized on 2026-08-04.
 -->
 
 # Atoryn Forge Constitution

@@ -50,7 +50,6 @@ $speckit-checklist
 $speckit-tasks
 $speckit-analyze
 $speckit-implement
-$speckit-converge
 ```
 
 The committed artifacts are the source of truth even when commands are unavailable in a particular environment.
@@ -214,5 +213,5 @@ The feature is done only when:
 - the full desktop-to-mobile-to-PR flow passes;
 - required tests and build pass;
 - no long-lived credential appears in events or logs;
-- the implementation converges against `spec.md`, `plan.md`, and `tasks.md`;
+- the implementation has been reviewed against `spec.md`, `plan.md`, and `tasks.md`;
 - known limitations and live-provider costs are documented.

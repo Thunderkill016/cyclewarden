@@ -18,7 +18,7 @@
 - [x] T003 Create feature specification at `specs/001-remote-agent-run/spec.md`
 - [x] T004 Create technical plan and research decisions in `specs/001-remote-agent-run/plan.md` and `research.md`
 - [x] T005 Create data model, quickstart, and requirements checklist under `specs/001-remote-agent-run/`
-- [ ] T006 Run the official Spec Kit CLI locally with Codex skills and reconcile generated templates without overwriting committed artifacts
+- [x] T006 Run official Spec Kit CLI v0.8.15 on a GitHub-hosted Linux runner and synchronize Codex skills, templates, scripts, manifests, and extensions while preserving Atoryn-authored artifacts
 - [ ] T007 Run `$speckit-analyze` and resolve every CRITICAL or HIGH inconsistency before implementation
 
 **Checkpoint**: Specification artifacts are authoritative and internally consistent.
@@ -144,7 +144,7 @@
 
 **Checkpoint**: One real disposable repository reaches reviewed draft PR through remote execution.
 
-## Phase 10: Security, responsive hardening, and convergence
+## Phase 10: Security, responsive hardening, and final verification
 
 - [ ] T081 Add PWA manifest and installability metadata without making offline execution claims
 - [ ] T082 Audit all Forge pages at desktop, tablet, and mobile viewports and fix overflow, focus, and touch-target defects
@@ -154,7 +154,7 @@
 - [ ] T086 Update active product documentation to distinguish Atoryn Forge direction from the frozen CycleWarden practical-validation scope
 - [ ] T087 Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, and web end-to-end tests
 - [ ] T088 Run `$speckit-analyze`, fix all material artifact/code inconsistencies, and update tasks if needed
-- [ ] T089 Run `$speckit-converge` and append any missing implementation or evidence tasks
+- [ ] T089 Perform a final specification-to-implementation evidence review and append any missing implementation or evidence tasks
 - [ ] T090 Complete final security and evidence review before marking the feature ready for merge
 
 ## Dependency graph
@@ -173,7 +173,7 @@ US4 can begin after Phase 4 and proceed alongside US1-US3 UI work.
 Live provider spike requires Phase 3 provider contracts, Phase 4 persistence,
 and the corresponding US1-US3 application use cases.
 
-Security/convergence requires every implemented story and live-provider result.
+Security/final verification requires every implemented story and live-provider result.
 ```
 
 ## Recommended first implementation slice
