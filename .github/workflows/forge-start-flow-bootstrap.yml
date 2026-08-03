@@ -9,9 +9,13 @@ on:
       - apps/web/package.json
       - apps/web/src/components/forge/**
       - apps/web/vitest.config.ts
+  pull_request:
+    branches:
+      - agent/atoryn-forge-persistence
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   failing-component-test:
