@@ -72,6 +72,10 @@ function requestHash(value: unknown): string {
   return createHash("sha256").update(stableSerialize(value)).digest("hex");
 }
 
+function jsonb(value: unknown): string {
+  return JSON.stringify(value);
+}
+
 function assertRepository(input: ForgeStartRunInput) {
   const repository = resolveForgeRepository(input.repositoryId);
   if (!repository) {
@@ -217,7 +221,7 @@ async function startPersistedRun(input: {
         ${repository.namespace},
         ${repository.name},
         ${repository.defaultBranch},
-        ${transaction.json({ test: { command: "pnpm test", requirement: "constitution" } })},
+        ${jsonb({ test: { command: "pnpm test", requirement: "constitution" } })}::jsonb,
         ${input.request.instructionLanguage},
         ${input.request.technicalOutputLanguage},
         'active'
@@ -254,9 +258,9 @@ async function startPersistedRun(input: {
         ${input.request.instruction},
         ${input.request.instructionLanguage},
         ${input.request.instruction},
-        ${transaction.json(["repository"])},
-        ${transaction.json([criterion])},
-        ${transaction.json(["No production deployment", "No direct base-branch write"])},
+        ${jsonb(["repository"])}::jsonb,
+        ${jsonb([criterion])}::jsonb,
+        ${jsonb(["No production deployment", "No direct base-branch write"])}::jsonb,
         ${input.request.technicalOutputLanguage},
         'running'
       )
@@ -275,8 +279,8 @@ async function startPersistedRun(input: {
         ${input.request.baseBranch},
         ${input.request.agentProvider},
         'fake-sandbox',
-        ${transaction.json({ maxUsd: input.request.budgetUsd })},
-        ${transaction.json({ network: input.request.networkPolicy })},
+        ${jsonb({ maxUsd: input.request.budgetUsd })}::jsonb,
+        ${jsonb({ network: input.request.networkPolicy })}::jsonb,
         1,
         0
       )
@@ -292,12 +296,12 @@ async function startPersistedRun(input: {
         'run.created',
         'user',
         ${input.actor.id},
-        ${transaction.json({
+        ${jsonb({
           taskId,
           iteration: 1,
           repositoryId: repository.id,
           reviewed: true,
-        })},
+        })}::jsonb,
         1
       )
     `;
@@ -327,7 +331,7 @@ async function startPersistedRun(input: {
       SET status = 'completed',
           resource_type = 'run',
           resource_id = ${runId}::uuid,
-          response = ${transaction.json(responseJson)},
+          response = ${jsonb(responseJson)}::jsonb,
           updated_at = now()
       WHERE workspace_id = ${workspaceId}::uuid
         AND operation = 'start-run'
