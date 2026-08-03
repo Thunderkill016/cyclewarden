@@ -1,0 +1,94 @@
+name: Forge persistence bootstrap
+
+on:
+  push:
+    branches:
+      - agent/atoryn-forge-persistence
+    paths:
+      - .github/workflows/forge-persistence-bootstrap.yml
+  pull_request:
+    branches:
+      - agent/atoryn-forge-application-fakes
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cyclewarden
+          POSTGRES_PASSWORD: cyclewarden
+          POSTGRES_DB: cyclewarden
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://cyclewarden:cyclewarden@localhost:5432/cyclewarden
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/atoryn-forge-persistence
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Synchronize lockfile
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+
+      - name: Verify frozen installation
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply database migrations
+        run: pnpm db:migrate
+
+      - name: Validate database schema package
+        run: |
+          pnpm --filter @cyclewarden/db typecheck
+          pnpm --filter @cyclewarden/db build
+
+      - name: Validate Forge domain dependency
+        run: |
+          pnpm --filter @cyclewarden/forge-domain typecheck
+          pnpm --filter @cyclewarden/forge-domain test
+          pnpm --filter @cyclewarden/forge-domain build
+
+      - name: Typecheck Forge application
+        run: pnpm --filter @cyclewarden/forge-application typecheck
+
+      - name: Test Forge application with PostgreSQL
+        run: pnpm --filter @cyclewarden/forge-application test
+
+      - name: Build Forge application
+        run: pnpm --filter @cyclewarden/forge-application build
+
+      - name: Commit synchronized lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo "Lockfile already synchronized."
+            exit 0
+          fi
+          git commit -m "Sync Forge persistence workspace lockfile"
+          git push origin HEAD:agent/atoryn-forge-persistence
