@@ -312,12 +312,22 @@ async function startPersistedRun(input: {
       repository: `${repository.namespace}/${repository.name}`,
       demo: false,
     };
+    const responseJson: Record<string, string | number | boolean> = {
+      workspaceId: result.workspaceId,
+      projectId: result.projectId,
+      taskId: result.taskId,
+      runId: result.runId,
+      iteration: result.iteration,
+      state: result.state,
+      repository: result.repository,
+      demo: result.demo,
+    };
     await transaction`
       UPDATE forge_idempotency_records
       SET status = 'completed',
           resource_type = 'run',
           resource_id = ${runId}::uuid,
-          response = ${transaction.json(result)},
+          response = ${transaction.json(responseJson)},
           updated_at = now()
       WHERE workspace_id = ${workspaceId}::uuid
         AND operation = 'start-run'
