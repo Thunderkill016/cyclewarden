@@ -55,6 +55,7 @@ export async function startForgeRunAction(
         error: error.message,
       };
     }
+    console.error("Unexpected Forge start failure", error);
     return {
       ...initialForgeStartActionState,
       errorCode: "START_FAILED",
