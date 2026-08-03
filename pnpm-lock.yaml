@@ -156,6 +156,9 @@ importers:
       '@cyclewarden/forge-domain':
         specifier: workspace:*
         version: link:../forge-domain
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
     devDependencies:
       '@types/node':
         specifier: 20.19.43
