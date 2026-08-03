@@ -8,6 +8,8 @@
 - Mutable aggregates use optimistic concurrency versions.
 - Provider credentials are referenced through secret handles, never stored in task/run payloads.
 - Original instructions and normalized technical instructions are both retained.
+- Constitution-baseline and task-mandatory evidence cannot be waived; only advisory evidence can carry an audited waiver.
+- A completed run is immutable. A rejected review creates a new run with the next iteration number rather than reopening the prior run.
 
 ## Workspace
 
@@ -62,7 +64,7 @@ Unique where relevant: `(workspaceId, providerKey, externalAccountId)`.
 | namespace | string | Provider namespace/owner |
 | repositoryName | string | Provider repository name |
 | defaultBranch | string | Resolved base branch |
-| validationProfile | JSON | Build/test/lint/typecheck commands |
+| validationProfile | JSON | Build/test/lint/typecheck commands and mandatory/advisory classification |
 | interfaceLocale | `vi` \| `en` | Project UI preference |
 | technicalOutputLanguage | `vi` \| `en` | Engineering artifact preference |
 | status | `active` \| `disconnected` \| `archived` | Project state |
@@ -82,7 +84,7 @@ Unique: `(sourceProvider, externalRepositoryId)` within a workspace.
 | instructionLanguage | `vi` \| `en` | Input language |
 | normalizedObjective | text | Technical objective |
 | scope | JSON | Allowed/expected areas |
-| acceptanceCriteria | JSON array | Verifiable criteria |
+| acceptanceCriteria | JSON array | Verifiable criteria with mandatory/advisory classification |
 | constraints | JSON array | Security, provider, and project constraints |
 | technicalOutputLanguage | `vi` \| `en` | Artifact language |
 | status | `draft` \| `ready` \| `running` \| `review` \| `completed` \| `cancelled` | Task lifecycle |
@@ -100,6 +102,7 @@ Unique: `(sourceProvider, externalRepositoryId)` within a workspace.
 | sandboxConnectionId | UUID | Sandbox provider connection |
 | sourceConnectionId | UUID | Source provider connection |
 | state | enum | See state machine below |
+| reviewOutcome | `approved` \| `rejected` \| `cancelled` nullable | Final review outcome; rejected runs are completed but unpublished |
 | baseBranch | string | Reviewed base branch |
 | baseCommitSha | string nullable | Resolved before mutation |
 | workingBranch | string nullable | Created for publication |
@@ -122,6 +125,8 @@ Unique: `(taskId, iteration)`.
 ### Run state enum
 
 `draft`, `queued`, `provisioning`, `running`, `awaiting_approval`, `cancelling`, `validating`, `awaiting_review`, `publishing`, `completed`, `failed`, `cancelled`, `expired`.
+
+A rejected review sets `reviewOutcome = rejected`, transitions the current run from `awaiting_review` to `completed`, and leaves `Publication` absent. A subsequent instruction creates a new run with `iteration + 1` in `queued` after the active-run admission check succeeds.
 
 ## RunEvent
 
@@ -158,6 +163,8 @@ Initial event types:
 - `validation.started`
 - `validation.completed`
 - `review.ready`
+- `review.resolved`
+- `run.iteration_created`
 - `publication.started`
 - `publication.completed`
 - `run.cancel_requested`
@@ -170,7 +177,7 @@ Initial event types:
 | Field | Type | Notes |
 |---|---|---|
 | workspaceId | UUID | Ownership boundary |
-| operation | string | `start-run`, `cancel-run`, `resolve-approval`, `publish` |
+| operation | string | `start-run`, `create-iteration`, `cancel-run`, `resolve-approval`, `review`, `publish` |
 | idempotencyKey | string | Client supplied |
 | requestHash | string | Reject same key with different input |
 | resourceType | string | Created/affected resource kind |
@@ -210,13 +217,15 @@ Unique: `(runId, requestKey)`.
 | runId | UUID | Run FK |
 | kind | `build` \| `test` \| `lint` \| `typecheck` \| `custom` | Validation category |
 | command | text | Redacted command |
-| required | boolean | Completion gate |
+| requirement | `constitution` \| `task_mandatory` \| `advisory` | Completion-gate classification |
 | status | `pending` \| `running` \| `passed` \| `failed` \| `skipped` | Result |
 | exitCode | integer nullable | Process result |
 | durationMs | integer nullable | Duration |
 | outputSummary | text nullable | Redacted summary |
 | artifactRef | string nullable | Full log/artifact storage reference |
 | startedAt / finishedAt | timestamp nullable | Audit |
+
+`constitution` and `task_mandatory` validation results cannot be waived. An advisory result may be waived only in the final review decision.
 
 ## AcceptanceEvidence
 
@@ -225,14 +234,17 @@ Unique: `(runId, requestKey)`.
 | id | UUID | Primary key |
 | runId | UUID | Run FK |
 | criterionKey | string | Stable criterion identifier |
+| requirement | `constitution` \| `task_mandatory` \| `advisory` | Completion-gate classification |
 | status | `satisfied` \| `not_satisfied` \| `inconclusive` \| `waived` | Evidence verdict |
 | evidenceType | string | Test, diff, manual, screenshot, log, etc. |
 | evidenceRef | string nullable | Artifact/event/file reference |
 | explanation | text | Why evidence supports verdict |
-| waivedBy | UUID nullable | Required for waiver |
+| waivedBy | UUID nullable | Allowed only when requirement is advisory |
+| waivedReason | text nullable | Required for advisory waiver |
+| waivedAt | timestamp nullable | Required for advisory waiver |
 | createdAt | timestamp | Audit |
 
-Unique: `(runId, criterionKey)`.
+Unique: `(runId, criterionKey)`. `waived` is invalid for constitution or task-mandatory criteria.
 
 ## ChangeSet
 
@@ -260,9 +272,10 @@ One active change set per run iteration.
 | decidedBy | UUID | User FK |
 | rationale | text nullable | Review notes |
 | evidenceSnapshot | JSON | IDs/versions reviewed |
+| advisoryWaivers | JSON array | Advisory evidence keys plus actor, reason, scope, and time |
 | createdAt | timestamp | Decision time |
 
-Only one final approval per run; rejection may lead to a new task iteration.
+Only one final review decision exists per run. Rejection finalizes the current run as unpublished and may lead to a new run iteration after a new instruction.
 
 ## Publication
 
@@ -284,13 +297,16 @@ Unique: `(runId)` and provider-side idempotency metadata.
 
 ## Important invariants
 
-1. A workspace cannot exceed its active run limit.
+1. A workspace cannot exceed its active run limit. In the MVP, a second start is rejected with `ACTIVE_RUN_EXISTS` and creates no queued record or provider side effect.
 2. A run cannot enter `running` without a resolved project, base branch, budget, permission policy, and provider connections.
 3. A command classified as sensitive cannot start without a valid approved request covering the exact scope.
 4. An approval request can resolve only once.
 5. A run cannot enter `awaiting_review` until sandbox mutation has stopped and the change set plus validation records exist.
-6. A run cannot publish without an approved review decision referencing the current evidence snapshot.
-7. A publication cannot write directly to the base branch.
-8. Prior run events, evidence, decisions, and iterations are never overwritten by retries.
-9. Terminal states are immutable except through explicit administrative reconciliation that adds audit events.
-10. All user-visible provider errors are redacted and mapped to stable internal failure codes.
+6. A run cannot be approved or published while any constitution or task-mandatory evidence is missing, failed, inconclusive, skipped, or waived.
+7. Advisory evidence may be waived only through an audited final review decision referencing the current evidence snapshot.
+8. A run cannot publish without an approved review decision referencing the current evidence snapshot.
+9. A publication cannot write directly to the base branch.
+10. A rejected run transitions to `completed`, remains unpublished, and is never reopened; a new instruction creates at most one next iteration atomically.
+11. Prior run events, evidence, decisions, and iterations are never overwritten by retries.
+12. Terminal states are immutable except through explicit administrative reconciliation that adds audit events.
+13. All user-visible provider errors are redacted and mapped to stable internal failure codes.
