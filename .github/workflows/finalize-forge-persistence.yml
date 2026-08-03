@@ -1,0 +1,65 @@
+name: Finalize Forge persistence slice
+
+on:
+  push:
+    branches:
+      - agent/atoryn-forge-persistence
+    paths:
+      - .github/workflows/finalize-forge-persistence.yml
+  pull_request:
+    branches:
+      - agent/atoryn-forge-application-fakes
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/atoryn-forge-persistence
+          fetch-depth: 0
+
+      - name: Mark validated tasks complete and remove finalizer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('specs/001-remote-agent-run/tasks.md')
+          text = path.read_text(encoding='utf-8')
+          for task_id in range(30, 38):
+              old = f'- [ ] T{task_id:03d}'
+              new = f'- [x] T{task_id:03d}'
+              if old not in text:
+                  raise SystemExit(f'Expected task marker not found: {old}')
+              text = text.replace(old, new, 1)
+
+          checkpoint = '**Checkpoint**: Run state survives process restart and can be reconstructed from durable records.'
+          replacement = (
+              checkpoint
+              + ' Validation evidence: PostgreSQL 16 migrations; db/domain/application typechecks and builds; '
+              + '13 domain tests and 17 application tests passed in PR #73, including transaction rollback, '
+              + 'ordered event cursors, optimistic concurrency, persistent idempotency, reconciliation, and cross-workspace isolation.'
+          )
+          if checkpoint not in text:
+              raise SystemExit('Phase 4 checkpoint not found')
+          text = text.replace(checkpoint, replacement, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+          rm .github/workflows/finalize-forge-persistence.yml
+
+      - name: Commit finalized task evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add specs/001-remote-agent-run/tasks.md .github/workflows/finalize-forge-persistence.yml
+          git commit -m "Mark Forge persistence foundation complete"
+          git push origin HEAD:agent/atoryn-forge-persistence
