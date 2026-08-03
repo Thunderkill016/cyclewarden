@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
@@ -32,7 +33,10 @@ const repositories: ForgeRepositoryOption[] = [
 describe("Forge start components", () => {
   it("renders selectable supported repositories and disables unsupported ones", () => {
     const html = renderToStaticMarkup(
-      <RepositorySelector repositories={repositories} defaultRepositoryId="active" />,
+      createElement(RepositorySelector, {
+        repositories,
+        defaultRepositoryId: "active",
+      }),
     );
     expect(html).toContain('name="repositoryId"');
     expect(html).toContain('value="active"');
@@ -42,14 +46,16 @@ describe("Forge start components", () => {
   });
 
   it("renders separate instruction and technical output language controls", () => {
-    const html = renderToStaticMarkup(<TaskComposer />);
+    const html = renderToStaticMarkup(createElement(TaskComposer));
     expect(html).toContain('name="instructionLanguage"');
     expect(html).toContain('name="technicalOutputLanguage"');
     expect(html).toContain('name="instruction"');
   });
 
   it("renders reviewed branch, agent, budget and permission policy", () => {
-    const html = renderToStaticMarkup(<RunReview baseBranch="main" />);
+    const html = renderToStaticMarkup(
+      createElement(RunReview, { baseBranch: "main" }),
+    );
     expect(html).toContain('name="baseBranch"');
     expect(html).toContain('name="agentProvider"');
     expect(html).toContain('name="budgetUsd"');
