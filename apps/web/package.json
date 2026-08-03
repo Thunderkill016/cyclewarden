@@ -16,6 +16,7 @@
     "@cyclewarden/auth": "workspace:*",
     "@cyclewarden/config": "workspace:*",
     "@cyclewarden/db": "workspace:*",
+    "@cyclewarden/forge-domain": "workspace:*",
     "@cyclewarden/i18n": "workspace:*",
     "@cyclewarden/logger": "workspace:*",
     "@cyclewarden/mail": "workspace:*",
