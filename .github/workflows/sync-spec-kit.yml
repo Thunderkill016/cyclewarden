@@ -7,12 +7,18 @@ on:
       - agent/atoryn-forge-spec-foundation
     paths:
       - .github/workflows/sync-spec-kit.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/sync-spec-kit.yml
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
-  group: sync-spec-kit-${{ github.ref }}
+  group: sync-spec-kit-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -20,11 +26,14 @@ jobs:
     name: Generate official Codex skills and Spec Kit assets
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
 
     steps:
       - name: Check out the feature branch
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.TARGET_BRANCH }}
           fetch-depth: 0
 
       - name: Preserve Atoryn-authored artifacts
@@ -105,4 +114,4 @@ jobs:
             exit 0
           fi
           git commit -m "Sync official Spec Kit Codex assets"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin "HEAD:${TARGET_BRANCH}"
