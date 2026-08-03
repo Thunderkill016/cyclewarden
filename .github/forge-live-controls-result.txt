@@ -1,0 +1,145 @@
+# Forge live-controls verification
+
+SOURCE_COMMIT=f925955c243704dc139d4113dc5aef43c4dc74ec
+OVERALL_STATUS=1
+
+## Frozen install
+Scope: all 14 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +425
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 425, reused 0, downloaded 39, added 28
+Progress: resolved 425, reused 0, downloaded 76, added 68
+Progress: resolved 425, reused 0, downloaded 84, added 75
+Progress: resolved 425, reused 0, downloaded 139, added 130
+Progress: resolved 425, reused 0, downloaded 225, added 216
+Progress: resolved 425, reused 0, downloaded 413, added 401
+Progress: resolved 425, reused 0, downloaded 425, added 425, done
+.../node_modules/unrs-resolver postinstall$ node postinstall.js
+.../node_modules/unrs-resolver postinstall: Done
+
+devDependencies:
++ postgres 3.4.9
+
+Done in 7s
+STATUS=0
+
+## Forge domain build
+
+> @cyclewarden/forge-domain@0.1.0 build /home/runner/work/cyclewarden/cyclewarden/packages/forge-domain
+> npm run clean && tsc -p tsconfig.build.json
+
+
+> @cyclewarden/forge-domain@0.1.0 clean
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})"
+
+STATUS=0
+
+## Web typecheck
+
+> @cyclewarden/web@0.1.0 typecheck /home/runner/work/cyclewarden/cyclewarden/apps/web
+> tsc --noEmit
+
+src/lib/forge/run-control-service.ts(458,40): error TS2345: Argument of type 'TransactionSql<{}>' is not assignable to parameter of type 'Sql<{}>'.
+  Type 'TransactionSql<{}>' is missing the following properties from type 'Sql<{}>': CLOSE, END, PostgresError, options, and 7 more.
+src/lib/forge/run-control-service.ts(467,39): error TS2345: Argument of type 'TransactionSql<{}>' is not assignable to parameter of type 'Sql<{}>'.
+  Type 'TransactionSql<{}>' is missing the following properties from type 'Sql<{}>': CLOSE, END, PostgresError, options, and 7 more.
+src/lib/forge/run-control-service.ts(577,27): error TS2345: Argument of type 'TransactionSql<{}>' is not assignable to parameter of type 'Sql<{}>'.
+  Type 'TransactionSql<{}>' is missing the following properties from type 'Sql<{}>': CLOSE, END, PostgresError, options, and 7 more.
+src/lib/forge/run-control-service.ts(599,40): error TS2345: Argument of type 'TransactionSql<{}>' is not assignable to parameter of type 'Sql<{}>'.
+  Type 'TransactionSql<{}>' is missing the following properties from type 'Sql<{}>': CLOSE, END, PostgresError, options, and 7 more.
+src/lib/forge/run-control-service.ts(608,39): error TS2345: Argument of type 'TransactionSql<{}>' is not assignable to parameter of type 'Sql<{}>'.
+  Type 'TransactionSql<{}>' is missing the following properties from type 'Sql<{}>': CLOSE, END, PostgresError, options, and 7 more.
+src/lib/forge/run-control-service.ts(700,27): error TS2345: Argument of type 'TransactionSql<{}>' is not assignable to parameter of type 'Sql<{}>'.
+  Type 'TransactionSql<{}>' is missing the following properties from type 'Sql<{}>': CLOSE, END, PostgresError, options, and 7 more.
+src/lib/forge/run-control-service.ts(739,40): error TS2345: Argument of type 'TransactionSql<{}>' is not assignable to parameter of type 'Sql<{}>'.
+  Type 'TransactionSql<{}>' is missing the following properties from type 'Sql<{}>': CLOSE, END, PostgresError, options, and 7 more.
+/home/runner/work/cyclewarden/cyclewarden/apps/web:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @cyclewarden/web@0.1.0 typecheck: `tsc --noEmit`
+Exit status 2
+STATUS=2
+
+## Replay and approval tests
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/cyclewarden/cyclewarden/apps/web[39m
+
+ [32m✓[39m src/lib/forge/run-event-projection.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 20:07:13
+[2m   Duration [22m 610ms[2m (transform 81ms, setup 0ms, import 470ms, tests 7ms, environment 0ms)[22m
+
+STATUS=0
+
+## Web production build
+
+> @cyclewarden/web@0.1.0 build /home/runner/work/cyclewarden/cyclewarden/apps/web
+> next build
+
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+   ▲ Next.js 15.5.21
+
+   Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (106kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (253kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ⚠ Compiled with warnings in 2.6s
+
+../../node_modules/.pnpm/@supabase+supabase-js@2.110.2/node_modules/@supabase/supabase-js/dist/index.mjs
+A Node.js API is used (process.version at line: 27) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+../../node_modules/.pnpm/@supabase+supabase-js@2.110.2/node_modules/@supabase/supabase-js/dist/index.mjs
+../../node_modules/.pnpm/@supabase+ssr@0.6.1_@supabase+supabase-js@2.110.2/node_modules/@supabase/ssr/dist/module/createBrowserClient.js
+../../node_modules/.pnpm/@supabase+ssr@0.6.1_@supabase+supabase-js@2.110.2/node_modules/@supabase/ssr/dist/module/index.js
+
+../../node_modules/.pnpm/jose@6.2.3/node_modules/jose/dist/webapi/lib/deflate.js
+A Node.js API is used (CompressionStream at line: 10) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+../../node_modules/.pnpm/jose@6.2.3/node_modules/jose/dist/webapi/lib/deflate.js
+../../node_modules/.pnpm/jose@6.2.3/node_modules/jose/dist/webapi/jwe/flattened/decrypt.js
+../../node_modules/.pnpm/jose@6.2.3/node_modules/jose/dist/webapi/index.js
+../../node_modules/.pnpm/better-auth@1.6.23_drizzle-orm@0.45.2_@upstash+redis@1.38.0_kysely@0.29.3_postgres@3.4.9__nex_nqtlj4s252nic5nmjncobud7iu/node_modules/better-auth/dist/crypto/jwt.mjs
+../../node_modules/.pnpm/better-auth@1.6.23_drizzle-orm@0.45.2_@upstash+redis@1.38.0_kysely@0.29.3_postgres@3.4.9__nex_nqtlj4s252nic5nmjncobud7iu/node_modules/better-auth/dist/cookies/index.mjs
+
+../../node_modules/.pnpm/jose@6.2.3/node_modules/jose/dist/webapi/lib/deflate.js
+A Node.js API is used (DecompressionStream at line: 26) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+../../node_modules/.pnpm/jose@6.2.3/node_modules/jose/dist/webapi/lib/deflate.js
+../../node_modules/.pnpm/jose@6.2.3/node_modules/jose/dist/webapi/jwe/flattened/decrypt.js
+../../node_modules/.pnpm/jose@6.2.3/node_modules/jose/dist/webapi/index.js
+../../node_modules/.pnpm/better-auth@1.6.23_drizzle-orm@0.45.2_@upstash+redis@1.38.0_kysely@0.29.3_postgres@3.4.9__nex_nqtlj4s252nic5nmjncobud7iu/node_modules/better-auth/dist/crypto/jwt.mjs
+../../node_modules/.pnpm/better-auth@1.6.23_drizzle-orm@0.45.2_@upstash+redis@1.38.0_kysely@0.29.3_postgres@3.4.9__nex_nqtlj4s252nic5nmjncobud7iu/node_modules/better-auth/dist/cookies/index.mjs
+
+ ✓ Compiled successfully in 23.6s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/lib/forge/run-control-service.ts:458:40
+Type error: Argument of type 'TransactionSql<{}>' is not assignable to parameter of type 'Sql<{}>'.
+  Type 'TransactionSql<{}>' is missing the following properties from type 'Sql<{}>': CLOSE, END, PostgresError, options, and 7 more.
+
+[0m [90m 456 |[39m   [36mconst[39m root [33m=[39m requireSql()[33m;[39m
+ [90m 457 |[39m   [36mreturn[39m root[33m.[39mbegin([36masync[39m (transaction) [33m=>[39m {
+[31m[1m>[22m[39m[90m 458 |[39m     [36mconst[39m run [33m=[39m [36mawait[39m getAuthorizedRun(transaction[33m,[39m input[33m.[39mactor[33m,[39m input[33m.[39mrunId)[33m;[39m
+ [90m     |[39m                                        [31m[1m^[22m[39m
+ [90m 459 |[39m     [36mif[39m ([33m![39m[33mINSTRUCTION_STATES[39m[33m.[39mhas(run[33m.[39mstate)) {
+ [90m 460 |[39m       [36mthrow[39m [36mnew[39m [33mForgeRunControlError[39m(
+ [90m 461 |[39m         [32m"RUN_NOT_CONTROLLABLE"[39m[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+/home/runner/work/cyclewarden/cyclewarden/apps/web:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @cyclewarden/web@0.1.0 build: `next build`
+Exit status 1
+STATUS=1
+
