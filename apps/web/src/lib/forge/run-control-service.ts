@@ -104,12 +104,14 @@ export class ForgeRunControlError extends Error {
 }
 
 type PostgresRows = readonly (object | undefined)[];
+type SqlTemplateParameters =
+  Parameters<Sql> extends [TemplateStringsArray, ...infer Rest] ? Rest : never;
 
 /** Shared callable subset implemented by both postgres.js Sql and TransactionSql. */
 interface QueryableSql {
   <T extends PostgresRows = Record<string, unknown>[]>(
     strings: TemplateStringsArray,
-    ...parameters: any[]
+    ...parameters: SqlTemplateParameters
   ): Promise<T>;
 }
 
