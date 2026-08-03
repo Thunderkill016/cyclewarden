@@ -2,32 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 
+import type { ForgeStartActionState } from "@/lib/forge/action-state";
+import { initialForgeStartActionState } from "@/lib/forge/action-state";
 import { getForgeActor } from "@/lib/forge/actor";
 import {
   ForgeStartRunError,
   startGovernedForgeRun,
 } from "@/lib/forge/start-run-service";
 import { forgeStartRunInputSchema } from "@/lib/forge/start-run-input";
-
-export interface ForgeStartActionState {
-  ok: boolean;
-  error: string | null;
-  errorCode: string | null;
-  runId: string | null;
-  taskId: string | null;
-  repository: string | null;
-  demo: boolean;
-}
-
-export const initialForgeStartActionState: ForgeStartActionState = {
-  ok: false,
-  error: null,
-  errorCode: null,
-  runId: null,
-  taskId: null,
-  repository: null,
-  demo: false,
-};
 
 export async function startForgeRunAction(
   _previous: ForgeStartActionState,
