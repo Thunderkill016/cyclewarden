@@ -6,9 +6,13 @@ on:
       - agent/atoryn-forge-start-flow
     paths:
       - .github/workflows/forge-start-flow-bootstrap.yml
+  pull_request:
+    branches:
+      - agent/atoryn-forge-persistence
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   sync-lockfile:
