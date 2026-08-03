@@ -26,7 +26,8 @@
     "test": "vitest run src"
   },
   "dependencies": {
-    "@cyclewarden/forge-domain": "workspace:*"
+    "@cyclewarden/forge-domain": "workspace:*",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
     "@types/node": "20.19.43",
