@@ -15,15 +15,33 @@ permissions:
   pull-requests: read
 
 jobs:
-  web-build:
+  forge-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cyclewarden
+          POSTGRES_PASSWORD: cyclewarden
+          POSTGRES_DB: cyclewarden
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
+      CI: true
       DATABASE_URL: postgresql://cyclewarden:cyclewarden@127.0.0.1:5432/cyclewarden
       BETTER_AUTH_SECRET: ci-test-secret-at-least-32-characters-long!!
       BETTER_AUTH_URL: http://127.0.0.1:3000
       AUTH_ADAPTER: better-auth
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_HOST: 127.0.0.1
+      PORT: "3000"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,8 +59,14 @@ jobs:
       - name: Install from synchronized lockfile
         run: pnpm install --frozen-lockfile
 
+      - name: Prepare database fixture
+        run: pnpm db:migrate
+
       - name: Build required Forge domain artifact
         run: pnpm --filter @cyclewarden/forge-domain build
 
-      - name: Build only the web application
-        run: pnpm --filter @cyclewarden/web build
+      - name: Install Chromium
+        run: pnpm --filter @cyclewarden/web exec playwright install chromium --with-deps
+
+      - name: Run only the Forge start E2E
+        run: pnpm --filter @cyclewarden/web exec playwright test e2e/forge-start.spec.ts
