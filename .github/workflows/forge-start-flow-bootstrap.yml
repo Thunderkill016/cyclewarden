@@ -15,17 +15,60 @@ permissions:
   pull-requests: read
 
 jobs:
-  locate-profile-query:
+  forge-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cyclewarden
+          POSTGRES_PASSWORD: cyclewarden
+          POSTGRES_DB: cyclewarden
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cyclewarden -d cyclewarden"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      CI: true
+      DATABASE_URL: postgresql://cyclewarden:cyclewarden@127.0.0.1:5432/cyclewarden
+      BETTER_AUTH_SECRET: ci-test-secret-at-least-32-characters-long!!
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      AUTH_ADAPTER: better-auth
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_HOST: 127.0.0.1
+      PORT: "3000"
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/atoryn-forge-start-flow
 
-      - name: Locate UUID profile lookups
-        shell: bash
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install from synchronized lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare database fixture
+        run: pnpm db:migrate
+
+      - name: Build required Forge domain artifact
+        run: pnpm --filter @cyclewarden/forge-domain build
+
+      - name: Install Chromium
+        run: pnpm --filter @cyclewarden/web exec playwright install chromium --with-deps
+
+      - name: Run only the Forge start E2E once
         run: >-
-          git grep -n -E
-          'profiles|displayName|display_name|avatarUrl|avatar_url'
-          -- apps/web packages
+          pnpm --filter @cyclewarden/web exec playwright test
+          e2e/forge-start.spec.ts --retries=0
