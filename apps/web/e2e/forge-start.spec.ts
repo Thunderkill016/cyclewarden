@@ -37,6 +37,14 @@ test("creates one reviewed Forge run from the responsive web flow", async ({
   );
   await page.getByRole("button", { name: /Start governed run/i }).click();
 
+  const outcome = page.locator('[data-testid="forge-run-id"], [role="alert"]');
+  await expect(outcome.first()).toBeVisible();
+
+  const alert = page.getByRole("alert");
+  if (await alert.isVisible()) {
+    throw new Error(`Forge start failed: ${await alert.innerText()}`);
+  }
+
   await expect(page.getByText("Run queued.")).toBeVisible();
   await expect(page.getByTestId("forge-run-id")).toHaveText(
     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
