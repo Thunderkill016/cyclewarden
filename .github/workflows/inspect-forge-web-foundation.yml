@@ -6,9 +6,13 @@ on:
       - agent/atoryn-forge-start-flow
     paths:
       - .github/workflows/inspect-forge-web-foundation.yml
+  pull_request:
+    branches:
+      - agent/atoryn-forge-persistence
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   inspect:
@@ -23,16 +27,16 @@ jobs:
         run: |
           set -euo pipefail
           echo '=== APPS/WEB TREE ==='
-          find apps/web -maxdepth 5 -type f \
+          find apps/web -maxdepth 6 -type f \
             \( -name '*.ts' -o -name '*.tsx' -o -name '*.json' -o -name '*.css' \) \
             | sort
           echo '=== AUTH AND DB REFERENCES ==='
-          grep -RInE 'better-auth|auth\.api|headers\(\)|DATABASE_URL|postgres\(|drizzle\(|getSession|session\.user|currentUser' apps/web packages 2>/dev/null | head -n 500 || true
+          grep -RInE 'better-auth|auth\.api|headers\(\)|DATABASE_URL|postgres\(|drizzle\(|getSession|session\.user|currentUser' apps/web packages 2>/dev/null | head -n 700 || true
           echo '=== API ROUTES ==='
-          find apps/web/app -path '*/api/*' -type f -maxdepth 8 -print -exec sh -c 'echo --- $1; sed -n "1,240p" "$1"' _ {} \;
+          find apps/web/app -path '*/api/*' -type f -maxdepth 9 -print -exec sh -c 'echo --- $1; sed -n "1,260p" "$1"' _ {} \;
           echo '=== WEB TEST CONFIG ==='
           for f in apps/web/package.json apps/web/vitest.config.* apps/web/playwright.config.* apps/web/tsconfig.json; do
-            if [ -f "$f" ]; then echo --- $f; sed -n '1,260p' "$f"; fi
+            if [ -f "$f" ]; then echo --- $f; sed -n '1,300p' "$f"; fi
           done
           echo '=== UI COMPONENT EXPORTS ==='
-          find apps/web/components -maxdepth 3 -type f -print 2>/dev/null | sort | head -n 400 || true
+          find apps/web/components -maxdepth 4 -type f -print 2>/dev/null | sort | head -n 500 || true
