@@ -1,6 +1,6 @@
 # Tasks: Remote Agent Run
 
-**Input**: `spec.md`, `plan.md`, `research.md`, `data-model.md`, `quickstart.md`  
+**Input**: `spec.md`, `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, `analysis.md`  
 **Tests**: Required by the constitution for domain logic, provider contracts, security boundaries, recovery, and end-to-end acceptance.  
 **Organization**: Tasks are dependency ordered and grouped by independently testable user story.
 
@@ -19,23 +19,23 @@
 - [x] T004 Create technical plan and research decisions in `specs/001-remote-agent-run/plan.md` and `research.md`
 - [x] T005 Create data model, quickstart, and requirements checklist under `specs/001-remote-agent-run/`
 - [x] T006 Run official Spec Kit CLI v0.8.15 on a GitHub-hosted Linux runner and synchronize Codex skills, templates, scripts, manifests, and extensions while preserving Atoryn-authored artifacts
-- [ ] T007 Run `$speckit-analyze` and resolve every CRITICAL or HIGH inconsistency before implementation
+- [x] T007 Apply `$speckit-analyze` rules across specification artifacts, record findings in `specs/001-remote-agent-run/analysis.md`, and resolve every CRITICAL or HIGH inconsistency before implementation
 
 **Checkpoint**: Specification artifacts are authoritative and internally consistent.
 
 ## Phase 2: Provider-neutral domain foundation
 
 - [ ] T008 Create `packages/forge-domain/package.json` and strict TypeScript configuration using existing workspace conventions
-- [ ] T009 [P] Define task, run, approval, validation, review, publication, and event schemas in `packages/forge-domain/src/contracts/`
+- [ ] T009 [P] Define task, run, approval, validation, review, publication, event, evidence-classification, and stable-error schemas in `packages/forge-domain/src/contracts/`
 - [ ] T010 [P] Define `SourceProvider` contract in `packages/forge-domain/src/providers/source-provider.ts`
 - [ ] T011 [P] Define `CodingAgentProvider` contract in `packages/forge-domain/src/providers/coding-agent-provider.ts`
 - [ ] T012 [P] Define `SandboxProvider` contract in `packages/forge-domain/src/providers/sandbox-provider.ts`
-- [ ] T013 Implement the run state machine and legal transitions in `packages/forge-domain/src/run/run-state-machine.ts`
-- [ ] T014 Implement completion-evidence rules in `packages/forge-domain/src/review/completion-gate.ts`
+- [ ] T013 Implement legal run transitions, active-state classification, rejected-review completion, and next-iteration creation rules in `packages/forge-domain/src/run/run-state-machine.ts`
+- [ ] T014 Implement constitution/task-mandatory versus advisory evidence rules, stale-snapshot detection, and publication eligibility in `packages/forge-domain/src/review/completion-gate.ts`
 - [ ] T015 Implement sensitive-action classification in `packages/forge-domain/src/approval/approval-policy.ts`
 - [ ] T016 Implement secret-redaction contracts in `packages/forge-domain/src/security/redaction.ts`
-- [ ] T017 [P] Add unit tests for run transitions in `packages/forge-domain/src/run/run-state-machine.test.ts`
-- [ ] T018 [P] Add unit tests for approval classification and completion gates in `packages/forge-domain/src/approval/` and `src/review/`
+- [ ] T017 [P] Add unit tests for legal/illegal transitions, cancellable states, `ACTIVE_RUN_EXISTS`, rejected-review finalization, and next-iteration uniqueness in `packages/forge-domain/src/run/run-state-machine.test.ts`
+- [ ] T018 [P] Add approval-policy tests in `packages/forge-domain/src/approval/approval-policy.test.ts` and completion-gate tests for mandatory/advisory evidence and stale snapshots in `packages/forge-domain/src/review/completion-gate.test.ts`
 - [ ] T019 [P] Add redaction regression tests for common token/key patterns in `packages/forge-domain/src/security/redaction.test.ts`
 
 **Checkpoint**: Domain tests pass without importing Next.js, GitHub, Codex, Vercel, or database implementations.
@@ -44,14 +44,14 @@
 
 - [ ] T020 Create `packages/forge-application/` using existing package conventions
 - [ ] T021 Implement workspace-authorized task creation and normalization use case in `packages/forge-application/src/tasks/create-task.ts`
-- [ ] T022 Implement idempotent run start use case in `packages/forge-application/src/runs/start-run.ts`
-- [ ] T023 Implement instruction, cancel, approval-resolution, review, and publish use cases under `packages/forge-application/src/`
+- [ ] T022 Implement idempotent run admission in `packages/forge-application/src/runs/start-run.ts`, including atomic active-run-limit enforcement and side-effect-free `ACTIVE_RUN_EXISTS` rejection
+- [ ] T023 Implement concrete use cases in `packages/forge-application/src/runs/add-instruction.ts`, `cancel-run.ts`, `create-next-iteration.ts`, `packages/forge-application/src/approvals/resolve-approval.ts`, `src/reviews/resolve-review.ts`, and `src/publications/publish-run.ts`
 - [ ] T024 [P] Implement deterministic fake source provider in `packages/forge-application/src/testing/fake-source-provider.ts`
 - [ ] T025 [P] Implement deterministic fake coding-agent provider in `packages/forge-application/src/testing/fake-agent-provider.ts`
 - [ ] T026 [P] Implement deterministic fake sandbox provider in `packages/forge-application/src/testing/fake-sandbox-provider.ts`
 - [ ] T027 Add provider contract suites reusable by every adapter in `packages/forge-application/src/testing/provider-contracts/`
-- [ ] T028 Add application tests for duplicate start, cancel, approval, review, and publish requests in `packages/forge-application/src/**/*.test.ts`
-- [ ] T029 Add one complete fake-provider run test from task creation through approved publication in `packages/forge-application/src/testing/remote-run.integration.test.ts`
+- [ ] T028 Add application tests for duplicate start, active-run rejection, cancel, approval races, rejected-review iteration creation, stale review, and idempotent publish in `packages/forge-application/src/**/*.test.ts`
+- [ ] T029 Add one deterministic fake-provider integration suite in `packages/forge-application/src/testing/remote-run.integration.test.ts` covering both rejected iteration N -> iteration N+1 and approved evidence -> draft publication
 
 **Checkpoint**: The entire domain lifecycle runs deterministically without external providers or web UI.
 
@@ -77,7 +77,7 @@
 - [ ] T040 [P] [US1] Build bilingual task composer in `apps/web/components/forge/task-composer.tsx`
 - [ ] T041 [US1] Build pre-run review for scope, agent, base branch, budget, and permissions in `apps/web/components/forge/run-review.tsx`
 - [ ] T042 [US1] Connect the start-run action to the application service with server-side workspace authorization and idempotency
-- [ ] T043 [US1] Add validation and error UX for revoked connection, unsupported repository, active-run limit, and invalid task
+- [ ] T043 [US1] Add validation and error UX for revoked connection, unsupported repository, deterministic `ACTIVE_RUN_EXISTS`, and invalid task
 - [ ] T044 [P] [US1] Add component tests for repository selection and task review
 - [ ] T045 [US1] Add Playwright flow for sign-in fixture -> repository -> task -> durable run creation
 
@@ -108,10 +108,10 @@
 - [ ] T057 [US3] Generate and store a redacted change set and unified diff after mutation stops
 - [ ] T058 [P] [US3] Build changed-file and diff review surface in `apps/web/components/forge/change-review.tsx`
 - [ ] T059 [P] [US3] Build validation, acceptance evidence, unresolved risk, and usage panels
-- [ ] T060 [US3] Implement review approval/rejection against an evidence snapshot
+- [ ] T060 [US3] Implement review approval/rejection against an immutable evidence snapshot, with waivers limited to advisory evidence
 - [ ] T061 [US3] Implement publication orchestration that creates a new branch and draft pull request only after approval
 - [ ] T062 [US3] Reuse or adapt existing draft-PR publication code without retaining trusted-local assumptions
-- [ ] T063 [P] [US3] Add completion-gate tests for missing evidence, failed required checks, waivers, and stale evidence snapshots
+- [ ] T063 [P] [US3] Add completion-gate tests for missing/failed mandatory evidence, invalid mandatory waivers, valid advisory waivers, and stale evidence snapshots
 - [ ] T064 [P] [US3] Add publication idempotency and partial-failure reconciliation tests
 - [ ] T065 [US3] Add Playwright flow for review -> approve -> draft PR result and reject -> new iteration
 
