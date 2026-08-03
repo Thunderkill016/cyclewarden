@@ -64,10 +64,6 @@ jobs:
               ],
               Path('specs/001-remote-agent-run/plan.md'): [
                   (
-                      '9. Convergence review against specification and acceptance criteria.',
-                      '9. Final evidence review against the specification and acceptance criteria.',
-                  ),
-                  (
                       '8. Convergence against specification.',
                       '8. Final evidence review against the specification.',
                   ),
