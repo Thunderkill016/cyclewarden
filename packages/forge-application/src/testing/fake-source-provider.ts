@@ -22,7 +22,10 @@ export class FakeSourceProvider implements SourceProvider {
     ],
   ) {}
 
-  async listRepositories(): Promise<{
+  async listRepositories(_input: {
+    connectionId: string;
+    cursor?: string;
+  }): Promise<{
     repositories: SourceRepositoryRef[];
     nextCursor: string | null;
   }> {
