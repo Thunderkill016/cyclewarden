@@ -42,18 +42,18 @@
 
 ## Phase 3: Fake providers and application orchestration
 
-- [ ] T020 Create `packages/forge-application/` using existing package conventions
-- [ ] T021 Implement workspace-authorized task creation and normalization use case in `packages/forge-application/src/tasks/create-task.ts`
-- [ ] T022 Implement idempotent run admission in `packages/forge-application/src/runs/start-run.ts`, including atomic active-run-limit enforcement and side-effect-free `ACTIVE_RUN_EXISTS` rejection
-- [ ] T023 Implement concrete use cases in `packages/forge-application/src/runs/add-instruction.ts`, `cancel-run.ts`, `create-next-iteration.ts`, `packages/forge-application/src/approvals/resolve-approval.ts`, `src/reviews/resolve-review.ts`, and `src/publications/publish-run.ts`
-- [ ] T024 [P] Implement deterministic fake source provider in `packages/forge-application/src/testing/fake-source-provider.ts`
-- [ ] T025 [P] Implement deterministic fake coding-agent provider in `packages/forge-application/src/testing/fake-agent-provider.ts`
-- [ ] T026 [P] Implement deterministic fake sandbox provider in `packages/forge-application/src/testing/fake-sandbox-provider.ts`
-- [ ] T027 Add provider contract suites reusable by every adapter in `packages/forge-application/src/testing/provider-contracts/`
-- [ ] T028 Add application tests for duplicate start, active-run rejection, cancel, approval races, rejected-review iteration creation, stale review, and idempotent publish in `packages/forge-application/src/**/*.test.ts`
-- [ ] T029 Add one deterministic fake-provider integration suite in `packages/forge-application/src/testing/remote-run.integration.test.ts` covering both rejected iteration N -> iteration N+1 and approved evidence -> draft publication
+- [x] T020 Create `packages/forge-application/` using existing package conventions
+- [x] T021 Implement workspace-authorized task creation and normalization use case in `packages/forge-application/src/tasks/create-task.ts`
+- [x] T022 Implement idempotent run admission in `packages/forge-application/src/runs/start-run.ts`, including atomic active-run-limit enforcement and side-effect-free `ACTIVE_RUN_EXISTS` rejection
+- [x] T023 Implement concrete use cases in `packages/forge-application/src/runs/add-instruction.ts`, `cancel-run.ts`, `create-next-iteration.ts`, `packages/forge-application/src/approvals/resolve-approval.ts`, `src/reviews/resolve-review.ts`, and `src/publications/publish-run.ts`
+- [x] T024 [P] Implement deterministic fake source provider in `packages/forge-application/src/testing/fake-source-provider.ts`
+- [x] T025 [P] Implement deterministic fake coding-agent provider in `packages/forge-application/src/testing/fake-agent-provider.ts`
+- [x] T026 [P] Implement deterministic fake sandbox provider in `packages/forge-application/src/testing/fake-sandbox-provider.ts`
+- [x] T027 Add provider contract suites reusable by every adapter in `packages/forge-application/src/testing/provider-contracts/`
+- [x] T028 Add application tests for duplicate start, active-run rejection, cancel, approval races, rejected-review iteration creation, stale review, and idempotent publish in `packages/forge-application/src/**/*.test.ts`
+- [x] T029 Add one deterministic fake-provider integration suite in `packages/forge-application/src/testing/remote-run.integration.test.ts` covering both rejected iteration N -> iteration N+1 and approved evidence -> draft publication
 
-**Checkpoint**: The entire domain lifecycle runs deterministically without external providers or web UI.
+**Checkpoint**: The entire domain lifecycle runs deterministically without external providers or web UI. Validation evidence: frozen pnpm install; domain typecheck, 13 tests, and build; application typecheck, 7 tests, and build passed on Ubuntu/Node 22 in PR #72.
 
 ## Phase 4: Durable persistence and event projection
 
