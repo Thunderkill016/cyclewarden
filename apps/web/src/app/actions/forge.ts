@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import type { ForgeStartActionState } from "@/lib/forge/action-state";
 import { initialForgeStartActionState } from "@/lib/forge/action-state";
 import { getForgeActor } from "@/lib/forge/actor";
@@ -40,7 +38,6 @@ export async function startForgeRunAction(
       actor,
       request: parsed.data,
     });
-    revalidatePath("/app/forge");
     return {
       ok: true,
       error: null,
