@@ -8,5 +8,9 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "exclude": ["src/**/*.test.ts", "dist"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/testing/postgres-fixture.ts",
+    "dist"
+  ]
 }
