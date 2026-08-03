@@ -20,6 +20,7 @@ A signed-in developer connects a GitHub account, selects one accessible reposito
 1. **Given** a developer with a valid GitHub connection, **when** they select an accessible repository and submit a valid task, **then** Forge displays the normalized objective, acceptance criteria, repository, base branch, agent, budget, and requested permissions before execution.
 2. **Given** the reviewed task, **when** the developer starts the run, **then** Forge creates exactly one durable run and begins isolated remote execution.
 3. **Given** an invalid or revoked repository connection, **when** the developer starts the run, **then** no sandbox is created and the UI explains how to reconnect safely.
+4. **Given** the workspace already has an active run, **when** the developer attempts another start, **then** Forge rejects it with the stable `ACTIVE_RUN_EXISTS` result and creates neither a run nor a sandbox.
 
 ---
 
@@ -51,9 +52,9 @@ After the agent finishes implementation, the developer reviews changed files, co
 **Acceptance Scenarios**:
 
 1. **Given** a completed implementation attempt, **when** validation finishes, **then** Forge displays changed files, diff, check results, acceptance evidence, summary, risks, and usage.
-2. **Given** missing required evidence, **when** the developer attempts to approve, **then** Forge blocks pull-request creation and identifies the missing evidence.
+2. **Given** missing constitution-mandated or task-mandatory evidence, **when** the developer attempts to approve, **then** Forge blocks approval and pull-request creation and identifies the missing evidence.
 3. **Given** sufficient evidence and developer approval, **when** pull-request creation succeeds, **then** Forge records the source branch, pull-request identifier, URL reference, commit SHA, and final run outcome.
-4. **Given** developer rejection, **when** they provide a new instruction, **then** Forge creates a new iteration under the same task without rewriting prior evidence.
+4. **Given** developer rejection, **when** they provide a new instruction, **then** Forge records the current run as completed with a rejected review outcome and creates a new run under the same task with the next iteration number, without rewriting prior instructions, events, diff, evidence, or review history.
 
 ---
 
@@ -94,17 +95,17 @@ A developer uses the interface and submits a task in Vietnamese while keeping so
 - **FR-007**: Repository access MUST use temporary repository-scoped credentials and MUST NOT expose long-lived provider credentials to the sandbox.
 - **FR-008**: The system MUST persist ordered run events before presenting them as durable history.
 - **FR-009**: A reconnecting client MUST receive a current-state snapshot plus events after a supplied cursor.
-- **FR-010**: The developer MUST be able to send an additional instruction to an active or blocked run.
+- **FR-010**: The developer MUST be able to send an additional instruction to a running or awaiting-approval run. A rejected review creates a new run iteration rather than reopening the completed run.
 - **FR-011**: Sensitive actions MUST create explicit approval requests and MUST remain blocked until approved, rejected, expired, or cancelled.
 - **FR-012**: Approval resolution MUST be idempotent and record actor, decision, reason, scope, and time.
-- **FR-013**: The developer MUST be able to cancel an active, blocked, or queued run from any supported device.
+- **FR-013**: The developer MUST be able to cancel a queued, provisioning, running, awaiting-approval, or validating run from any supported device.
 - **FR-014**: The system MUST run configured validation commands and record command, exit status, duration, and summarized output.
 - **FR-015**: The review surface MUST show changed files, readable diff, validation outcomes, acceptance evidence, agent summary, unresolved risks, and usage estimates.
-- **FR-016**: Completion MUST be blocked until all mandatory evidence for the task is present or explicitly waived with a recorded reason.
+- **FR-016**: Completion and approval MUST be blocked until the constitution baseline and every task-mandatory evidence item are present. Only explicitly advisory evidence MAY be waived, and each waiver MUST record actor, reason, scope, and time; a waiver MUST NOT bypass a failed or missing constitution-mandated check.
 - **FR-017**: Approved results MUST be publishable to a new source branch and draft pull request without writing directly to the protected base branch.
-- **FR-018**: Rejected results MUST support another iteration while preserving previous instructions, events, diff, and evidence.
+- **FR-018**: A rejected review MUST finalize the current run as unpublished and MAY create exactly one next run iteration for the same task after a new instruction is supplied; all prior instructions, events, diffs, evidence, and review decisions MUST remain immutable.
 - **FR-019**: Interface locale and technical-output language MUST be independently configurable as Vietnamese or English.
-- **FR-020**: The MVP MUST support exactly one active Codex run per workspace and MUST reject or queue additional starts deterministically.
+- **FR-020**: The MVP MUST support exactly one active Codex run per workspace. Additional starts while a run is active MUST be rejected deterministically with `ACTIVE_RUN_EXISTS`; the MVP MUST NOT silently queue them.
 - **FR-021**: The system MUST expose a provider-neutral domain boundary even though the first implementations are GitHub, Codex, and one sandbox provider.
 - **FR-022**: The system MUST redact known secret patterns from persisted logs and user-facing event payloads.
 
@@ -148,6 +149,7 @@ A developer uses the interface and submits a task in Vietnamese while keeping so
 - Codex is the only coding-agent adapter in this feature.
 - One remote sandbox provider is selected during planning.
 - The first supported repositories are JavaScript/TypeScript projects with explicit package-manager commands.
+- The MVP rejects, rather than queues, a second run while the workspace has an active run.
 - Production deployment, arbitrary MCP installation, skill installation, multi-agent execution, and team collaboration are outside this feature.
 
 ## Out of Scope
