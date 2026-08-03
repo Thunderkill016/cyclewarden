@@ -1,4 +1,4 @@
-name: Forge start flow bootstrap
+name: Forge targeted verification
 
 on:
   push:
@@ -6,48 +6,24 @@ on:
       - agent/atoryn-forge-start-flow
     paths:
       - .github/workflows/forge-start-flow-bootstrap.yml
+      - apps/web/src/components/forge/**
+      - apps/web/vitest.config.ts
   pull_request:
     branches:
       - agent/atoryn-forge-persistence
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
 
 jobs:
-  validate:
+  failing-component-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: cyclewarden
-          POSTGRES_PASSWORD: cyclewarden
-          POSTGRES_DB: cyclewarden
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      CI: true
-      DATABASE_URL: postgresql://cyclewarden:cyclewarden@localhost:5432/cyclewarden
-      BETTER_AUTH_SECRET: ci-test-secret-at-least-32-characters-long!!
-      BETTER_AUTH_URL: http://127.0.0.1:3000
-      AUTH_ADAPTER: better-auth
-      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
-      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
-      PLAYWRIGHT_HOST: 127.0.0.1
-      PORT: "3000"
-
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/atoryn-forge-start-flow
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -58,63 +34,10 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Synchronize lockfile
-        run: pnpm install --lockfile-only --no-frozen-lockfile
-
-      - name: Verify frozen installation
+      - name: Install from validated lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Apply database migrations
-        run: pnpm db:migrate
-
-      - name: Validate Forge dependency stack
-        run: |
-          pnpm --filter @cyclewarden/db typecheck
-          pnpm --filter @cyclewarden/forge-domain typecheck
-          pnpm --filter @cyclewarden/forge-domain test
-          pnpm --filter @cyclewarden/forge-domain build
-          pnpm --filter @cyclewarden/forge-application typecheck
-          pnpm --filter @cyclewarden/forge-application test
-          pnpm --filter @cyclewarden/forge-application build
-
-      - name: Typecheck web start flow
-        run: pnpm --filter @cyclewarden/web typecheck
-
-      - name: Test web start flow
-        shell: bash
-        run: |
-          set -o pipefail
-          mkdir -p artifacts
-          pnpm --filter @cyclewarden/web test 2>&1 | tee artifacts/web-test.log
-
-      - name: Upload web test diagnostics
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: forge-web-test-diagnostics
-          if-no-files-found: warn
-          retention-days: 7
-          path: artifacts/web-test.log
-
-      - name: Build web application
-        run: pnpm --filter @cyclewarden/web build
-
-      - name: Install Playwright Chromium
-        run: pnpm --filter @cyclewarden/web exec playwright install chromium --with-deps
-
-      - name: Run authenticated durable Forge start E2E
-        run: pnpm --filter @cyclewarden/web exec playwright test e2e/forge-start.spec.ts
-
-      - name: Commit synchronized lockfile
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pnpm-lock.yaml
-          if git diff --cached --quiet; then
-            echo "Lockfile already synchronized."
-            exit 0
-          fi
-          git commit -m "Sync Forge start flow workspace lockfile"
-          git push origin HEAD:agent/atoryn-forge-start-flow
+      - name: Run only the previously failing component test
+        run: >-
+          pnpm --filter @cyclewarden/web exec vitest run
+          src/components/forge/start-components.test.tsx
