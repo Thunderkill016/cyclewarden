@@ -4,14 +4,16 @@ on:
   push:
     branches:
       - agent/atoryn-forge-live-controls
+    paths-ignore:
+      - .github/forge-live-controls-result.txt
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-web-slice:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       CI: true
       BETTER_AUTH_SECRET: ci-test-secret-at-least-32-characters-long!!
@@ -30,19 +32,43 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install from frozen lockfile
-        run: pnpm install --frozen-lockfile
+      - name: Run targeted verification and write report
+        id: verify
+        shell: bash
+        run: |
+          set +e
+          : > /tmp/forge-live-controls.log
+          overall=0
 
-      - name: Build required Forge domain artifact
-        run: pnpm --filter @cyclewarden/forge-domain build
+          run_check() {
+            label="$1"
+            shift
+            echo "## ${label}" | tee -a /tmp/forge-live-controls.log
+            "$@" 2>&1 | tee -a /tmp/forge-live-controls.log
+            status=${PIPESTATUS[0]}
+            echo "STATUS=${status}" | tee -a /tmp/forge-live-controls.log
+            echo | tee -a /tmp/forge-live-controls.log
+            if [ "${status}" -ne 0 ]; then overall=${status}; fi
+          }
 
-      - name: Typecheck web
-        run: pnpm --filter @cyclewarden/web typecheck
+          run_check "Frozen install" pnpm install --frozen-lockfile
+          run_check "Forge domain build" pnpm --filter @cyclewarden/forge-domain build
+          run_check "Web typecheck" pnpm --filter @cyclewarden/web typecheck
+          run_check "Replay and approval tests" pnpm --filter @cyclewarden/web exec vitest run src/lib/forge/run-event-projection.test.ts
+          run_check "Web production build" pnpm --filter @cyclewarden/web build
 
-      - name: Test event replay and approval races
-        run: >-
-          pnpm --filter @cyclewarden/web exec vitest run
-          src/lib/forge/run-event-projection.test.ts
+          {
+            echo "# Forge live-controls verification"
+            echo
+            echo "SOURCE_COMMIT=${GITHUB_SHA}"
+            echo "OVERALL_STATUS=${overall}"
+            echo
+            cat /tmp/forge-live-controls.log
+          } > .github/forge-live-controls-result.txt
 
-      - name: Build web
-        run: pnpm --filter @cyclewarden/web build
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/forge-live-controls-result.txt
+          git commit -m "Record Forge live-controls verification" || true
+          git push
+          exit "${overall}"
