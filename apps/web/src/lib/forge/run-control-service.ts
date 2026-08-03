@@ -106,6 +106,7 @@ export class ForgeRunControlError extends Error {
 type PostgresRows = readonly (object | undefined)[];
 type SqlTemplateParameters =
   Parameters<Sql> extends [TemplateStringsArray, ...infer Rest] ? Rest : never;
+type PostgresTimestamp = Date | string;
 
 /** Shared callable subset implemented by both postgres.js Sql and TransactionSql. */
 interface QueryableSql {
@@ -125,10 +126,10 @@ interface AuthorizedRunRow {
   version: number;
   base_branch: string;
   agent_provider: string;
-  cancel_requested_at: Date | null;
-  started_at: Date | null;
-  finished_at: Date | null;
-  updated_at: Date;
+  cancel_requested_at: PostgresTimestamp | null;
+  started_at: PostgresTimestamp | null;
+  finished_at: PostgresTimestamp | null;
+  updated_at: PostgresTimestamp;
   title: string;
   original_instruction: string;
   instruction_language: string;
@@ -146,7 +147,7 @@ interface EventRow {
   actor_type: string;
   actor_id: string | null;
   payload: unknown;
-  created_at: Date;
+  created_at: PostgresTimestamp;
 }
 
 interface ApprovalRow {
@@ -158,8 +159,8 @@ interface ApprovalRow {
   risk_level: string;
   status: string;
   version: number;
-  requested_at: Date;
-  resolved_at: Date | null;
+  requested_at: PostgresTimestamp;
+  resolved_at: PostgresTimestamp | null;
   reason: string | null;
 }
 
@@ -218,8 +219,12 @@ function commandHash(value: unknown): string {
   return createHash("sha256").update(stableSerialize(value)).digest("hex");
 }
 
-function iso(value: Date | null): string | null {
-  return value ? value.toISOString() : null;
+function timestamp(value: PostgresTimestamp): string {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+
+function iso(value: PostgresTimestamp | null): string | null {
+  return value === null ? null : timestamp(value);
 }
 
 function mapEvent(row: EventRow): ForgeRunEventView {
@@ -230,7 +235,7 @@ function mapEvent(row: EventRow): ForgeRunEventView {
     actorType: row.actor_type,
     actorId: row.actor_id,
     payload: row.payload,
-    createdAt: row.created_at.toISOString(),
+    createdAt: timestamp(row.created_at),
   };
 }
 
@@ -244,7 +249,7 @@ function mapApproval(row: ApprovalRow): ForgeApprovalView {
     riskLevel: row.risk_level,
     status: row.status,
     version: row.version,
-    requestedAt: row.requested_at.toISOString(),
+    requestedAt: timestamp(row.requested_at),
     resolvedAt: iso(row.resolved_at),
     reason: row.reason,
   };
@@ -345,7 +350,7 @@ export async function getForgeRunView(
       cancelRequestedAt: iso(row.cancel_requested_at),
       startedAt: iso(row.started_at),
       finishedAt: iso(row.finished_at),
-      updatedAt: row.updated_at.toISOString(),
+      updatedAt: timestamp(row.updated_at),
     },
     task: {
       title: row.title,
