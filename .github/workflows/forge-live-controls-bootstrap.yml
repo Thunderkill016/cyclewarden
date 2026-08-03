@@ -11,15 +11,33 @@ permissions:
   contents: write
 
 jobs:
-  verify-web-slice:
+  verify-cross-context-flow:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cyclewarden
+          POSTGRES_PASSWORD: cyclewarden
+          POSTGRES_DB: cyclewarden
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cyclewarden -d cyclewarden"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     env:
       CI: true
+      DATABASE_URL: postgresql://cyclewarden:cyclewarden@127.0.0.1:5432/cyclewarden
       BETTER_AUTH_SECRET: ci-test-secret-at-least-32-characters-long!!
       BETTER_AUTH_URL: http://127.0.0.1:3000
       AUTH_ADAPTER: better-auth
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_HOST: 127.0.0.1
+      PORT: "3000"
     steps:
       - uses: actions/checkout@v4
 
@@ -32,8 +50,7 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Run targeted verification and write report
-        id: verify
+      - name: Run one cross-context acceptance flow and write report
         shell: bash
         run: |
           set +e
@@ -52,10 +69,10 @@ jobs:
           }
 
           run_check "Frozen install" pnpm install --frozen-lockfile
+          run_check "Database migrations" pnpm db:migrate
           run_check "Forge domain build" pnpm --filter @cyclewarden/forge-domain build
-          run_check "Web typecheck" pnpm --filter @cyclewarden/web typecheck
-          run_check "Replay and approval tests" pnpm --filter @cyclewarden/web exec vitest run src/lib/forge/run-event-projection.test.ts
-          run_check "Web production build" pnpm --filter @cyclewarden/web build
+          run_check "Chromium installation" pnpm --filter @cyclewarden/web exec playwright install chromium --with-deps
+          run_check "Cross-context Playwright" pnpm --filter @cyclewarden/web exec playwright test e2e/forge-live-controls.spec.ts --retries=0
 
           {
             echo "# Forge live-controls verification"
