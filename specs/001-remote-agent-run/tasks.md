@@ -72,16 +72,16 @@
 
 **Goal**: A developer connects/selects a repository, reviews a normalized task, and starts one governed run.
 
-- [ ] T038 [US1] Add Forge project and repository selection routes/actions under `apps/web/app/api/forge/`
-- [ ] T039 [P] [US1] Build responsive repository selector in `apps/web/components/forge/repository-selector.tsx`
-- [ ] T040 [P] [US1] Build bilingual task composer in `apps/web/components/forge/task-composer.tsx`
-- [ ] T041 [US1] Build pre-run review for scope, agent, base branch, budget, and permissions in `apps/web/components/forge/run-review.tsx`
-- [ ] T042 [US1] Connect the start-run action to the application service with server-side workspace authorization and idempotency
-- [ ] T043 [US1] Add validation and error UX for revoked connection, unsupported repository, deterministic `ACTIVE_RUN_EXISTS`, and invalid task
-- [ ] T044 [P] [US1] Add component tests for repository selection and task review
-- [ ] T045 [US1] Add Playwright flow for sign-in fixture -> repository -> task -> durable run creation
+- [x] T038 [US1] Add the authenticated Forge start route and server action under `apps/web/src/app/app/forge/` and `apps/web/src/app/actions/forge.ts`
+- [x] T039 [P] [US1] Build responsive repository selector in `apps/web/src/components/forge/repository-selector.tsx`
+- [x] T040 [P] [US1] Build bilingual task composer in `apps/web/src/components/forge/task-composer.tsx`
+- [x] T041 [US1] Build pre-run review for scope, agent, base branch, budget, network, and sensitive-action permissions in `apps/web/src/components/forge/run-review.tsx`
+- [x] T042 [US1] Connect the start-run action to durable PostgreSQL creation with server-side workspace authorization, canonical request hashing, idempotency, active-run admission, ordered event creation, and explicit JSONB serialization
+- [x] T043 [US1] Add validation and error UX for revoked connection, unsupported repository, deterministic `ACTIVE_RUN_EXISTS`, idempotency conflicts, and invalid tasks
+- [x] T044 [P] [US1] Add component tests for repository selection, bilingual task composition, and reviewed run policy in `apps/web/src/components/forge/start-components.test.tsx`
+- [x] T045 [US1] Add authenticated Playwright flow in `apps/web/e2e/forge-start.spec.ts` for Better Auth sign-up -> repository -> task -> reviewed durable PostgreSQL run creation
 
-**Independent acceptance**: US1 scenarios pass using fake providers and persisted state.
+**Independent acceptance**: US1 scenarios pass using fake provider fixtures and persisted PostgreSQL state. Validation evidence in PR #74: synchronized frozen lockfile, web typecheck, 3/3 Forge component tests, required domain artifact build, Next.js production build, and one authenticated PostgreSQL Playwright test with `--retries=0` all passed on Ubuntu/Node 22. Temporary diagnostic workflows were removed after validation.
 
 ## Phase 6: User Story 2 - Monitor and control from another device
 
