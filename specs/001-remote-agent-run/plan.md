@@ -24,7 +24,7 @@ The implementation reuses the existing Next.js web application, deterministic li
 **Target Platform**: Responsive web and installable PWA-compatible shell; no native application  
 **Initial Repository Support**: JavaScript/TypeScript repositories with package-manager validation commands  
 **Performance Goal**: Durable start acknowledgement within 2 seconds and first run-progress event within 30 seconds excluding external clone/provider delay  
-**Constraints**: One active run per workspace, one agent provider, one source provider, one sandbox provider, no production deployment
+**Constraints**: One active run per workspace; a second start is rejected with `ACTIVE_RUN_EXISTS`; one agent provider, one source provider, one sandbox provider, no production deployment
 
 ## Constitution Check
 
@@ -35,7 +35,7 @@ The implementation reuses the existing Next.js web application, deterministic li
 | Provider-Neutral Core | Typed `SourceProvider`, `CodingAgentProvider`, and `SandboxProvider`; provider IDs stored separately |
 | Durable Remote Execution | Database-backed run/event state, sandbox lease, limits, heartbeat, cancellation, recovery |
 | Human-Governed Risk | Approval policy engine blocks sensitive actions; idempotent approve/reject endpoints |
-| Evidence-Based Completion | Existing verification/evidence mechanisms extended with validation and acceptance evidence |
+| Evidence-Based Completion | Constitution baseline and task-mandatory evidence cannot be waived; advisory evidence waivers are explicit and audited |
 | Auditable Runs | Append-only ordered run events retained after sandbox destruction |
 | Bilingual Product Boundary | Existing i18n package reused; locale and technical-output language stored separately |
 | Open Extension Model | No Spec Kit dependency in runtime domain; first adapters are replaceable |
@@ -85,8 +85,16 @@ DRAFT
   -> RUNNING
   -> VALIDATING
   -> AWAITING_REVIEW
+
+Approved review:
+AWAITING_REVIEW
   -> PUBLISHING
   -> COMPLETED
+
+Rejected review:
+AWAITING_REVIEW
+  -> COMPLETED (unpublished, review outcome = rejected)
+  -> explicit new instruction creates Run(iteration + 1) in QUEUED
 
 Terminal alternatives:
 FAILED | CANCELLED | EXPIRED
@@ -97,7 +105,24 @@ QUEUED | PROVISIONING | RUNNING | AWAITING_APPROVAL | VALIDATING
   -> CANCELLED | FAILED
 ```
 
-State transitions MUST be executed through one domain service and guarded by optimistic concurrency/version checks.
+State transitions MUST be executed through one domain service and guarded by optimistic concurrency/version checks. A completed run is never reopened. A new iteration is a new `Run` with the same `taskId` and the next unique iteration number. Creating that iteration and enforcing the workspace active-run limit MUST occur atomically.
+
+## Active-Run Admission Policy
+
+- The MVP has `activeRunLimit = 1` per workspace.
+- Active states are `queued`, `provisioning`, `running`, `awaiting_approval`, `cancelling`, `validating`, `awaiting_review`, and `publishing`.
+- A start request while another run is active returns the stable `ACTIVE_RUN_EXISTS` result.
+- The rejected request creates no run, sandbox lease, provider call, or queued work.
+- Duplicate delivery of the same accepted start request replays the original result through the idempotency record.
+
+## Evidence and Waiver Policy
+
+The completion gate classifies evidence into two groups:
+
+1. **Mandatory evidence**: constitution baseline plus task-declared required checks and acceptance evidence. Missing or failed mandatory evidence blocks approval and publication and cannot be waived.
+2. **Advisory evidence**: optional diagnostics or non-blocking checks. An advisory item may be waived only with actor, reason, scope, and timestamp recorded in the review decision and audit events.
+
+The completion gate evaluates an immutable evidence snapshot. A later file change or validation result makes the previous review snapshot stale and requires a new review.
 
 ## Project Structure
 
@@ -127,6 +152,7 @@ specs/001-remote-agent-run/
   data-model.md
   quickstart.md
   checklists/requirements.md
+  analysis.md
   tasks.md
 ```
 
@@ -172,7 +198,7 @@ All mutations require idempotency keys and workspace authorization. Provider cal
 
 ## Validation Strategy
 
-- **Unit**: state transitions, approval classification, budget rules, event ordering, redaction, completion gate.
+- **Unit**: state transitions, rejected-review iteration creation, active-run admission, approval classification, budget rules, event ordering, redaction, completion gate, mandatory/advisory waiver rules.
 - **Contract**: fake implementations verify source/agent/sandbox adapter contracts.
 - **Integration**: database transaction and idempotency tests; SSE reconnect; credential-broker boundaries.
 - **End-to-end**: desktop starts run, mobile reconnects and resolves approval, validation completes, desktop reviews and creates draft PR.
