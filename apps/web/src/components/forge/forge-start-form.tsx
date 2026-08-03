@@ -2,10 +2,8 @@
 
 import { useActionState, useState } from "react";
 
-import {
-  initialForgeStartActionState,
-  startForgeRunAction,
-} from "@/app/actions/forge";
+import { startForgeRunAction } from "@/app/actions/forge";
+import { initialForgeStartActionState } from "@/lib/forge/action-state";
 import type { ForgeRepositoryOption } from "@/lib/forge/repositories";
 import { RepositorySelector } from "./repository-selector";
 import { RunReview } from "./run-review";
