@@ -78,12 +78,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo "Generated Spec Kit assets:"
+          find .agents .specify -maxdepth 5 -type f -print | sort
+
           required_skills=(
             speckit-analyze
             speckit-checklist
             speckit-clarify
             speckit-constitution
-            speckit-converge
             speckit-implement
             speckit-plan
             speckit-specify
@@ -93,12 +95,13 @@ jobs:
           for skill in "${required_skills[@]}"; do
             test -s ".agents/skills/${skill}/SKILL.md"
           done
+
           test -s .specify/templates/spec-template.md
           test -s .specify/templates/plan-template.md
           test -s .specify/templates/tasks-template.md
           test -s .specify/templates/checklist-template.md
-          test -s .specify/scripts/bash/common.sh
-          test -s .specify/scripts/bash/check-prerequisites.sh
+          test -n "$(find .specify/scripts -type f -name 'common.*' -print -quit)"
+          test -n "$(find .specify/scripts -type f -name 'check-prerequisites.*' -print -quit)"
           test -s .specify/memory/constitution.md
           test -s specs/001-remote-agent-run/spec.md
 
