@@ -57,16 +57,16 @@
 
 ## Phase 4: Durable persistence and event projection
 
-- [ ] T030 Add Drizzle schema and migration for Forge entities in the existing `packages/db/` conventions
-- [ ] T031 Implement transactional run transition plus ordered event append in `packages/forge-application/src/persistence/`
-- [ ] T032 Implement idempotency repository and request-hash validation in `packages/forge-application/src/persistence/idempotency-repository.ts`
-- [ ] T033 Implement optimistic concurrency for run and approval mutations
-- [ ] T034 Implement event cursor queries and current-state snapshot projection in `packages/forge-application/src/events/`
-- [ ] T035 Implement stale lease, heartbeat, expired approval, and partial-publication reconciliation in `packages/forge-application/src/reconciliation/`
-- [ ] T036 Add database integration tests for event ordering, rollback, optimistic concurrency, and idempotency
-- [ ] T037 Add cross-workspace authorization tests for every project, task, run, approval, review, and publication query
+- [x] T030 Add Drizzle schema and migration for Forge entities in the existing `packages/db/` conventions
+- [x] T031 Implement transactional run transition plus ordered event append in `packages/forge-application/src/persistence/`
+- [x] T032 Implement idempotency repository and request-hash validation in `packages/forge-application/src/persistence/idempotency-repository.ts`
+- [x] T033 Implement optimistic concurrency for run and approval mutations
+- [x] T034 Implement event cursor queries and current-state snapshot projection in `packages/forge-application/src/events/`
+- [x] T035 Implement stale lease, heartbeat, expired approval, and partial-publication reconciliation in `packages/forge-application/src/reconciliation/`
+- [x] T036 Add database integration tests for event ordering, rollback, optimistic concurrency, and idempotency
+- [x] T037 Add cross-workspace authorization tests for every project, task, run, approval, review, and publication query
 
-**Checkpoint**: Run state survives process restart and can be reconstructed from durable records.
+**Checkpoint**: Run state survives process restart and can be reconstructed from durable records. Validation evidence: PostgreSQL 16 migrations; db/domain/application typechecks and builds; 13 domain tests and 17 application tests passed in PR #73, including transaction rollback, ordered event cursors, optimistic concurrency, persistent idempotency, reconciliation, and cross-workspace isolation.
 
 ## Phase 5: User Story 1 - Start a governed coding run
 
