@@ -25,20 +25,20 @@
 
 ## Phase 2: Provider-neutral domain foundation
 
-- [ ] T008 Create `packages/forge-domain/package.json` and strict TypeScript configuration using existing workspace conventions
-- [ ] T009 [P] Define task, run, approval, validation, review, publication, event, evidence-classification, and stable-error schemas in `packages/forge-domain/src/contracts/`
-- [ ] T010 [P] Define `SourceProvider` contract in `packages/forge-domain/src/providers/source-provider.ts`
-- [ ] T011 [P] Define `CodingAgentProvider` contract in `packages/forge-domain/src/providers/coding-agent-provider.ts`
-- [ ] T012 [P] Define `SandboxProvider` contract in `packages/forge-domain/src/providers/sandbox-provider.ts`
-- [ ] T013 Implement legal run transitions, active-state classification, rejected-review completion, and next-iteration creation rules in `packages/forge-domain/src/run/run-state-machine.ts`
-- [ ] T014 Implement constitution/task-mandatory versus advisory evidence rules, stale-snapshot detection, and publication eligibility in `packages/forge-domain/src/review/completion-gate.ts`
-- [ ] T015 Implement sensitive-action classification in `packages/forge-domain/src/approval/approval-policy.ts`
-- [ ] T016 Implement secret-redaction contracts in `packages/forge-domain/src/security/redaction.ts`
-- [ ] T017 [P] Add unit tests for legal/illegal transitions, cancellable states, `ACTIVE_RUN_EXISTS`, rejected-review finalization, and next-iteration uniqueness in `packages/forge-domain/src/run/run-state-machine.test.ts`
-- [ ] T018 [P] Add approval-policy tests in `packages/forge-domain/src/approval/approval-policy.test.ts` and completion-gate tests for mandatory/advisory evidence and stale snapshots in `packages/forge-domain/src/review/completion-gate.test.ts`
-- [ ] T019 [P] Add redaction regression tests for common token/key patterns in `packages/forge-domain/src/security/redaction.test.ts`
+- [x] T008 Create `packages/forge-domain/package.json` and strict TypeScript configuration using existing workspace conventions
+- [x] T009 [P] Define task, run, approval, validation, review, publication, event, evidence-classification, and stable-error schemas in `packages/forge-domain/src/contracts/`
+- [x] T010 [P] Define `SourceProvider` contract in `packages/forge-domain/src/providers/source-provider.ts`
+- [x] T011 [P] Define `CodingAgentProvider` contract in `packages/forge-domain/src/providers/coding-agent-provider.ts`
+- [x] T012 [P] Define `SandboxProvider` contract in `packages/forge-domain/src/providers/sandbox-provider.ts`
+- [x] T013 Implement legal run transitions, active-state classification, rejected-review completion, and next-iteration creation rules in `packages/forge-domain/src/run/run-state-machine.ts`
+- [x] T014 Implement constitution/task-mandatory versus advisory evidence rules, stale-snapshot detection, and publication eligibility in `packages/forge-domain/src/review/completion-gate.ts`
+- [x] T015 Implement sensitive-action classification in `packages/forge-domain/src/approval/approval-policy.ts`
+- [x] T016 Implement secret-redaction contracts in `packages/forge-domain/src/security/redaction.ts`
+- [x] T017 [P] Add unit tests for legal/illegal transitions, cancellable states, `ACTIVE_RUN_EXISTS`, rejected-review finalization, and next-iteration uniqueness in `packages/forge-domain/src/run/run-state-machine.test.ts`
+- [x] T018 [P] Add approval-policy tests in `packages/forge-domain/src/approval/approval-policy.test.ts` and completion-gate tests for mandatory/advisory evidence and stale snapshots in `packages/forge-domain/src/review/completion-gate.test.ts`
+- [x] T019 [P] Add redaction regression tests for common token/key patterns in `packages/forge-domain/src/security/redaction.test.ts`
 
-**Checkpoint**: Domain tests pass without importing Next.js, GitHub, Codex, Vercel, or database implementations.
+**Checkpoint**: Domain tests pass without importing Next.js, GitHub, Codex, Vercel, or database implementations. Validation evidence: frozen pnpm install, typecheck, 13 unit tests, and package build passed on Ubuntu/Node 22 in PR #71.
 
 ## Phase 3: Fake providers and application orchestration
 
