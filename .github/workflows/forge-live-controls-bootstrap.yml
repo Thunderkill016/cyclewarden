@@ -1,0 +1,48 @@
+name: Forge live controls verification
+
+on:
+  push:
+    branches:
+      - agent/atoryn-forge-live-controls
+
+permissions:
+  contents: read
+
+jobs:
+  verify-web-slice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CI: true
+      BETTER_AUTH_SECRET: ci-test-secret-at-least-32-characters-long!!
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      AUTH_ADAPTER: better-auth
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install from frozen lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Build required Forge domain artifact
+        run: pnpm --filter @cyclewarden/forge-domain build
+
+      - name: Typecheck web
+        run: pnpm --filter @cyclewarden/web typecheck
+
+      - name: Test event replay and approval races
+        run: >-
+          pnpm --filter @cyclewarden/web exec vitest run
+          src/lib/forge/run-event-projection.test.ts
+
+      - name: Build web
+        run: pnpm --filter @cyclewarden/web build
