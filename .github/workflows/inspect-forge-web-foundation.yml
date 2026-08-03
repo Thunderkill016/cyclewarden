@@ -1,0 +1,38 @@
+name: Inspect Forge web foundation
+
+on:
+  push:
+    branches:
+      - agent/atoryn-forge-start-flow
+    paths:
+      - .github/workflows/inspect-forge-web-foundation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/atoryn-forge-start-flow
+
+      - name: Print relevant web tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== APPS/WEB TREE ==='
+          find apps/web -maxdepth 5 -type f \
+            \( -name '*.ts' -o -name '*.tsx' -o -name '*.json' -o -name '*.css' \) \
+            | sort
+          echo '=== AUTH AND DB REFERENCES ==='
+          grep -RInE 'better-auth|auth\.api|headers\(\)|DATABASE_URL|postgres\(|drizzle\(|getSession|session\.user|currentUser' apps/web packages 2>/dev/null | head -n 500 || true
+          echo '=== API ROUTES ==='
+          find apps/web/app -path '*/api/*' -type f -maxdepth 8 -print -exec sh -c 'echo --- $1; sed -n "1,240p" "$1"' _ {} \;
+          echo '=== WEB TEST CONFIG ==='
+          for f in apps/web/package.json apps/web/vitest.config.* apps/web/playwright.config.* apps/web/tsconfig.json; do
+            if [ -f "$f" ]; then echo --- $f; sed -n '1,260p' "$f"; fi
+          done
+          echo '=== UI COMPONENT EXPORTS ==='
+          find apps/web/components -maxdepth 3 -type f -print 2>/dev/null | sort | head -n 400 || true
