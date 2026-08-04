@@ -5,6 +5,14 @@ export type CodingAgentEvent =
   | { type: "completed"; summary: string }
   | { type: "failed"; code: string; summary: string };
 
+export interface CodingAgentUsageSummary {
+  inputTokens: number;
+  cachedInputTokens: number;
+  outputTokens: number;
+  reasoningTokens: number;
+  totalTokens: number;
+}
+
 export interface CodingAgentStartInput {
   runId: string;
   sandboxId: string;
@@ -18,6 +26,8 @@ export interface CodingAgentProvider {
   readonly key: string;
 
   start(input: CodingAgentStartInput): Promise<{ externalRunId: string }>;
+
+  resume(input: { externalRunId: string }): Promise<void>;
 
   events(input: {
     externalRunId: string;
@@ -36,4 +46,8 @@ export interface CodingAgentProvider {
   }): Promise<void>;
 
   cancel(input: { externalRunId: string; reason: string }): Promise<void>;
+
+  usageSummary(input: {
+    externalRunId: string;
+  }): Promise<CodingAgentUsageSummary>;
 }
