@@ -31,14 +31,6 @@ jobs:
           cache: pnpm
       - name: Synchronize workspace lockfile
         run: pnpm install --lockfile-only
-      - name: Verify frozen installation
-        run: pnpm install --frozen-lockfile
-      - name: Typecheck GitHub provider
-        run: pnpm --filter @cyclewarden/provider-github typecheck
-      - name: Test GitHub provider
-        run: pnpm --filter @cyclewarden/provider-github test
-      - name: Build GitHub provider
-        run: pnpm --filter @cyclewarden/provider-github build
       - name: Commit synchronized lockfile
         shell: bash
         run: |
@@ -51,3 +43,11 @@ jobs:
           git add pnpm-lock.yaml
           git commit -m "chore(forge): sync GitHub provider lockfile"
           git push origin HEAD:agent/atoryn-forge-live-provider-spike
+      - name: Verify frozen installation
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck GitHub provider
+        run: pnpm --filter @cyclewarden/provider-github typecheck
+      - name: Test GitHub provider
+        run: pnpm --filter @cyclewarden/provider-github test
+      - name: Build GitHub provider
+        run: pnpm --filter @cyclewarden/provider-github build
