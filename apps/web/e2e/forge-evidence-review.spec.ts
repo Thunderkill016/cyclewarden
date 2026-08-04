@@ -29,6 +29,14 @@ async function startFixtureRun(page: import("@playwright/test").Page) {
   return runId;
 }
 
+async function assertNoReviewError(page: import("@playwright/test").Page) {
+  const error = page.getByTestId("forge-review-error");
+  await page.waitForTimeout(500);
+  if (await error.isVisible()) {
+    throw new Error(await error.innerText());
+  }
+}
+
 test("reject iteration -> approve evidence -> create draft pull request", async ({
   page,
 }) => {
@@ -40,6 +48,7 @@ test("reject iteration -> approve evidence -> create draft pull request", async 
   await expect(page.getByTestId("forge-review-state")).toHaveText("queued");
 
   await page.getByTestId("forge-prepare-evidence").click();
+  await assertNoReviewError(page);
   await expect(page.getByTestId("forge-review-state")).toHaveText("awaiting_review");
   await expect(page.getByTestId("forge-unified-diff")).toContainText(
     "src/atoryn-task.ts",
@@ -52,6 +61,7 @@ test("reject iteration -> approve evidence -> create draft pull request", async 
     .getByLabel("Rationale")
     .fill("The first iteration needs a clearer implementation boundary.");
   await page.getByTestId("forge-review-reject").click();
+  await assertNoReviewError(page);
   await expect(page.getByTestId("forge-review-state")).toHaveText("completed");
   await expect(page.getByTestId("forge-next-iteration")).toBeVisible();
 
@@ -62,14 +72,17 @@ test("reject iteration -> approve evidence -> create draft pull request", async 
   await expect(page.getByTestId("forge-review-state")).toHaveText("queued");
 
   await page.getByTestId("forge-prepare-evidence").click();
+  await assertNoReviewError(page);
   await expect(page.getByTestId("forge-review-state")).toHaveText("awaiting_review");
   await page
     .getByLabel("Rationale")
     .fill("Mandatory evidence is complete and the exact redacted diff is approved.");
   await page.getByTestId("forge-review-approve").click();
+  await assertNoReviewError(page);
   await expect(page.getByTestId("forge-publish")).toBeVisible();
 
   await page.getByTestId("forge-publish").click();
+  await assertNoReviewError(page);
   await expect(page.getByTestId("forge-review-state")).toHaveText("completed");
   await expect(page.getByTestId("forge-publication-url")).toHaveAttribute(
     "href",
