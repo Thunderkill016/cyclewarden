@@ -28,6 +28,12 @@ export {
   type NewForgeRunEvent,
 } from "./schema";
 
+export {
+  forgeChangeSets,
+  type ForgeChangeSetRow,
+  type NewForgeChangeSet,
+} from "./forge-evidence-schema";
+
 /** DatabasePort — thin contract for future multi-adapter work. */
 export interface DatabasePort {
   ping(): Promise<boolean>;
