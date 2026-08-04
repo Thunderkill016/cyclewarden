@@ -260,7 +260,7 @@ describe("CodexProvider", () => {
     ]);
     expect(client.turnStarts[0]?.input).toContain("Implement the approved change");
     expect(client.turnStarts[0]?.input).toContain("All tests pass");
-    expect(client.turnStarts[0]?.input).toContain("technical output");
+    expect(client.turnStarts[0]?.input).toContain("Technical output language");
     await expect(registry.get(THREAD_ID)).resolves.toMatchObject({
       runId: RUN_ID,
       sandboxId: SANDBOX_ID,
