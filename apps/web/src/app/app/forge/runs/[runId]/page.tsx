@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { RunConsole } from "@/components/forge/run-console";
 import { getForgeActor } from "@/lib/forge/actor";
+import { getForgeInstructionTrace } from "@/lib/forge/instruction-trace-service";
 import {
   ForgeRunControlError,
   getForgeRunView,
@@ -28,6 +29,7 @@ export default async function ForgeRunPage({
     }
     throw error;
   }
+  const instructionTrace = await getForgeInstructionTrace(actor, runId);
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
@@ -54,7 +56,7 @@ export default async function ForgeRunPage({
           App home
         </Link>
       </nav>
-      <RunConsole initial={view} />
+      <RunConsole initial={view} instructionTrace={instructionTrace} />
     </main>
   );
 }
