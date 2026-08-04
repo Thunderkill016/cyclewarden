@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { getForgeActor } from "@/lib/forge/actor";
 import { forgeEvidenceReviewErrorResponse } from "@/lib/forge/evidence-review-http";
-import { resolveForgeEvidenceReview } from "@/lib/forge/evidence-review-service";
+import {
+  ForgeEvidenceReviewError,
+  resolveForgeEvidenceReview,
+} from "@/lib/forge/evidence-review-service";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +26,17 @@ export async function POST(
       getForgeActor(),
       request.json() as Promise<ReviewBody>,
     ]);
-    const decision =
-      body.decision === "approved" || body.decision === "rejected"
-        ? body.decision
-        : "";
+    if (body.decision !== "approved" && body.decision !== "rejected") {
+      throw new ForgeEvidenceReviewError(
+        "INVALID_INPUT",
+        "Review decision must be approved or rejected.",
+        400,
+      );
+    }
     const result = await resolveForgeEvidenceReview({
       actor,
       runId,
-      decision: decision as "approved" | "rejected",
+      decision: body.decision,
       rationale: typeof body.rationale === "string" ? body.rationale : undefined,
       expectedSnapshotVersion:
         typeof body.expectedSnapshotVersion === "number"
