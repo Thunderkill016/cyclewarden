@@ -7,6 +7,7 @@ import {
   getForgeEvidenceReviewView,
   resolveForgeEvidenceReview,
 } from "@/lib/forge/evidence-review-service";
+import { resolveRejectedForgeReview } from "@/lib/forge/resolve-rejected-review";
 
 export const dynamic = "force-dynamic";
 
@@ -34,10 +35,9 @@ export async function POST(
         400,
       );
     }
-    const result = await resolveForgeEvidenceReview({
+    const requestInput = {
       actor,
       runId,
-      decision: body.decision,
       rationale: typeof body.rationale === "string" ? body.rationale : undefined,
       expectedSnapshotVersion:
         typeof body.expectedSnapshotVersion === "number"
@@ -45,7 +45,14 @@ export async function POST(
           : Number.NaN,
       idempotencyKey:
         typeof body.idempotencyKey === "string" ? body.idempotencyKey : "",
-    });
+    };
+    const result =
+      body.decision === "rejected"
+        ? await resolveRejectedForgeReview(requestInput)
+        : await resolveForgeEvidenceReview({
+            ...requestInput,
+            decision: "approved",
+          });
     const view = await getForgeEvidenceReviewView(actor, runId);
     return NextResponse.json({ ok: true, ...result, view });
   } catch (error) {
