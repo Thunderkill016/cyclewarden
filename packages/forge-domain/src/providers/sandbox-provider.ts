@@ -4,6 +4,7 @@ export interface SandboxLimits {
   memoryMb: number;
   storageMb: number;
   allowedHosts: string[];
+  exposedPorts?: number[];
 }
 
 export interface SandboxExecResult {
@@ -11,6 +12,11 @@ export interface SandboxExecResult {
   stdout: string;
   stderr: string;
   durationMs: number;
+}
+
+export interface SandboxExposeResult {
+  port: number;
+  url: string;
 }
 
 export interface SandboxProvider {
@@ -32,6 +38,11 @@ export interface SandboxProvider {
     timeoutMs: number;
     environment?: Record<string, string>;
   }): Promise<SandboxExecResult>;
+
+  expose(input: {
+    sandboxId: string;
+    port: number;
+  }): Promise<SandboxExposeResult>;
 
   stop(input: { sandboxId: string; reason: string }): Promise<void>;
 
