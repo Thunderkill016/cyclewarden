@@ -134,8 +134,8 @@
 - [x] T071 Create `packages/provider-github/` implementing the source-provider contract with a GitHub App
 - [x] T072 Add signed GitHub callback/webhook handling and repository-installation reconciliation
 - [x] T073 Add repository-scoped short-lived credential brokerage without exposing the GitHub App private key
-- [ ] T074 Create `packages/provider-sandbox-vercel/` implementing sandbox create, execute, expose, stop, and destroy
-- [ ] T075 Enforce sandbox time, storage, compute, and deny-by-default network policy
+- [x] T074 Create `packages/provider-sandbox-vercel/` implementing sandbox create, execute, expose, stop, and destroy
+- [x] T075 Enforce sandbox time, storage, compute, and deny-by-default network policy
 - [ ] T076 Create `packages/provider-codex/` implementing start, resume, additional instruction, approval, cancel, event stream, and usage summary
 - [ ] T077 Normalize live provider events into versioned Atoryn run events
 - [ ] T078 Add opt-in live GitHub contract test against a disposable repository
