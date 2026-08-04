@@ -5,6 +5,7 @@ import type { Sql } from "postgres";
 
 import { createSql } from "@/lib/db";
 import type { ForgeActor } from "./actor";
+import { normalizeForgeInstruction } from "./instruction-normalization";
 import { resolveForgeRepository } from "./repositories";
 import type { ForgeStartRunInput } from "./start-run-input";
 
@@ -144,6 +145,11 @@ async function startPersistedRun(input: {
   const repository = assertRepository(input.request);
   const workspaceId = await ensureWorkspace(input.sql, input.actor);
   const hash = requestHash(input.request);
+  const normalizedObjective = normalizeForgeInstruction({
+    instruction: input.request.instruction,
+    instructionLanguage: input.request.instructionLanguage,
+    technicalOutputLanguage: input.request.technicalOutputLanguage,
+  });
 
   return input.sql.begin(async (transaction) => {
     const inserted = await transaction<{ request_hash: string }[]>`
@@ -222,13 +228,15 @@ async function startPersistedRun(input: {
         ${repository.name},
         ${repository.defaultBranch},
         ${jsonb({ test: { command: "pnpm test", requirement: "constitution" } })}::jsonb,
-        ${input.request.instructionLanguage},
+        ${input.request.interfaceLocale},
         ${input.request.technicalOutputLanguage},
         'active'
       )
       ON CONFLICT (workspace_id, source_provider, external_repository_id)
       DO UPDATE SET
         default_branch = EXCLUDED.default_branch,
+        interface_locale = EXCLUDED.interface_locale,
+        technical_output_language = EXCLUDED.technical_output_language,
         status = 'active',
         updated_at = now()
       RETURNING id
@@ -257,7 +265,7 @@ async function startPersistedRun(input: {
         ${input.request.instruction.slice(0, 120)},
         ${input.request.instruction},
         ${input.request.instructionLanguage},
-        ${input.request.instruction},
+        ${normalizedObjective},
         ${jsonb(["repository"])}::jsonb,
         ${jsonb([criterion])}::jsonb,
         ${jsonb(["No production deployment", "No direct base-branch write"])}::jsonb,
@@ -301,6 +309,11 @@ async function startPersistedRun(input: {
           iteration: 1,
           repositoryId: repository.id,
           reviewed: true,
+          interfaceLocale: input.request.interfaceLocale,
+          instructionLanguage: input.request.instructionLanguage,
+          technicalOutputLanguage: input.request.technicalOutputLanguage,
+          originalInstruction: input.request.instruction,
+          normalizedObjective,
         })}::jsonb,
         1
       )
