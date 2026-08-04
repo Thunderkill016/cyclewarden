@@ -1,0 +1,59 @@
+name: Forge Codex provider bootstrap
+
+on:
+  push:
+    branches:
+      - agent/atoryn-forge-codex-provider
+    paths:
+      - packages/provider-codex/**
+      - packages/forge-domain/src/providers/coding-agent-provider.ts
+      - packages/forge-application/src/testing/fake-agent-provider.ts
+      - package.json
+      - pnpm-lock.yaml
+      - .github/workflows/forge-codex-provider-bootstrap.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: forge-codex-provider-bootstrap
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/atoryn-forge-codex-provider
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Synchronize workspace lockfile
+        run: pnpm install --lockfile-only
+      - name: Commit synchronized lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- pnpm-lock.yaml; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add pnpm-lock.yaml
+          git commit -m "chore(forge): sync Codex provider lockfile"
+          git push origin HEAD:agent/atoryn-forge-codex-provider
+      - name: Verify frozen installation
+        run: pnpm install --frozen-lockfile
+      - name: Build Forge domain
+        run: pnpm --filter @cyclewarden/forge-domain build
+      - name: Typecheck Codex provider
+        run: pnpm --filter @cyclewarden/provider-codex typecheck
+      - name: Test Codex provider
+        run: pnpm --filter @cyclewarden/provider-codex test
+      - name: Build Codex provider
+        run: pnpm --filter @cyclewarden/provider-codex build
