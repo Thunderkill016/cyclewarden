@@ -1,6 +1,6 @@
 import type {
-  Publication,
   SourceChangeRequestInput,
+  SourceChangeRequestResult,
   SourceProvider,
   SourceRepositoryRef,
 } from "@cyclewarden/forge-domain";
@@ -45,12 +45,9 @@ export class FakeSourceProvider implements SourceProvider {
 
   async createDraftChangeRequest(
     input: SourceChangeRequestInput,
-  ): Promise<Publication> {
+  ): Promise<SourceChangeRequestResult> {
     this.publicationCalls.push(input);
-    const now = new Date().toISOString();
     return {
-      id: "11111111-1111-4111-8111-111111111111",
-      runId: "22222222-2222-4222-8222-222222222222",
       provider: this.key,
       externalRepositoryId: input.repository.externalRepositoryId,
       branchName: input.branchName,
@@ -59,8 +56,6 @@ export class FakeSourceProvider implements SourceProvider {
       changeRequestUrl: `https://example.test/pull/${this.publicationCalls.length}`,
       status: "pr_created",
       failureCode: null,
-      createdAt: now,
-      updatedAt: now,
     };
   }
 }
