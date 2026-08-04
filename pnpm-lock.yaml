@@ -27,6 +27,9 @@ importers:
       '@cyclewarden/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@cyclewarden/forge-domain':
+        specifier: workspace:*
+        version: link:../../packages/forge-domain
       '@cyclewarden/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
