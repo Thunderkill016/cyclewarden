@@ -22,6 +22,7 @@ test("desktop start -> disconnect -> mobile recover -> approve and cancel", asyn
 }) => {
   await authenticate(page);
   await page.goto("/app/forge");
+  await page.getByTestId("forge-locale-en").click();
   await page.getByLabel(/Describe the change/i).fill(
     "Add a responsive account activity panel with deterministic validation.",
   );
