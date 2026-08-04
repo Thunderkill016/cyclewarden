@@ -33,7 +33,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `pnpm --filter @cyclewarden/evolution-core build && pnpm exec next dev --hostname ${HOST} --port ${PORT}`,
+    command: `pnpm --filter @cyclewarden/evolution-core build && pnpm --filter @cyclewarden/forge-domain build && pnpm exec next dev --hostname ${HOST} --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
