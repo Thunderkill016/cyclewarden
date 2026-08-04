@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import type { ForgeInstructionTraceView } from "@/lib/forge/instruction-trace-service";
 import {
   latestForgeCursor,
   mergeForgeEvents,
@@ -14,6 +15,7 @@ import type {
   ForgeRunEventView,
   ForgeRunView,
 } from "@/lib/forge/run-control-service";
+import { InstructionTrace } from "./instruction-trace";
 import { MobileRunCommandCenter } from "./mobile-run-command-center";
 import { RunActivityFeed } from "./run-activity-feed";
 
@@ -46,7 +48,13 @@ async function parseResponse(response: Response): Promise<CommandResponse> {
   return body;
 }
 
-export function RunConsole({ initial }: { initial: ForgeRunView }) {
+export function RunConsole({
+  initial,
+  instructionTrace,
+}: {
+  initial: ForgeRunView;
+  instructionTrace: ForgeInstructionTraceView;
+}) {
   const [snapshot, setSnapshot] = useState(initial.snapshot);
   const [events, setEvents] = useState(initial.events);
   const [approvals, setApprovals] = useState(initial.approvals);
@@ -66,9 +74,7 @@ export function RunConsole({ initial }: { initial: ForgeRunView }) {
       state: incoming.reduce(projectForgeState, current.state),
       eventSequence: Math.max(current.eventSequence, latestForgeCursor(incoming)),
     }));
-    setApprovals((current) =>
-      incoming.reduce(projectForgeApprovals, current),
-    );
+    setApprovals((current) => incoming.reduce(projectForgeApprovals, current));
   };
 
   useEffect(() => {
@@ -112,7 +118,9 @@ export function RunConsole({ initial }: { initial: ForgeRunView }) {
         setApprovals((current) => upsertApproval(current, result.approval!));
       }
     } catch (commandError) {
-      setError(commandError instanceof Error ? commandError.message : "Unable to add instruction");
+      setError(
+        commandError instanceof Error ? commandError.message : "Unable to add instruction",
+      );
     } finally {
       setPendingAction(null);
     }
@@ -194,9 +202,6 @@ export function RunConsole({ initial }: { initial: ForgeRunView }) {
             <h1 className="mt-2 break-words text-2xl font-semibold text-foreground">
               {initial.task.title}
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted">
-              {initial.task.originalInstruction}
-            </p>
           </div>
           <div className="flex flex-col items-end gap-2 text-xs">
             <span
@@ -211,7 +216,10 @@ export function RunConsole({ initial }: { initial: ForgeRunView }) {
         <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-border bg-background p-3">
             <dt className="text-xs text-muted">Run ID</dt>
-            <dd data-testid="forge-live-run-id" className="mt-1 break-all font-mono text-xs text-foreground">
+            <dd
+              data-testid="forge-live-run-id"
+              className="mt-1 break-all font-mono text-xs text-foreground"
+            >
               {snapshot.id}
             </dd>
           </div>
@@ -225,12 +233,17 @@ export function RunConsole({ initial }: { initial: ForgeRunView }) {
           </div>
           <div className="rounded-xl border border-border bg-background p-3">
             <dt className="text-xs text-muted">Cursor</dt>
-            <dd data-testid="forge-event-cursor" className="mt-1 font-mono text-foreground">
+            <dd
+              data-testid="forge-event-cursor"
+              className="mt-1 font-mono text-foreground"
+            >
               {latestForgeCursor(events)}
             </dd>
           </div>
         </dl>
       </section>
+
+      <InstructionTrace {...instructionTrace} />
 
       {error && (
         <div
