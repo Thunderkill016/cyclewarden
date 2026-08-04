@@ -1,0 +1,53 @@
+{
+  "start": {
+    "eyebrow": "Atoryn Forge · governed remote execution",
+    "title": "Start one reviewable coding run",
+    "description": "Select a repository, describe the task, review permissions and budget, then create one durable queued run. Interface language, instruction language, and technical-output language remain separate.",
+    "back": "Back to app",
+    "actor": "Actor",
+    "demoMode": "demo mode",
+    "authenticatedWorkspace": "authenticated workspace",
+    "submit": "Start governed run",
+    "submitting": "Creating durable run…",
+    "queued": "Run queued.",
+    "openMonitor": "Open live run monitor",
+    "saved": "Saved."
+  },
+  "language": {
+    "interface": "Interface language",
+    "instruction": "Instruction language",
+    "technicalOutput": "Technical-output language",
+    "english": "English",
+    "vietnamese": "Vietnamese",
+    "switchHint": "Switching the interface does not rewrite the task or technical-output policy."
+  },
+  "repository": {
+    "legend": "1. Repository",
+    "description": "GitHub becomes the first live source adapter later. This slice uses the same provider-neutral contract with deterministic repository fixtures."
+  },
+  "task": {
+    "legend": "2. Development task",
+    "instructionLabel": "Describe the change",
+    "instructionPlaceholder": "Example: Add an account settings page and keep code, branches, commits, and pull-request copy in English."
+  },
+  "review": {
+    "legend": "3. Review governed run",
+    "baseBranch": "Base branch",
+    "agent": "Coding agent",
+    "budget": "Maximum budget (USD)",
+    "networkPolicy": "Network policy",
+    "denyByDefault": "Deny by default",
+    "registriesOnly": "Package registries only",
+    "noDeploy": "No production deployment.",
+    "noBaseWrite": "No direct write to the base branch.",
+    "sensitiveApproval": "Sensitive actions remain blocked for approval."
+  },
+  "trace": {
+    "title": "Instruction trace",
+    "original": "Original instruction",
+    "normalized": "Normalized technical instruction",
+    "interfaceLocale": "Interface",
+    "instructionLanguage": "Instruction",
+    "technicalOutputLanguage": "Technical output"
+  }
+}
