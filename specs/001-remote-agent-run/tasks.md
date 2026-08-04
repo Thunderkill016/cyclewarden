@@ -87,17 +87,17 @@
 
 **Goal**: A developer can reconnect, inspect ordered progress, approve/reject, instruct, and cancel from a second device.
 
-- [ ] T046 [US2] Add run snapshot endpoint and SSE endpoint under `apps/web/app/api/forge/runs/[runId]/`
-- [ ] T047 [US2] Implement persisted-history-then-live event projection with event cursor recovery
-- [ ] T048 [P] [US2] Build desktop run activity feed in `apps/web/components/forge/run-activity-feed.tsx`
-- [ ] T049 [P] [US2] Build mobile run command center in `apps/web/components/forge/mobile-run-command-center.tsx`
-- [ ] T050 [US2] Add additional-instruction and cancellation actions with idempotency and terminal-state guards
-- [ ] T051 [US2] Add approval detail and resolve actions with optimistic concurrency
-- [ ] T052 [P] [US2] Add tests for event replay, duplicate event suppression, and reconnect after cursor
-- [ ] T053 [P] [US2] Add race test where two sessions resolve the same approval and only one succeeds
-- [ ] T054 [US2] Add Playwright cross-context test: desktop start -> disconnect -> mobile recover -> approve/cancel
+- [x] T046 [US2] Add authenticated run snapshot, cursor recovery, SSE, command, and approval endpoints under `apps/web/src/app/api/forge/runs/[runId]/`
+- [x] T047 [US2] Implement persisted-history-then-live event projection with `Last-Event-ID`, cursor polling, heartbeat, reconnect, ordered merge, and duplicate suppression in `apps/web/src/lib/forge/run-event-projection.ts` and the SSE route
+- [x] T048 [P] [US2] Build desktop run activity feed in `apps/web/src/components/forge/run-activity-feed.tsx`
+- [x] T049 [P] [US2] Build responsive mobile command center in `apps/web/src/components/forge/mobile-run-command-center.tsx` and connect it through `run-console.tsx`
+- [x] T050 [US2] Add server-authorized additional-instruction and cancellation commands with persistent idempotency, controllable-state guards, ordered events, and terminal completion in `apps/web/src/lib/forge/run-control-service.ts`
+- [x] T051 [US2] Add sensitive-instruction approval detail and approve/reject actions with row locking and optimistic expected-version checks
+- [x] T052 [P] [US2] Add tests for ordered replay, duplicate suppression, cursor-gap recovery, cancellation projection, and approval projection in `apps/web/src/lib/forge/run-event-projection.test.ts`
+- [x] T053 [P] [US2] Add optimistic approval race test proving one session wins and a stale second decision is rejected
+- [x] T054 [US2] Add authenticated cross-context Playwright flow in `apps/web/e2e/forge-live-controls.spec.ts`: desktop start -> close original page -> mobile recover -> sensitive instruction -> approve -> cancel
 
-**Independent acceptance**: US2 scenarios pass while the original browser is closed.
+**Independent acceptance**: US2 passes while the original desktop page is closed. Validation evidence in PR #75 on Ubuntu/Node 22 and PostgreSQL 16: frozen install, Forge domain build, web typecheck, 5/5 replay and approval-race tests, and Next.js production build passed; then one authenticated cross-context Playwright test passed in 41.2 seconds with `--retries=0`, recovering the persisted event cursor and completing instruction, approval, and cancellation from a new mobile browser context. Temporary verification artifacts were removed after validation.
 
 ## Phase 7: User Story 3 - Review evidence and create a draft pull request
 

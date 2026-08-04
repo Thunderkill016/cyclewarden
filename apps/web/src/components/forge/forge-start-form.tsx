@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 
 import { startForgeRunAction } from "@/app/actions/forge";
@@ -56,6 +57,14 @@ export function ForgeStartForm({
           >
             {state.runId}
           </p>
+          {!state.demo && (
+            <Link
+              href={`/app/forge/runs/${state.runId}`}
+              className="mt-4 inline-flex rounded-lg border border-accent px-4 py-2 text-sm font-semibold text-accent"
+            >
+              Open live run monitor
+            </Link>
+          )}
         </div>
       )}
 
