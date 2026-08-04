@@ -62,6 +62,32 @@ describe("completion gate", () => {
     });
   });
 
+  it("blocks a failed mandatory validation", () => {
+    const result = evaluateCompletionGate({
+      currentSnapshotVersion: 3,
+      validations: [{ ...baseValidation, status: "failed", exitCode: 1 }],
+      acceptanceEvidence: [baseEvidence],
+    });
+
+    expect(result.eligibleForApproval).toBe(false);
+    expect(
+      result.blockers.some((item) => item.code === "MANDATORY_VALIDATION_FAILED"),
+    ).toBe(true);
+  });
+
+  it("blocks missing mandatory acceptance evidence", () => {
+    const result = evaluateCompletionGate({
+      currentSnapshotVersion: 3,
+      validations: [baseValidation],
+      acceptanceEvidence: [{ ...baseEvidence, status: "inconclusive" }],
+    });
+
+    expect(result.eligibleForApproval).toBe(false);
+    expect(
+      result.blockers.some((item) => item.code === "MANDATORY_EVIDENCE_MISSING"),
+    ).toBe(true);
+  });
+
   it("never accepts a mandatory waiver", () => {
     const result = evaluateCompletionGate({
       currentSnapshotVersion: 3,
