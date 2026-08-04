@@ -32,12 +32,21 @@ export default async function ForgeRunPage({
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
       <nav className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/app/forge"
-          className="rounded-xl border border-border px-4 py-2 text-sm text-muted transition-colors hover:border-accent hover:text-foreground"
-        >
-          ← Start another run
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/app/forge"
+            className="rounded-xl border border-border px-4 py-2 text-sm text-muted transition-colors hover:border-accent hover:text-foreground"
+          >
+            ← Start another run
+          </Link>
+          <Link
+            href={`/app/forge/runs/${runId}/review`}
+            data-testid="forge-open-review"
+            className="rounded-xl border border-accent/50 bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
+          >
+            Review evidence
+          </Link>
+        </div>
         <Link
           href="/app"
           className="rounded-xl border border-border px-4 py-2 text-sm text-muted transition-colors hover:border-accent hover:text-foreground"
