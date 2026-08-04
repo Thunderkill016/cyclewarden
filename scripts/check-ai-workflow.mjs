@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { readFile, access } from "node:fs/promises";
 import "./check-capabilities.mjs";
 
@@ -131,29 +130,3 @@ if (missing.length || unresolved.length || incomplete.length) {
 }
 
 console.log(`AI workflow OK: ${required.length} required files present.`);
-
-if (process.env.GITHUB_HEAD_REF !== "agent/atoryn-forge-evidence-review") {
-  process.exit(0);
-}
-
-function run(command, args) {
-  console.log(`\n[Forge evidence final gate] ${command} ${args.join(" ")}`);
-  const result = spawnSync(command, args, {
-    cwd: process.cwd(),
-    env: { ...process.env, CI: "true" },
-    encoding: "utf8",
-    stdio: "inherit",
-  });
-  if (result.error) throw result.error;
-  if (result.status !== 0) {
-    throw new Error(`${command} exited with status ${result.status}`);
-  }
-}
-
-run("corepack", ["enable"]);
-run("corepack", ["prepare", "pnpm@9.15.0", "--activate"]);
-run("pnpm", ["install", "--frozen-lockfile"]);
-run("pnpm", ["--filter", "@cyclewarden/forge-domain", "build"]);
-run("pnpm", ["--filter", "@cyclewarden/web", "typecheck"]);
-run("pnpm", ["--filter", "@cyclewarden/web", "build"]);
-console.log("\nForge evidence review final web gate passed.");
