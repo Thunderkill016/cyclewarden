@@ -10,6 +10,7 @@ export * from "./approvals/resolve-approval.js";
 export * from "./reviews/resolve-review.js";
 export * from "./publications/publish-run.js";
 export * from "./events/live-provider-event-normalizer.js";
+export * from "./events/postgres-live-provider-event-sink.js";
 export * from "./persistence/postgres-forge-repository.js";
 export * from "./persistence/postgres-idempotency-repository.js";
 export * from "./reconciliation/postgres-reconciler.js";
