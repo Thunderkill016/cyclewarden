@@ -130,11 +130,23 @@ if (process.env.GITHUB_HEAD_REF !== "agent/atoryn-forge-evidence-review") {
   process.exit(0);
 }
 
-function run(command, args) {
-  console.log(`\n[Forge evidence gate] ${command} ${args.join(" ")}`);
+const postgresName = `forge-evidence-e2e-${process.pid}`;
+const verificationEnv = {
+  ...process.env,
+  CI: "true",
+  DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:55432/cyclewarden",
+  BETTER_AUTH_SECRET: "ci-test-secret-at-least-32-characters-long!!",
+  BETTER_AUTH_URL: "http://127.0.0.1:3000",
+  AUTH_ADAPTER: "better-auth",
+  NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000",
+  PLAYWRIGHT_HOST: "127.0.0.1",
+};
+
+function run(command, args, env = verificationEnv) {
+  console.log(`\n[Forge evidence E2E] ${command} ${args.join(" ")}`);
   const result = spawnSync(command, args, {
     cwd: process.cwd(),
-    env: { ...process.env, CI: "true" },
+    env,
     encoding: "utf8",
     stdio: "inherit",
   });
@@ -144,18 +156,63 @@ function run(command, args) {
   }
 }
 
-run("corepack", ["enable"]);
-run("corepack", ["prepare", "pnpm@9.15.0", "--activate"]);
-run("pnpm", ["install", "--frozen-lockfile"]);
-run("pnpm", ["--filter", "@cyclewarden/forge-domain", "build"]);
-run("pnpm", ["--filter", "@cyclewarden/web", "typecheck"]);
-run("pnpm", [
-  "--filter",
-  "@cyclewarden/web",
-  "exec",
-  "vitest",
-  "run",
-  "src/lib/forge/evidence-review-service.test.ts",
-]);
-run("pnpm", ["--filter", "@cyclewarden/web", "build"]);
-console.log("\nForge evidence review web gate passed.");
+try {
+  run("docker", [
+    "run",
+    "--detach",
+    "--rm",
+    "--name",
+    postgresName,
+    "--env",
+    "POSTGRES_PASSWORD=postgres",
+    "--env",
+    "POSTGRES_DB=cyclewarden",
+    "--publish",
+    "55432:5432",
+    "postgres:16",
+  ]);
+
+  let ready = false;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const probe = spawnSync(
+      "docker",
+      ["exec", postgresName, "pg_isready", "-U", "postgres", "-d", "cyclewarden"],
+      { encoding: "utf8" },
+    );
+    if (probe.status === 0) {
+      ready = true;
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+  if (!ready) throw new Error("PostgreSQL fixture did not become ready");
+
+  run("corepack", ["enable"]);
+  run("corepack", ["prepare", "pnpm@9.15.0", "--activate"]);
+  run("pnpm", ["install", "--frozen-lockfile"]);
+  run("pnpm", ["db:migrate"]);
+  run("pnpm", ["--filter", "@cyclewarden/forge-domain", "build"]);
+  run("pnpm", [
+    "--filter",
+    "@cyclewarden/web",
+    "exec",
+    "playwright",
+    "install",
+    "chromium",
+  ]);
+  run("pnpm", [
+    "--filter",
+    "@cyclewarden/web",
+    "exec",
+    "playwright",
+    "test",
+    "e2e/forge-evidence-review.spec.ts",
+    "--retries=0",
+  ]);
+  console.log("\nForge evidence review Playwright acceptance passed.");
+} finally {
+  spawnSync("docker", ["rm", "--force", postgresName], {
+    encoding: "utf8",
+    stdio: "inherit",
+  });
+}
