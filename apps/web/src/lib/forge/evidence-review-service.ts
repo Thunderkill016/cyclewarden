@@ -17,6 +17,7 @@ export type ForgeReviewRunState =
   | "provisioning"
   | "running"
   | "awaiting_approval"
+  | "cancelling"
   | "validating"
   | "awaiting_review"
   | "publishing"
@@ -475,7 +476,6 @@ async function getAuthorizedRun(
   lock = false,
 ): Promise<AuthorizedReviewRunRow> {
   assertUuid(runId, "Run ID");
-  const lockClause = lock ? " FOR UPDATE OF r" : "";
   const rows = await sql<AuthorizedReviewRunRow[]>`
     SELECT r.id, r.task_id, r.workspace_id, r.iteration, r.state,
            r.review_outcome, r.version, r.event_sequence, r.base_branch,
@@ -500,7 +500,6 @@ async function getAuthorizedRun(
       404,
     );
   }
-  if (lock && !lockClause) throw new Error("Unreachable lock guard");
   if (lock) {
     const locked = await sql<AuthorizedReviewRunRow[]>`
       SELECT r.id, r.task_id, r.workspace_id, r.iteration, r.state,
@@ -831,6 +830,14 @@ export async function prepareFixtureForgeEvidence(input: {
   const root = requireSql();
   return root.begin(async (transaction) => {
     const run = await getAuthorizedRun(transaction, input.actor, input.runId, true);
+    const operation = "prepare-fixture-evidence";
+    const claim = await claimMutation(transaction, {
+      workspaceId: run.workspace_id,
+      operation,
+      idempotencyKey: input.idempotencyKey,
+      hash: requestHash({ runId: run.id }),
+    });
+    if (claim.replay) return claim.replay;
     if (run.source_provider !== "fake-source") {
       throw new ForgeEvidenceReviewError(
         "PROVIDER_UNAVAILABLE",
@@ -845,14 +852,6 @@ export async function prepareFixtureForgeEvidence(input: {
         409,
       );
     }
-    const operation = "prepare-fixture-evidence";
-    const claim = await claimMutation(transaction, {
-      workspaceId: run.workspace_id,
-      operation,
-      idempotencyKey: input.idempotencyKey,
-      hash: requestHash({ runId: run.id }),
-    });
-    if (claim.replay) return claim.replay;
 
     const baseCommitSha = gitSha(`${run.id}:base:${run.iteration}`);
     const headCommitSha = gitSha(`${run.id}:head:${run.iteration}`);
@@ -1079,6 +1078,13 @@ export async function resolveForgeEvidenceReview(input: {
   expectedSnapshotVersion: number;
 }): Promise<ForgeReviewMutationResult> {
   assertIdempotencyKey(input.idempotencyKey);
+  if (input.decision !== "approved" && input.decision !== "rejected") {
+    throw new ForgeEvidenceReviewError(
+      "INVALID_INPUT",
+      "Review decision must be approved or rejected.",
+      400,
+    );
+  }
   if (!Number.isInteger(input.expectedSnapshotVersion) || input.expectedSnapshotVersion < 0) {
     throw new ForgeEvidenceReviewError(
       "INVALID_INPUT",
@@ -1090,13 +1096,6 @@ export async function resolveForgeEvidenceReview(input: {
   const root = requireSql();
   return root.begin(async (transaction) => {
     const run = await getAuthorizedRun(transaction, input.actor, input.runId, true);
-    if (run.state !== "awaiting_review") {
-      throw new ForgeEvidenceReviewError(
-        "RUN_NOT_REVIEWABLE",
-        `The run is ${run.state}, not awaiting review.`,
-        409,
-      );
-    }
     const operation = "resolve-evidence-review";
     const claim = await claimMutation(transaction, {
       workspaceId: run.workspace_id,
@@ -1110,6 +1109,13 @@ export async function resolveForgeEvidenceReview(input: {
       }),
     });
     if (claim.replay) return claim.replay;
+    if (run.state !== "awaiting_review") {
+      throw new ForgeEvidenceReviewError(
+        "RUN_NOT_REVIEWABLE",
+        `The run is ${run.state}, not awaiting review.`,
+        409,
+      );
+    }
 
     const [validations, evidence, changeSet, existingReview] = await Promise.all([
       readValidations(transaction, run.workspace_id, run.id),
@@ -1245,13 +1251,6 @@ export async function createNextForgeIteration(input: {
       input.previousRunId,
       true,
     );
-    if (previous.state !== "completed" || previous.review_outcome !== "rejected") {
-      throw new ForgeEvidenceReviewError(
-        "RUN_NOT_REVIEWABLE",
-        "A new iteration requires a completed rejected run.",
-        409,
-      );
-    }
     const operation = "create-next-iteration";
     const claim = await claimMutation(transaction, {
       workspaceId: previous.workspace_id,
@@ -1260,6 +1259,13 @@ export async function createNextForgeIteration(input: {
       hash: requestHash({ previousRunId: previous.id }),
     });
     if (claim.replay) return claim.replay;
+    if (previous.state !== "completed" || previous.review_outcome !== "rejected") {
+      throw new ForgeEvidenceReviewError(
+        "RUN_NOT_REVIEWABLE",
+        "A new iteration requires a completed rejected run.",
+        409,
+      );
+    }
 
     const workspaceRows = await transaction<{ active_run_limit: number }[]>`
       SELECT active_run_limit
@@ -1372,7 +1378,7 @@ function fakeDraftPublication(input: {
   branchName: string;
   headCommitSha: string;
 }): { id: string; url: string } {
-  const id = `draft-${sha256(`${input.runId}:${input.branchName}`).slice(0, 12)}`;
+  const id = `draft-${sha256(`${input.runId}:${input.branchName}:${input.headCommitSha}`).slice(0, 12)}`;
   const repositoryPath = input.repository.split("/").map(encodeURIComponent).join("/");
   return {
     id,
@@ -1397,13 +1403,6 @@ export async function publishApprovedForgeRun(input: {
   const root = requireSql();
   const phase = await root.begin(async (transaction) => {
     const run = await getAuthorizedRun(transaction, input.actor, input.runId, true);
-    if (run.state !== "awaiting_review" && run.state !== "publishing") {
-      throw new ForgeEvidenceReviewError(
-        "RUN_NOT_REVIEWABLE",
-        `The run cannot publish while it is ${run.state}.`,
-        409,
-      );
-    }
     const operation = "publish-approved-run";
     const hash = requestHash({
       runId: run.id,
@@ -1417,6 +1416,17 @@ export async function publishApprovedForgeRun(input: {
       allowPendingReconciliation: true,
     });
     if (claim.replay) return { replay: claim.replay } as const;
+    if (
+      run.state !== "awaiting_review" &&
+      run.state !== "publishing" &&
+      run.state !== "completed"
+    ) {
+      throw new ForgeEvidenceReviewError(
+        "RUN_NOT_REVIEWABLE",
+        `The run cannot publish while it is ${run.state}.`,
+        409,
+      );
+    }
 
     const [validations, evidence, changeSet, review, publication] = await Promise.all([
       readValidations(transaction, run.workspace_id, run.id),
@@ -1460,7 +1470,7 @@ export async function publishApprovedForgeRun(input: {
       if (recovery === "reuse-completed") {
         const response: ForgeReviewMutationResult = {
           runId: run.id,
-          state: run.state === "completed" ? "completed" : "publishing",
+          state: "completed",
           version: run.version,
           eventSequence: Number(run.event_sequence),
           snapshotVersion: changeSet.snapshotVersion,
