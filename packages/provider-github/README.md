@@ -35,6 +35,21 @@ Each installation-token request contains exactly one repository ID and explicit 
 
 The token is exposed only inside `withRepositoryCredential(...)`. The broker does not cache, persist, log, or return it as durable application state.
 
+## Opt-in live contract
+
+`src/github-source-provider.live.test.ts` exercises the provider against a real disposable repository. Normal CI discovers the test but skips it unless `ATORYN_LIVE_GITHUB_CONTRACT=1`.
+
+The test requires:
+
+- `ATORYN_LIVE_GITHUB_TOKEN` with access to one disposable repository;
+- `ATORYN_LIVE_GITHUB_REPOSITORY=owner/repo`;
+- `ATORYN_LIVE_GITHUB_CONFIRM_DISPOSABLE=DESTROY:owner/repo`;
+- optionally `ATORYN_LIVE_GITHUB_BASE_BRANCH`.
+
+It refuses the production `cyclewarden` repository and refuses repository names that do not explicitly contain a disposable fixture/test marker. The test creates an unreferenced commit, creates a unique branch and draft pull request at that exact SHA, replays the same request to prove idempotency, verifies the base branch did not move, and closes the pull request and deletes the branch in `finally` cleanup.
+
+The manual workflow `.github/workflows/forge-live-github-contract.yml` runs inside the `live-github-contract` GitHub environment and expects the token as an environment secret. A successful live workflow run is required before T078 is marked complete.
+
 ## Required GitHub App permissions
 
 The live client implementation should request only the repository permissions needed for metadata, contents/refs, and pull requests. The default publication path needs read-only metadata plus the minimum contents and pull-request access required by the requested operation.
