@@ -1,0 +1,53 @@
+{
+  "start": {
+    "eyebrow": "Atoryn Forge · thực thi từ xa có kiểm soát",
+    "title": "Bắt đầu một phiên lập trình có thể kiểm duyệt",
+    "description": "Chọn kho mã, mô tả yêu cầu, kiểm tra quyền và ngân sách rồi tạo một phiên chạy bền vững. Ngôn ngữ giao diện, ngôn ngữ yêu cầu và ngôn ngữ đầu ra kỹ thuật được kiểm soát riêng.",
+    "back": "Quay lại ứng dụng",
+    "actor": "Người thực hiện",
+    "demoMode": "chế độ demo",
+    "authenticatedWorkspace": "workspace đã xác thực",
+    "submit": "Bắt đầu phiên chạy có kiểm soát",
+    "submitting": "Đang tạo phiên chạy bền vững…",
+    "queued": "Đã xếp hàng phiên chạy.",
+    "openMonitor": "Mở màn hình theo dõi trực tiếp",
+    "saved": "Đã lưu."
+  },
+  "language": {
+    "interface": "Ngôn ngữ giao diện",
+    "instruction": "Ngôn ngữ yêu cầu",
+    "technicalOutput": "Ngôn ngữ đầu ra kỹ thuật",
+    "english": "Tiếng Anh",
+    "vietnamese": "Tiếng Việt",
+    "switchHint": "Đổi giao diện không viết lại yêu cầu hoặc chính sách đầu ra kỹ thuật."
+  },
+  "repository": {
+    "legend": "1. Kho mã nguồn",
+    "description": "GitHub sẽ là bộ kết nối nguồn trực tiếp đầu tiên ở giai đoạn sau. Lát cắt hiện tại dùng cùng hợp đồng trung lập nhà cung cấp với dữ liệu kho mã xác định trước."
+  },
+  "task": {
+    "legend": "2. Yêu cầu phát triển",
+    "instructionLabel": "Mô tả thay đổi",
+    "instructionPlaceholder": "Ví dụ: Thêm trang cài đặt tài khoản và giữ code, nhánh, commit cùng nội dung pull request bằng tiếng Anh."
+  },
+  "review": {
+    "legend": "3. Kiểm tra phiên chạy có kiểm soát",
+    "baseBranch": "Nhánh nền",
+    "agent": "Agent lập trình",
+    "budget": "Ngân sách tối đa (USD)",
+    "networkPolicy": "Chính sách mạng",
+    "denyByDefault": "Chặn theo mặc định",
+    "registriesOnly": "Chỉ kho package",
+    "noDeploy": "Không triển khai production.",
+    "noBaseWrite": "Không ghi trực tiếp vào nhánh nền.",
+    "sensitiveApproval": "Hành động nhạy cảm vẫn phải chờ phê duyệt."
+  },
+  "trace": {
+    "title": "Dấu vết ngôn ngữ",
+    "original": "Yêu cầu gốc",
+    "normalized": "Chỉ dẫn kỹ thuật đã chuẩn hóa",
+    "interfaceLocale": "Giao diện",
+    "instructionLanguage": "Yêu cầu",
+    "technicalOutputLanguage": "Đầu ra kỹ thuật"
+  }
+}
