@@ -1,6 +1,6 @@
 import type {
-  Publication,
   SourceChangeRequestInput,
+  SourceChangeRequestResult,
   SourceProvider,
   SourceRepositoryRef,
 } from "@cyclewarden/forge-domain";
@@ -70,15 +70,6 @@ export interface GitHubInstallationClientFactory {
   forRepository(repositoryId: string): Promise<GitHubInstallationClient>;
 }
 
-export interface GitHubPublicationContext {
-  publicationId: string;
-  runId: string;
-}
-
-export type GitHubPublicationContextResolver = (
-  input: SourceChangeRequestInput,
-) => GitHubPublicationContext;
-
 export class GitHubSourceProviderError extends Error {
   constructor(
     readonly code:
@@ -97,8 +88,6 @@ export class GitHubSourceProviderError extends Error {
 
 export interface GitHubSourceProviderDependencies {
   clients: GitHubInstallationClientFactory;
-  publicationContext: GitHubPublicationContextResolver;
-  now?: () => Date;
   pageSize?: number;
 }
 
@@ -158,11 +147,9 @@ function assertPublicationInput(input: SourceChangeRequestInput): void {
 
 export class GitHubSourceProvider implements SourceProvider {
   readonly key = "github";
-  private readonly now: () => Date;
   private readonly pageSize: number;
 
   constructor(private readonly dependencies: GitHubSourceProviderDependencies) {
-    this.now = dependencies.now ?? (() => new Date());
     this.pageSize = dependencies.pageSize ?? 50;
     if (!Number.isInteger(this.pageSize) || this.pageSize < 1 || this.pageSize > 100) {
       throw new GitHubSourceProviderError(
@@ -201,7 +188,7 @@ export class GitHubSourceProvider implements SourceProvider {
 
   async createDraftChangeRequest(
     input: SourceChangeRequestInput,
-  ): Promise<Publication> {
+  ): Promise<SourceChangeRequestResult> {
     assertPublicationInput(input);
     const client = await this.dependencies.clients.forRepository(
       input.repository.externalRepositoryId,
@@ -273,11 +260,7 @@ export class GitHubSourceProvider implements SourceProvider {
       );
     }
 
-    const context = this.dependencies.publicationContext(input);
-    const timestamp = this.now().toISOString();
     return {
-      id: context.publicationId,
-      runId: context.runId,
       provider: this.key,
       externalRepositoryId: repository.id,
       branchName: input.branchName,
@@ -286,8 +269,6 @@ export class GitHubSourceProvider implements SourceProvider {
       changeRequestUrl: pullRequest.url,
       status: "pr_created",
       failureCode: null,
-      createdAt: timestamp,
-      updatedAt: timestamp,
     };
   }
 }
