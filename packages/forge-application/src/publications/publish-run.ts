@@ -69,7 +69,7 @@ export async function publishRun(input: {
         payload: { branchName: input.branchName },
       });
 
-      const providerPublication = await input.sourceProvider.createDraftChangeRequest({
+      const providerResult = await input.sourceProvider.createDraftChangeRequest({
         repository: input.repository,
         baseBranch: run.baseBranch,
         branchName: input.branchName,
@@ -81,7 +81,7 @@ export async function publishRun(input: {
       });
       const now = new Date().toISOString();
       const publication = publicationSchema.parse({
-        ...providerPublication,
+        ...providerResult,
         id: randomUUID(),
         runId: run.id,
         createdAt: now,
