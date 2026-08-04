@@ -15,7 +15,11 @@ type ApiFailure = {
   errorCode?: string;
 };
 
-type MutationResponse = ({ ok: true } & ForgeReviewMutationResult) | ApiFailure;
+type MutationSuccess = {
+  ok: true;
+  view?: ForgeEvidenceReviewView;
+} & ForgeReviewMutationResult;
+type MutationResponse = MutationSuccess | ApiFailure;
 type ViewResponse = { ok: true; view: ForgeEvidenceReviewView } | ApiFailure;
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -34,9 +38,10 @@ export function EvidenceReviewConsole({
   const [notice, setNotice] = useState<string | null>(null);
 
   async function refresh() {
-    const response = await fetch(`/api/forge/runs/${view.run.id}/evidence`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `/api/forge/runs/${view.run.id}/evidence?cursor=${Date.now()}`,
+      { cache: "no-store" },
+    );
     const result = await readJson<ViewResponse>(response);
     if (!result.ok) {
       throw new Error(result.error ?? "Unable to refresh evidence.");
@@ -49,7 +54,7 @@ export function EvidenceReviewConsole({
     label: string,
     path: string,
     body: Record<string, unknown>,
-  ): Promise<ForgeReviewMutationResult | null> {
+  ): Promise<MutationSuccess | null> {
     setBusy(label);
     setError(null);
     setNotice(null);
@@ -65,6 +70,7 @@ export function EvidenceReviewConsole({
           `${result.errorCode ?? "REQUEST_FAILED"}: ${result.error ?? "Request failed."}`,
         );
       }
+      if (result.view) setView(result.view);
       setNotice(result.replayed ? "The idempotent result was replayed." : "Saved.");
       return result;
     } catch (cause) {
@@ -81,7 +87,7 @@ export function EvidenceReviewConsole({
       `/api/forge/runs/${view.run.id}/evidence`,
       { idempotencyKey: crypto.randomUUID() },
     );
-    if (result) await refresh();
+    if (result && !result.view) await refresh();
   }
 
   async function resolveReview(decision: "approved" | "rejected") {
@@ -96,7 +102,7 @@ export function EvidenceReviewConsole({
         idempotencyKey: crypto.randomUUID(),
       },
     );
-    if (result) await refresh();
+    if (result && !result.view) await refresh();
   }
 
   async function createNextIteration() {
@@ -120,7 +126,7 @@ export function EvidenceReviewConsole({
         idempotencyKey: crypto.randomUUID(),
       },
     );
-    if (result) await refresh();
+    if (result && !result.view) await refresh();
   }
 
   const canPrepare =
