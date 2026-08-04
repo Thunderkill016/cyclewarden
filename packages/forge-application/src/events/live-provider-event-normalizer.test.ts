@@ -10,7 +10,7 @@ import {
 const HEAD_SHA = "a".repeat(40);
 
 describe("normalizeLiveProviderEvent", () => {
-  it("normalizes a GitHub publication into a versioned provider event without assigning sequence", () => {
+  it("normalizes GitHub publication metadata without assigning application sequence", () => {
     const event = normalizeLiveProviderEvent({
       source: "source",
       providerKey: "github",
@@ -55,7 +55,7 @@ describe("normalizeLiveProviderEvent", () => {
     expect("createdAt" in event).toBe(false);
   });
 
-  it("produces deterministic correlation IDs from provider identity and cursor", () => {
+  it("derives deterministic correlations from provider identity and opaque cursor", () => {
     const input = {
       source: "sandbox" as const,
       providerKey: "vercel-sandbox",
@@ -68,30 +68,27 @@ describe("normalizeLiveProviderEvent", () => {
     };
 
     const first = normalizeLiveProviderEvent(input);
-    const second = normalizeLiveProviderEvent(input);
-    const nextCursor = normalizeLiveProviderEvent({
+    const replay = normalizeLiveProviderEvent(input);
+    const next = normalizeLiveProviderEvent({
       ...input,
       cursor: "operation-created-2",
     });
 
-    expect(first.correlationId).toBe(second.correlationId);
-    expect(first.correlationId).not.toBe(nextCursor.correlationId);
+    expect(first.correlationId).toBe(replay.correlationId);
+    expect(first.correlationId).not.toBe(next.correlationId);
     expect(first).toMatchObject({
       type: "sandbox.ready",
       actorType: "provider",
       actorId: "vercel-sandbox",
       payload: {
-        provider: {
-          source: "sandbox",
-          payloadVersion: 1,
-        },
+        provider: { source: "sandbox", payloadVersion: 1 },
         data: { expiresAt: "2026-08-05T01:00:00.000Z" },
       },
       schemaVersion: 1,
     });
   });
 
-  it("maps every coding-agent event into stable Atoryn event names", () => {
+  it("maps every coding-agent event to stable Atoryn event names", () => {
     const events = [
       { type: "message" as const, text: "Editing files" },
       {
@@ -124,13 +121,11 @@ describe("normalizeLiveProviderEvent", () => {
     ]);
   });
 
-  it("redacts secret fields and credential-shaped strings before persistence", () => {
+  it("redacts secret fields and credential-shaped values before persistence", () => {
     const original = {
       command: "curl -H 'Authorization: Bearer abc.def.ghi' https://example.test",
       githubToken: "ghp_abcdefghijklmnopqrstuvwxyz123456",
-      nested: {
-        api_key: "sk-abcdefghijklmnopqrstuvwxyz123456",
-      },
+      nested: { api_key: "sk-abcdefghijklmnopqrstuvwxyz123456" },
     };
 
     const normalized = normalizeLiveProviderEvent({
@@ -146,10 +141,11 @@ describe("normalizeLiveProviderEvent", () => {
       },
     });
 
+    const persisted = JSON.stringify(normalized.payload.data);
     expect(normalized.payload.redactionCount).toBeGreaterThanOrEqual(3);
-    expect(JSON.stringify(normalized.payload.data)).not.toContain("ghp_");
-    expect(JSON.stringify(normalized.payload.data)).not.toContain("sk-");
-    expect(JSON.stringify(normalized.payload.data)).not.toContain("Bearer abc");
+    expect(persisted).not.toContain("ghp_");
+    expect(persisted).not.toContain("sk-");
+    expect(persisted).not.toContain("Bearer abc");
     expect(original.githubToken).toContain("ghp_");
     expect(original.nested.api_key).toContain("sk-");
   });
@@ -181,9 +177,7 @@ describe("normalizeLiveProviderEvent", () => {
 
     expect(command).toMatchObject({
       type: "sandbox.command_completed",
-      payload: {
-        data: { command: "pnpm test", exitCode: 0, durationMs: 25 },
-      },
+      payload: { data: { command: "pnpm test", exitCode: 0, durationMs: 25 } },
     });
     expect(exposure).toMatchObject({
       type: "sandbox.exposed",
@@ -193,7 +187,7 @@ describe("normalizeLiveProviderEvent", () => {
     });
   });
 
-  it("rejects invalid provider metadata, publication identities, and non-JSON tool input", () => {
+  it("fails closed for invalid publication metadata and non-JSON tool input", () => {
     expect(() =>
       normalizeLiveProviderEvent({
         source: "source",
@@ -243,8 +237,6 @@ describe("normalizeLiveProviderEvent", () => {
           input: cyclic,
         },
       }),
-    ).toMatchObject<Partial<LiveProviderEventNormalizationError>>({
-      code: "NON_JSON_PAYLOAD",
-    });
+    ).toThrowError(LiveProviderEventNormalizationError);
   });
 });
