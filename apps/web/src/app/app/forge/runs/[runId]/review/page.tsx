@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { EvidenceReviewConsole } from "@/components/forge/evidence-review-console";
+import { InstructionTrace } from "@/components/forge/instruction-trace";
 import { getForgeActor } from "@/lib/forge/actor";
 import {
   ForgeEvidenceReviewError,
   getForgeEvidenceReviewView,
 } from "@/lib/forge/evidence-review-service";
+import { getForgeInstructionTrace } from "@/lib/forge/instruction-trace-service";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,7 @@ export default async function ForgeEvidenceReviewPage({
     }
     throw error;
   }
+  const instructionTrace = await getForgeInstructionTrace(actor, runId);
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
@@ -45,7 +48,10 @@ export default async function ForgeEvidenceReviewPage({
           Forge home
         </Link>
       </nav>
-      <EvidenceReviewConsole initial={view} />
+      <div className="space-y-5">
+        <InstructionTrace {...instructionTrace} />
+        <EvidenceReviewConsole initial={view} />
+      </div>
     </main>
   );
 }

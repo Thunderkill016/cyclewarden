@@ -5,6 +5,8 @@ import { useActionState, useState } from "react";
 
 import { startForgeRunAction } from "@/app/actions/forge";
 import { initialForgeStartActionState } from "@/lib/forge/action-state";
+import { createForgeTranslator } from "@/lib/forge/i18n";
+import type { ForgeLanguageState } from "@/lib/forge/language-state";
 import type { ForgeRepositoryOption } from "@/lib/forge/repositories";
 import { RepositorySelector } from "./repository-selector";
 import { RunReview } from "./run-review";
@@ -12,8 +14,12 @@ import { TaskComposer } from "./task-composer";
 
 export function ForgeStartForm({
   repositories,
+  languages,
+  onLanguagesChange,
 }: {
   repositories: ForgeRepositoryOption[];
+  languages: ForgeLanguageState;
+  onLanguagesChange: (next: ForgeLanguageState) => void;
 }) {
   const [state, action, pending] = useActionState(
     startForgeRunAction,
@@ -23,16 +29,30 @@ export function ForgeStartForm({
   const defaultRepository = repositories.find(
     (repository) => repository.supported && repository.status === "active",
   );
+  const t = createForgeTranslator(languages.interfaceLocale);
 
   return (
     <form action={action} className="space-y-5">
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
+      <input
+        data-testid="forge-interface-locale"
+        type="hidden"
+        name="interfaceLocale"
+        value={languages.interfaceLocale}
+      />
       <RepositorySelector
         repositories={repositories}
         defaultRepositoryId={defaultRepository?.id}
+        locale={languages.interfaceLocale}
       />
-      <TaskComposer />
-      <RunReview baseBranch={defaultRepository?.defaultBranch ?? "main"} />
+      <TaskComposer
+        languages={languages}
+        onLanguagesChange={onLanguagesChange}
+      />
+      <RunReview
+        baseBranch={defaultRepository?.defaultBranch ?? "main"}
+        locale={languages.interfaceLocale}
+      />
 
       {state.error && (
         <div
@@ -47,7 +67,7 @@ export function ForgeStartForm({
 
       {state.ok && state.runId && (
         <div className="rounded-xl border border-accent/50 bg-accent/10 px-4 py-4 text-sm">
-          <p className="font-semibold text-accent">Run queued.</p>
+          <p className="font-semibold text-accent">{t("start.queued")}</p>
           <p className="mt-1 text-muted">
             {state.repository} · {state.demo ? "demo memory" : "durable PostgreSQL"}
           </p>
@@ -62,7 +82,7 @@ export function ForgeStartForm({
               href={`/app/forge/runs/${state.runId}`}
               className="mt-4 inline-flex rounded-lg border border-accent px-4 py-2 text-sm font-semibold text-accent"
             >
-              Open live run monitor
+              {t("start.openMonitor")}
             </Link>
           )}
         </div>
@@ -73,7 +93,7 @@ export function ForgeStartForm({
         disabled={pending || !defaultRepository}
         className="w-full rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-background transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {pending ? "Creating durable run…" : "Start governed run"}
+        {pending ? t("start.submitting") : t("start.submit")}
       </button>
     </form>
   );

@@ -14,6 +14,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
+      "@cyclewarden/forge-domain": resolve(
+        __dirname,
+        "../../packages/forge-domain/src/index.ts",
+      ),
     },
   },
 });

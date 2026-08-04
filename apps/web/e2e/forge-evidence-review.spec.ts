@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+const portable =
+  Boolean(process.env.DATABASE_URL) &&
+  Boolean(process.env.BETTER_AUTH_SECRET) &&
+  (process.env.AUTH_ADAPTER === "better-auth" || !process.env.AUTH_ADAPTER);
+
+test.skip(!portable, "durable evidence review requires Better Auth and PostgreSQL");
+
 async function authenticate(page: import("@playwright/test").Page) {
   const email = `forge_review_${Date.now()}@cyclewarden.test`;
   await page.goto("/login");
@@ -18,9 +25,17 @@ async function authenticate(page: import("@playwright/test").Page) {
 
 async function startFixtureRun(page: import("@playwright/test").Page) {
   await page.goto("/app/forge");
+  await expect(page.locator('select[name="instructionLanguage"]')).toHaveValue("vi");
+  await expect(page.locator('select[name="technicalOutputLanguage"]')).toHaveValue("en");
+
+  await page.getByTestId("forge-locale-en").click();
+  await expect(page.getByTestId("forge-interface-locale")).toHaveValue("en");
+  await expect(page.locator('select[name="instructionLanguage"]')).toHaveValue("vi");
+  await expect(page.locator('select[name="technicalOutputLanguage"]')).toHaveValue("en");
+
   await page
     .getByLabel(/Describe the change/i)
-    .fill("Add a reviewable account activity panel with deterministic validation.");
+    .fill("Thêm bảng hoạt động tài khoản có thể kiểm duyệt và xác thực ổn định.");
   await page.getByRole("button", { name: /Start governed run/i }).click();
   const runId = (await page.getByTestId("forge-run-id").innerText()).trim();
   expect(runId).toMatch(
@@ -37,7 +52,7 @@ async function assertNoReviewError(page: import("@playwright/test").Page) {
   }
 }
 
-test("reject iteration -> approve evidence -> create draft pull request", async ({
+test("Vietnamese task -> reject iteration -> approve English artifacts -> draft pull request", async ({
   page,
 }) => {
   await authenticate(page);
@@ -46,6 +61,15 @@ test("reject iteration -> approve evidence -> create draft pull request", async 
   await page.goto(`/app/forge/runs/${firstRunId}/review`);
   await expect(page.getByTestId("forge-review-run-id")).toHaveText(firstRunId);
   await expect(page.getByTestId("forge-review-state")).toHaveText("queued");
+  await expect(page.getByTestId("forge-instruction-trace")).toContainText(
+    "Thêm bảng hoạt động tài khoản",
+  );
+  await expect(page.getByTestId("forge-normalized-objective")).toContainText(
+    "Implement the user's requested change.",
+  );
+  await expect(page.getByTestId("forge-normalized-objective")).toContainText(
+    "branch names, commit messages, pull-request copy",
+  );
 
   await page.getByTestId("forge-prepare-evidence").click();
   await assertNoReviewError(page);
@@ -99,6 +123,9 @@ test("reject iteration -> approve evidence -> create draft pull request", async 
   const secondRunId = (await page.getByTestId("forge-review-run-id").innerText()).trim();
   expect(secondRunId).not.toBe(firstRunId);
   await expect(page.getByTestId("forge-review-state")).toHaveText("queued");
+  await expect(page.getByTestId("forge-instruction-trace")).toContainText(
+    "Thêm bảng hoạt động tài khoản",
+  );
 
   await page.getByTestId("forge-prepare-evidence").click();
   await assertNoReviewError(page);

@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./locales/en.json": "./locales/en.json",
-    "./locales/vi.json": "./locales/vi.json"
+    "./locales/vi.json": "./locales/vi.json",
+    "./locales/forge/en.json": "./locales/forge/en.json",
+    "./locales/forge/vi.json": "./locales/forge/vi.json"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

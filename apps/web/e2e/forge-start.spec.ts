@@ -28,6 +28,7 @@ test("creates one reviewed Forge run from the responsive web flow", async ({
 }) => {
   await authenticateIfRequired(page);
   await page.goto("/app/forge");
+  await page.getByTestId("forge-locale-en").click();
   await expect(
     page.getByRole("heading", { name: /Start one reviewable coding run/i }),
   ).toBeVisible();
