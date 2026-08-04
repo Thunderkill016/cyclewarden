@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { initialForgeLanguageState } from "@/lib/forge/language-state";
 import type { ForgeRepositoryOption } from "@/lib/forge/repositories";
 import { RepositorySelector } from "./repository-selector";
 import { RunReview } from "./run-review";
@@ -36,6 +37,7 @@ describe("Forge start components", () => {
       createElement(RepositorySelector, {
         repositories,
         defaultRepositoryId: "active",
+        locale: "vi",
       }),
     );
     expect(html).toContain('name="repositoryId"');
@@ -46,7 +48,12 @@ describe("Forge start components", () => {
   });
 
   it("renders separate instruction and technical output language controls", () => {
-    const html = renderToStaticMarkup(createElement(TaskComposer));
+    const html = renderToStaticMarkup(
+      createElement(TaskComposer, {
+        languages: initialForgeLanguageState,
+        onLanguagesChange: () => undefined,
+      }),
+    );
     expect(html).toContain('name="instructionLanguage"');
     expect(html).toContain('name="technicalOutputLanguage"');
     expect(html).toContain('name="instruction"');
@@ -54,7 +61,7 @@ describe("Forge start components", () => {
 
   it("renders reviewed branch, agent, budget and permission policy", () => {
     const html = renderToStaticMarkup(
-      createElement(RunReview, { baseBranch: "main" }),
+      createElement(RunReview, { baseBranch: "main", locale: "en" }),
     );
     expect(html).toContain('name="baseBranch"');
     expect(html).toContain('name="agentProvider"');
