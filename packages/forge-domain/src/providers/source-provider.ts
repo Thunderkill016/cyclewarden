@@ -1,5 +1,3 @@
-import type { Publication } from "../contracts/index.js";
-
 export interface SourceRepositoryRef {
   provider: string;
   externalRepositoryId: string;
@@ -20,6 +18,17 @@ export interface SourceChangeRequestInput {
   expectedHeadSha: string;
 }
 
+export interface SourceChangeRequestResult {
+  provider: string;
+  externalRepositoryId: string;
+  branchName: string;
+  commitSha: string;
+  changeRequestId: string | null;
+  changeRequestUrl: string | null;
+  status: "pushed" | "pr_created";
+  failureCode: string | null;
+}
+
 export interface SourceProvider {
   readonly key: string;
 
@@ -38,5 +47,5 @@ export interface SourceProvider {
 
   createDraftChangeRequest(
     input: SourceChangeRequestInput,
-  ): Promise<Publication>;
+  ): Promise<SourceChangeRequestResult>;
 }
