@@ -1,0 +1,42 @@
+name: Forge Codex assertion correction
+
+on:
+  push:
+    branches:
+      - agent/atoryn-forge-codex-provider
+    paths:
+      - .github/workflows/forge-codex-test-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/atoryn-forge-codex-provider
+      - name: Correct case-sensitive prompt assertion
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("packages/provider-codex/src/codex-provider.test.ts")
+          text = path.read_text()
+          before = 'expect(client.turnStarts[0]?.input).toContain("technical output");'
+          after = 'expect(client.turnStarts[0]?.input).toContain("Technical output language");'
+          if before not in text:
+              raise SystemExit("Expected Codex assertion was not found")
+          path.write_text(text.replace(before, after, 1))
+          PY
+      - name: Commit correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add packages/provider-codex/src/codex-provider.test.ts
+          git commit -m "test(forge): match Codex language prompt label"
+          git push origin HEAD:agent/atoryn-forge-codex-provider
