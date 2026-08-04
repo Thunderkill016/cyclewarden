@@ -1,0 +1,206 @@
+name: Forge evidence one-shot patch
+
+on:
+  push:
+    branches:
+      - agent/atoryn-forge-evidence-review
+    paths:
+      - .github/workflows/forge-evidence-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply service corrections
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("apps/web/src/lib/forge/evidence-review-service.ts")
+          text = path.read_text()
+
+          replacements = [
+              (
+                  '  | "awaiting_approval"\n  | "validating"',
+                  '  | "awaiting_approval"\n  | "cancelling"\n  | "validating"',
+              ),
+              (
+                  '''    if (run.source_provider !== "fake-source") {
+      throw new ForgeEvidenceReviewError(
+        "PROVIDER_UNAVAILABLE",
+        "Fixture evidence is available only for the fake source provider.",
+        409,
+      );
+    }
+    if (!FIXTURE_COMPLETABLE_STATES.has(run.state)) {
+      throw new ForgeEvidenceReviewError(
+        "RUN_NOT_REVIEWABLE",
+        `Evidence cannot be generated while the run is ${run.state}.`,
+        409,
+      );
+    }
+    const operation = "prepare-fixture-evidence";
+    const claim = await claimMutation(transaction, {
+      workspaceId: run.workspace_id,
+      operation,
+      idempotencyKey: input.idempotencyKey,
+      hash: requestHash({ runId: run.id }),
+    });
+    if (claim.replay) return claim.replay;
+''',
+                  '''    const operation = "prepare-fixture-evidence";
+    const claim = await claimMutation(transaction, {
+      workspaceId: run.workspace_id,
+      operation,
+      idempotencyKey: input.idempotencyKey,
+      hash: requestHash({ runId: run.id }),
+    });
+    if (claim.replay) return claim.replay;
+    if (run.source_provider !== "fake-source") {
+      throw new ForgeEvidenceReviewError(
+        "PROVIDER_UNAVAILABLE",
+        "Fixture evidence is available only for the fake source provider.",
+        409,
+      );
+    }
+    if (!FIXTURE_COMPLETABLE_STATES.has(run.state)) {
+      throw new ForgeEvidenceReviewError(
+        "RUN_NOT_REVIEWABLE",
+        `Evidence cannot be generated while the run is ${run.state}.`,
+        409,
+      );
+    }
+''',
+              ),
+              (
+                  '''    if (run.state !== "awaiting_review") {
+      throw new ForgeEvidenceReviewError(
+        "RUN_NOT_REVIEWABLE",
+        `The run is ${run.state}, not awaiting review.`,
+        409,
+      );
+    }
+    const operation = "resolve-evidence-review";
+    const claim = await claimMutation(transaction, {
+      workspaceId: run.workspace_id,
+      operation,
+      idempotencyKey: input.idempotencyKey,
+      hash: requestHash({
+        runId: run.id,
+        decision: input.decision,
+        rationale,
+        expectedSnapshotVersion: input.expectedSnapshotVersion,
+      }),
+    });
+    if (claim.replay) return claim.replay;
+''',
+                  '''    const operation = "resolve-evidence-review";
+    const claim = await claimMutation(transaction, {
+      workspaceId: run.workspace_id,
+      operation,
+      idempotencyKey: input.idempotencyKey,
+      hash: requestHash({
+        runId: run.id,
+        decision: input.decision,
+        rationale,
+        expectedSnapshotVersion: input.expectedSnapshotVersion,
+      }),
+    });
+    if (claim.replay) return claim.replay;
+    if (run.state !== "awaiting_review") {
+      throw new ForgeEvidenceReviewError(
+        "RUN_NOT_REVIEWABLE",
+        `The run is ${run.state}, not awaiting review.`,
+        409,
+      );
+    }
+''',
+              ),
+              (
+                  '''    if (run.state !== "awaiting_review" && run.state !== "publishing") {
+      throw new ForgeEvidenceReviewError(
+        "RUN_NOT_REVIEWABLE",
+        `The run cannot publish while it is ${run.state}.`,
+        409,
+      );
+    }
+    const operation = "publish-approved-run";
+    const hash = requestHash({
+      runId: run.id,
+      expectedSnapshotVersion: input.expectedSnapshotVersion,
+    });
+    const claim = await claimMutation(transaction, {
+      workspaceId: run.workspace_id,
+      operation,
+      idempotencyKey: input.idempotencyKey,
+      hash,
+      allowPendingReconciliation: true,
+    });
+    if (claim.replay) return { replay: claim.replay } as const;
+''',
+                  '''    const operation = "publish-approved-run";
+    const hash = requestHash({
+      runId: run.id,
+      expectedSnapshotVersion: input.expectedSnapshotVersion,
+    });
+    const claim = await claimMutation(transaction, {
+      workspaceId: run.workspace_id,
+      operation,
+      idempotencyKey: input.idempotencyKey,
+      hash,
+      allowPendingReconciliation: true,
+    });
+    if (claim.replay) return { replay: claim.replay } as const;
+    if (
+      run.state !== "awaiting_review" &&
+      run.state !== "publishing" &&
+      run.state !== "completed"
+    ) {
+      throw new ForgeEvidenceReviewError(
+        "RUN_NOT_REVIEWABLE",
+        `The run cannot publish while it is ${run.state}.`,
+        409,
+      );
+    }
+''',
+              ),
+              (
+                  '  const id = `draft-${sha256(`${input.runId}:${input.branchName}`).slice(0, 12)}`;',
+                  '  const id = `draft-${sha256(`${input.runId}:${input.branchName}:${input.headCommitSha}`).slice(0, 12)}`;',
+              ),
+          ]
+
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f"expected patch target missing: {old[:80]!r}")
+              text = text.replace(old, new, 1)
+
+          marker = '''  assertIdempotencyKey(input.idempotencyKey);
+  if (!Number.isInteger(input.expectedSnapshotVersion) || input.expectedSnapshotVersion < 0) {'''
+          replacement = '''  assertIdempotencyKey(input.idempotencyKey);
+  if (input.decision !== "approved" && input.decision !== "rejected") {
+    throw new ForgeEvidenceReviewError(
+      "INVALID_INPUT",
+      "Review decision must be approved or rejected.",
+      400,
+    );
+  }
+  if (!Number.isInteger(input.expectedSnapshotVersion) || input.expectedSnapshotVersion < 0) {'''
+          if marker not in text:
+              raise SystemExit("review validation marker missing")
+          text = text.replace(marker, replacement, 1)
+
+          path.write_text(text)
+          Path(".github/workflows/forge-evidence-patch.yml").unlink()
+          PY
+      - name: Commit patch and remove workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix Forge evidence idempotency boundaries"
+          git push
