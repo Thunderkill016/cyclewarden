@@ -103,19 +103,19 @@
 
 **Goal**: A developer reviews objective evidence, approves or rejects, and publishes only an approved change set.
 
-- [ ] T055 [US3] Adapt existing changed-file and verification capabilities into the Forge completion gate
-- [ ] T056 [US3] Persist validation results and acceptance evidence for build, test, lint, type-check, and custom commands
-- [ ] T057 [US3] Generate and store a redacted change set and unified diff after mutation stops
-- [ ] T058 [P] [US3] Build changed-file and diff review surface in `apps/web/components/forge/change-review.tsx`
-- [ ] T059 [P] [US3] Build validation, acceptance evidence, unresolved risk, and usage panels
-- [ ] T060 [US3] Implement review approval/rejection against an immutable evidence snapshot, with waivers limited to advisory evidence
-- [ ] T061 [US3] Implement publication orchestration that creates a new branch and draft pull request only after approval
-- [ ] T062 [US3] Reuse or adapt existing draft-PR publication code without retaining trusted-local assumptions
-- [ ] T063 [P] [US3] Add completion-gate tests for missing/failed mandatory evidence, invalid mandatory waivers, valid advisory waivers, and stale evidence snapshots
-- [ ] T064 [P] [US3] Add publication idempotency and partial-failure reconciliation tests
-- [ ] T065 [US3] Add Playwright flow for review -> approve -> draft PR result and reject -> new iteration
+- [x] T055 [US3] Reuse the Forge completion gate and CycleWarden verification principles to require mandatory checks, acceptance evidence, current snapshot version, inspectable diff, and explicit developer approval before publication
+- [x] T056 [US3] Persist build, test, lint, type-check validation results and acceptance evidence in PostgreSQL through `forge_validation_results` and `forge_acceptance_evidence`
+- [x] T057 [US3] Add `forge_change_sets` migration/schema and generate a secret-redacted unified diff, SHA-256 digest, exact base/head commits, changed-file scope, risks, summary, and usage estimate in `apps/web/src/lib/forge/evidence-review-service.ts`
+- [x] T058 [P] [US3] Build changed-file and unified-diff review UI in `apps/web/src/components/forge/change-review.tsx`
+- [x] T059 [P] [US3] Build validation, acceptance evidence, blocker, unresolved-risk, and usage panels in `apps/web/src/components/forge/evidence-status-panel.tsx`
+- [x] T060 [US3] Implement immutable snapshot-bound approval and durable rejection transactions, with advisory-only waivers enforced by the completion gate, in `evidence-review-service.ts` and `resolve-rejected-review.ts`
+- [x] T061 [US3] Implement exact-head publication orchestration that creates a new branch identity and fake-provider draft change request only after an approved current evidence snapshot
+- [x] T062 [US3] Adapt the existing draft-publication invariants—draft only, exact verified SHA, idempotent replay, partial-failure reconciliation, and no base-branch write—without importing trusted-local worktree or `gh` assumptions
+- [x] T063 [P] [US3] Expand completion-gate coverage to 6 tests for passing mandatory evidence, failed validation, missing evidence, invalid mandatory waiver, valid advisory waiver, and stale snapshot in `packages/forge-domain/src/review/completion-gate.test.ts`
+- [x] T064 [P] [US3] Add publication recovery tests for completed replay, pending/pushed/failed resume, and exact-head mismatch rejection in `apps/web/src/lib/forge/evidence-review-service.test.ts`
+- [x] T065 [US3] Add authenticated Playwright acceptance in `apps/web/e2e/forge-evidence-review.spec.ts`: start -> evidence -> reject -> distinct next iteration -> evidence -> approve -> fake draft pull request
 
-**Independent acceptance**: US3 scenarios pass with fake source publication before the live GitHub adapter is enabled.
+**Independent acceptance**: US3 passes with fake source publication before live GitHub is enabled. Validation evidence in PR #76: PostgreSQL migrations and database typecheck passed; Forge domain build and 6/6 completion-gate tests passed; web typecheck, publication-recovery tests, and Next.js production build passed; then exactly one authenticated Playwright test with `--retries=0` completed the rejection, next-iteration, approval, and draft-publication flow. A final web typecheck and production build also passed after adding the dedicated rejected-review transaction. Temporary verification hooks and workflow files were removed afterward.
 
 ## Phase 8: User Story 4 - Bilingual workflow
 
