@@ -1,5 +1,6 @@
 import type {
   SandboxExecResult,
+  SandboxExposeResult,
   SandboxProvider,
 } from "@cyclewarden/forge-domain";
 
@@ -7,6 +8,7 @@ export class FakeSandboxProvider implements SandboxProvider {
   readonly key = "fake-sandbox";
   readonly createCalls: unknown[] = [];
   readonly executeCalls: unknown[] = [];
+  readonly exposeCalls: unknown[] = [];
   readonly stopCalls: unknown[] = [];
   readonly destroyCalls: unknown[] = [];
 
@@ -35,6 +37,16 @@ export class FakeSandboxProvider implements SandboxProvider {
   ): Promise<SandboxExecResult> {
     this.executeCalls.push(input);
     return this.commandResult;
+  }
+
+  async expose(
+    input: Parameters<SandboxProvider["expose"]>[0],
+  ): Promise<SandboxExposeResult> {
+    this.exposeCalls.push(input);
+    return {
+      port: input.port,
+      url: `https://sandbox-${input.sandboxId}-${input.port}.example.test`,
+    };
   }
 
   async stop(input: Parameters<SandboxProvider["stop"]>[0]): Promise<void> {
