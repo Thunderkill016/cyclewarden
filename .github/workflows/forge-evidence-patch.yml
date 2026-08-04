@@ -1,11 +1,10 @@
 name: Forge evidence review verification
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/atoryn-forge-evidence-review
-    paths-ignore:
-      - .github/forge-evidence-result.txt
+      - agent/atoryn-forge-live-controls
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -37,9 +36,10 @@ jobs:
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: Apply idempotency corrections once
-        id: patch
+      - name: Apply idempotency corrections in the verification workspace
         shell: bash
         run: |
           python - <<'PY'
@@ -47,7 +47,6 @@ jobs:
 
           path = Path("apps/web/src/lib/forge/evidence-review-service.ts")
           text = path.read_text()
-          original = text
 
           replacements = [
               (
@@ -218,39 +217,19 @@ jobs:
           if marker in text:
               text = text.replace(marker, replacement, 1)
 
-          if text != original:
-              path.write_text(text)
-              print("changed=true")
-              with open("/tmp/patch-changed", "w") as handle:
-                  handle.write("true")
-          else:
-              print("changed=false")
+          path.write_text(text)
           PY
 
-          if [ -f /tmp/patch-changed ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add apps/web/src/lib/forge/evidence-review-service.ts
-            git commit -m "Fix Forge evidence idempotency boundaries"
-            git push
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: pnpm/action-setup@v4
-        if: steps.patch.outputs.changed != 'true'
         with:
           version: 9.15.0
 
       - uses: actions/setup-node@v4
-        if: steps.patch.outputs.changed != 'true'
         with:
           node-version: 22
           cache: pnpm
 
       - name: Run targeted verification and write report
-        if: steps.patch.outputs.changed != 'true'
         shell: bash
         run: |
           set +e
@@ -288,7 +267,7 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/forge-evidence-result.txt
+          git add apps/web/src/lib/forge/evidence-review-service.ts .github/forge-evidence-result.txt
           git commit -m "Record Forge evidence verification" || true
-          git push
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
           exit "${overall}"
