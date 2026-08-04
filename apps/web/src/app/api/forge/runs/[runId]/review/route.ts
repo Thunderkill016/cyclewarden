@@ -4,6 +4,7 @@ import { getForgeActor } from "@/lib/forge/actor";
 import { forgeEvidenceReviewErrorResponse } from "@/lib/forge/evidence-review-http";
 import {
   ForgeEvidenceReviewError,
+  getForgeEvidenceReviewView,
   resolveForgeEvidenceReview,
 } from "@/lib/forge/evidence-review-service";
 
@@ -45,7 +46,8 @@ export async function POST(
       idempotencyKey:
         typeof body.idempotencyKey === "string" ? body.idempotencyKey : "",
     });
-    return NextResponse.json({ ok: true, ...result });
+    const view = await getForgeEvidenceReviewView(actor, runId);
+    return NextResponse.json({ ok: true, ...result, view });
   } catch (error) {
     return forgeEvidenceReviewErrorResponse(error);
   }
