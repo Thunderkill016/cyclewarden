@@ -23,7 +23,8 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "npm run clean && tsc -p tsconfig.build.json",
-    "test": "vitest run src"
+    "test": "vitest run src",
+    "test:live": "vitest run src/github-source-provider.live.test.ts"
   },
   "dependencies": {
     "@cyclewarden/forge-domain": "workspace:*"
