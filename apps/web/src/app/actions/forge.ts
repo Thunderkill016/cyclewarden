@@ -16,6 +16,7 @@ export async function startForgeRunAction(
   const parsed = forgeStartRunInputSchema.safeParse({
     repositoryId: formData.get("repositoryId"),
     instruction: formData.get("instruction"),
+    interfaceLocale: formData.get("interfaceLocale"),
     instructionLanguage: formData.get("instructionLanguage"),
     technicalOutputLanguage: formData.get("technicalOutputLanguage"),
     baseBranch: formData.get("baseBranch"),
