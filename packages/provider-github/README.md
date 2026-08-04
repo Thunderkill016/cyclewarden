@@ -8,13 +8,25 @@ GitHub App source-provider adapter for Atoryn Forge.
 - verify repository identity before publication;
 - bind a working branch to the exact approved commit SHA;
 - create or replay a draft pull request without writing to the base branch;
-- return provider-only change-request metadata.
+- return provider-only change-request metadata;
+- verify GitHub App webhook deliveries against the raw request body;
+- deduplicate delivery IDs without making failed deliveries unretryable;
+- reconcile the complete repository snapshot after installation access changes;
+- deactivate suspended or deleted installations.
 
 ## Durable-state boundary
 
 The provider returns `SourceChangeRequestResult`, which contains only GitHub-owned publication data. The application layer creates the durable `Publication` record and owns its `id`, `runId`, and timestamps. Neither the fake provider nor the GitHub adapter fabricates application identifiers.
 
-## Security boundary
+Webhook delivery and installation repository persistence are also injected boundaries. This package defines the rules, but the application owns durable delivery claims, installation status, and atomic repository-snapshot replacement.
+
+## Webhook security boundary
+
+`GitHubWebhookHandler` requires the original request bytes and verifies `X-Hub-Signature-256` with HMAC-SHA256 before JSON parsing or delivery claiming. It also requires `X-GitHub-Delivery` and `X-GitHub-Event`, enforces a body-size limit, and releases a claimed delivery when reconciliation fails so GitHub can retry it.
+
+For `installation_repositories` changes, the handler asks `GitHubInstallationReconciler` to fetch and atomically replace the full installation inventory instead of trusting an event delta as durable truth. `installation` events reconcile on create, unsuspend, and accepted permission changes; suspend and delete events deactivate the installation.
+
+## Credential boundary
 
 This package never receives a GitHub App private key and never stores installation tokens. It depends on installation-scoped clients supplied by the application boundary. T073 will implement short-lived, repository-scoped token brokerage and must keep private-key material outside this package.
 
