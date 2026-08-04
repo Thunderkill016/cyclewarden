@@ -1,0 +1,36 @@
+{
+  "name": "@cyclewarden/provider-sandbox-vercel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vercel Sandbox provider adapter for Atoryn Forge.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "test": "vitest run src"
+  },
+  "dependencies": {
+    "@cyclewarden/forge-domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
