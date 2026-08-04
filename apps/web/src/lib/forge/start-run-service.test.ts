@@ -18,6 +18,7 @@ const actor: ForgeActor = {
 const request: ForgeStartRunInput = {
   repositoryId: "fixture-nextjs",
   instruction: "Add a governed account settings page",
+  interfaceLocale: "vi",
   instructionLanguage: "en",
   technicalOutputLanguage: "en",
   baseBranch: "main",
@@ -34,6 +35,17 @@ describe("Forge start run service", () => {
     const first = await startGovernedForgeRun({ actor, request, forceMemory: true });
     const duplicate = await startGovernedForgeRun({ actor, request, forceMemory: true });
     expect(duplicate).toEqual(first);
+  });
+
+  it("keeps interface, instruction, and technical-output language in the request hash", async () => {
+    await startGovernedForgeRun({ actor, request, forceMemory: true });
+    await expect(
+      startGovernedForgeRun({
+        actor,
+        forceMemory: true,
+        request: { ...request, interfaceLocale: "en" },
+      }),
+    ).rejects.toMatchObject({ code: "IDEMPOTENCY_KEY_CONFLICT" });
   });
 
   it("rejects a second active run without provider or persistence side effects", async () => {
