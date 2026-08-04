@@ -12,7 +12,8 @@ GitHub App source-provider adapter for Atoryn Forge.
 - verify GitHub App webhook deliveries against the raw request body;
 - deduplicate delivery IDs without making failed deliveries unretryable;
 - reconcile the complete repository snapshot after installation access changes;
-- deactivate suspended or deleted installations.
+- deactivate suspended or deleted installations;
+- broker short-lived installation credentials restricted to one active repository and an explicit permission set.
 
 ## Durable-state boundary
 
@@ -28,8 +29,12 @@ For `installation_repositories` changes, the handler asks `GitHubInstallationRec
 
 ## Credential boundary
 
-This package never receives a GitHub App private key and never stores installation tokens. It depends on installation-scoped clients supplied by the application boundary. T073 will implement short-lived, repository-scoped token brokerage and must keep private-key material outside this package.
+`GitHubCredentialBroker` receives no private key. It depends on a sign-only `GitHubAppJwtSigner`, so private-key material can remain inside a key vault or other isolated signing boundary. The broker validates an active installation-to-repository grant before requesting any signature or token.
+
+Each installation-token request contains exactly one repository ID and explicit `metadata`, `contents`, and `pull_requests` permissions. The response is rejected when GitHub returns another repository, a missing or broader permission, an empty credential, or a lifetime outside the configured short-lived window.
+
+The token is exposed only inside `withRepositoryCredential(...)`. The broker does not cache, persist, log, or return it as durable application state.
 
 ## Required GitHub App permissions
 
-The live client implementation should request only the repository permissions needed for metadata, contents/refs, and pull requests, and should mint installation tokens restricted to the selected repository whenever possible.
+The live client implementation should request only the repository permissions needed for metadata, contents/refs, and pull requests. The default publication path needs read-only metadata plus the minimum contents and pull-request access required by the requested operation.
