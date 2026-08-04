@@ -60,7 +60,28 @@ test("reject iteration -> approve evidence -> create draft pull request", async 
   await page
     .getByLabel("Rationale")
     .fill("The first iteration needs a clearer implementation boundary.");
+  const rejectionResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().endsWith(`/api/forge/runs/${firstRunId}/review`),
+  );
   await page.getByTestId("forge-review-reject").click();
+  const rejectionResponse = await rejectionResponsePromise;
+  const rejectionPayload = (await rejectionResponse.json()) as {
+    ok?: boolean;
+    state?: string;
+    errorCode?: string;
+    error?: string;
+    view?: { run?: { state?: string } };
+  };
+  expect(
+    rejectionResponse.ok(),
+    JSON.stringify(rejectionPayload),
+  ).toBeTruthy();
+  expect(rejectionPayload.state, JSON.stringify(rejectionPayload)).toBe("completed");
+  expect(rejectionPayload.view?.run?.state, JSON.stringify(rejectionPayload)).toBe(
+    "completed",
+  );
   await assertNoReviewError(page);
   await expect(page.getByTestId("forge-review-state")).toHaveText("completed");
   await expect(page.getByTestId("forge-next-iteration")).toBeVisible();
