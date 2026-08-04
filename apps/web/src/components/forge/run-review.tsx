@@ -1,12 +1,24 @@
-export function RunReview({ baseBranch = "main" }: { baseBranch?: string }) {
+import type { Locale } from "@cyclewarden/i18n";
+
+import { createForgeTranslator } from "@/lib/forge/i18n";
+
+export function RunReview({
+  baseBranch = "main",
+  locale,
+}: {
+  baseBranch?: string;
+  locale: Locale;
+}) {
+  const t = createForgeTranslator(locale);
+
   return (
     <fieldset className="space-y-4 rounded-2xl border border-accent/50 bg-accent/5 p-5">
       <legend className="px-2 text-sm font-semibold text-accent">
-        3. Review governed run / Kiểm tra trước khi chạy
+        {t("review.legend")}
       </legend>
       <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <label className="text-muted">
-          Base branch
+          {t("review.baseBranch")}
           <input
             name="baseBranch"
             value={baseBranch}
@@ -15,7 +27,7 @@ export function RunReview({ baseBranch = "main" }: { baseBranch?: string }) {
           />
         </label>
         <label className="text-muted">
-          Coding agent
+          {t("review.agent")}
           <select
             name="agentProvider"
             defaultValue="codex"
@@ -25,7 +37,7 @@ export function RunReview({ baseBranch = "main" }: { baseBranch?: string }) {
           </select>
         </label>
         <label className="text-muted">
-          Maximum budget (USD)
+          {t("review.budget")}
           <input
             name="budgetUsd"
             type="number"
@@ -37,21 +49,27 @@ export function RunReview({ baseBranch = "main" }: { baseBranch?: string }) {
           />
         </label>
         <label className="text-muted">
-          Network policy
+          {t("review.networkPolicy")}
           <select
             name="networkPolicy"
             defaultValue="deny-by-default"
             className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
           >
-            <option value="deny-by-default">Deny by default</option>
-            <option value="package-registries">Package registries only</option>
+            <option value="deny-by-default">{t("review.denyByDefault")}</option>
+            <option value="package-registries">{t("review.registriesOnly")}</option>
           </select>
         </label>
       </div>
       <ul className="grid gap-2 text-xs leading-relaxed text-muted sm:grid-cols-3">
-        <li className="rounded-lg border border-border bg-background p-3">No production deployment.</li>
-        <li className="rounded-lg border border-border bg-background p-3">No direct write to the base branch.</li>
-        <li className="rounded-lg border border-border bg-background p-3">Sensitive actions remain blocked for approval.</li>
+        <li className="rounded-lg border border-border bg-background p-3">
+          {t("review.noDeploy")}
+        </li>
+        <li className="rounded-lg border border-border bg-background p-3">
+          {t("review.noBaseWrite")}
+        </li>
+        <li className="rounded-lg border border-border bg-background p-3">
+          {t("review.sensitiveApproval")}
+        </li>
       </ul>
     </fieldset>
   );
