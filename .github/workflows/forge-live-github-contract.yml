@@ -1,0 +1,49 @@
+name: Forge live GitHub contract
+
+on:
+  workflow_dispatch:
+    inputs:
+      disposable_repository:
+        description: Disposable repository in owner/name format
+        required: true
+        type: string
+      confirm_disposable:
+        description: Exact DESTROY:owner/name confirmation
+        required: true
+        type: string
+      base_branch:
+        description: Optional base branch; repository default is used when empty
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: forge-live-github-contract-${{ inputs.disposable_repository }}
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    environment: live-github-contract
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @cyclewarden/forge-domain build
+      - name: Run disposable-repository contract
+        env:
+          ATORYN_LIVE_GITHUB_CONTRACT: "1"
+          ATORYN_LIVE_GITHUB_TOKEN: ${{ secrets.ATORYN_LIVE_GITHUB_TOKEN }}
+          ATORYN_LIVE_GITHUB_REPOSITORY: ${{ inputs.disposable_repository }}
+          ATORYN_LIVE_GITHUB_CONFIRM_DISPOSABLE: ${{ inputs.confirm_disposable }}
+          ATORYN_LIVE_GITHUB_BASE_BRANCH: ${{ inputs.base_branch }}
+        run: pnpm --filter @cyclewarden/provider-github test:live
