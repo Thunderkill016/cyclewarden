@@ -1,27 +1,53 @@
-name: Forge evidence one-shot patch
+name: Forge evidence review verification
 
 on:
   push:
     branches:
       - agent/atoryn-forge-evidence-review
-    paths:
-      - .github/workflows/forge-evidence-patch.yml
+    paths-ignore:
+      - .github/forge-evidence-result.txt
 
 permissions:
   contents: write
 
 jobs:
-  patch:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cyclewarden
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cyclewarden"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: true
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/cyclewarden
+      BETTER_AUTH_SECRET: ci-test-secret-at-least-32-characters-long!!
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      AUTH_ADAPTER: better-auth
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
     steps:
       - uses: actions/checkout@v4
-      - name: Apply service corrections
+
+      - name: Apply idempotency corrections once
+        id: patch
+        shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
 
           path = Path("apps/web/src/lib/forge/evidence-review-service.ts")
           text = path.read_text()
+          original = text
 
           replacements = [
               (
@@ -175,9 +201,8 @@ jobs:
           ]
 
           for old, new in replacements:
-              if old not in text:
-                  raise SystemExit(f"expected patch target missing: {old[:80]!r}")
-              text = text.replace(old, new, 1)
+              if old in text:
+                  text = text.replace(old, new, 1)
 
           marker = '''  assertIdempotencyKey(input.idempotencyKey);
   if (!Number.isInteger(input.expectedSnapshotVersion) || input.expectedSnapshotVersion < 0) {'''
@@ -190,17 +215,80 @@ jobs:
     );
   }
   if (!Number.isInteger(input.expectedSnapshotVersion) || input.expectedSnapshotVersion < 0) {'''
-          if marker not in text:
-              raise SystemExit("review validation marker missing")
-          text = text.replace(marker, replacement, 1)
+          if marker in text:
+              text = text.replace(marker, replacement, 1)
 
-          path.write_text(text)
-          Path(".github/workflows/forge-evidence-patch.yml").unlink()
+          if text != original:
+              path.write_text(text)
+              print("changed=true")
+              with open("/tmp/patch-changed", "w") as handle:
+                  handle.write("true")
+          else:
+              print("changed=false")
           PY
-      - name: Commit patch and remove workflow
+
+          if [ -f /tmp/patch-changed ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add apps/web/src/lib/forge/evidence-review-service.ts
+            git commit -m "Fix Forge evidence idempotency boundaries"
+            git push
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: steps.patch.outputs.changed != 'true'
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        if: steps.patch.outputs.changed != 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Run targeted verification and write report
+        if: steps.patch.outputs.changed != 'true'
+        shell: bash
         run: |
+          set +e
+          : > /tmp/forge-evidence.log
+          overall=0
+
+          run_check() {
+            label="$1"
+            shift
+            echo "## ${label}" | tee -a /tmp/forge-evidence.log
+            "$@" 2>&1 | tee -a /tmp/forge-evidence.log
+            status=${PIPESTATUS[0]}
+            echo "STATUS=${status}" | tee -a /tmp/forge-evidence.log
+            echo | tee -a /tmp/forge-evidence.log
+            if [ "${status}" -ne 0 ]; then overall=${status}; fi
+          }
+
+          run_check "Frozen install" pnpm install --frozen-lockfile
+          run_check "Database migrations" pnpm db:migrate
+          run_check "Database typecheck" pnpm --filter @cyclewarden/db typecheck
+          run_check "Forge domain build" pnpm --filter @cyclewarden/forge-domain build
+          run_check "Completion gate tests" pnpm --filter @cyclewarden/forge-domain exec vitest run src/review/completion-gate.test.ts
+          run_check "Web typecheck" pnpm --filter @cyclewarden/web typecheck
+          run_check "Publication recovery tests" pnpm --filter @cyclewarden/web exec vitest run src/lib/forge/evidence-review-service.test.ts
+          run_check "Web production build" pnpm --filter @cyclewarden/web build
+
+          {
+            echo "# Forge evidence review verification"
+            echo
+            echo "SOURCE_COMMIT=${GITHUB_SHA}"
+            echo "OVERALL_STATUS=${overall}"
+            echo
+            cat /tmp/forge-evidence.log
+          } > .github/forge-evidence-result.txt
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Fix Forge evidence idempotency boundaries"
+          git add .github/forge-evidence-result.txt
+          git commit -m "Record Forge evidence verification" || true
           git push
+          exit "${overall}"
