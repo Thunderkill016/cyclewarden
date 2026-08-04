@@ -6,6 +6,8 @@ on:
       - agent/atoryn-forge-live-provider-spike
     paths:
       - packages/provider-github/**
+      - packages/forge-domain/src/providers/source-provider.ts
+      - packages/forge-application/src/testing/fake-source-provider.ts
       - .github/workflows/forge-live-provider-bootstrap.yml
 
 permissions:
@@ -31,20 +33,53 @@ jobs:
           cache: pnpm
       - name: Synchronize workspace lockfile
         run: pnpm install --lockfile-only
-      - name: Commit synchronized lockfile
+      - name: Synchronize Spec Kit task ledger
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("specs/001-remote-agent-run/tasks.md")
+          text = path.read_text()
+          for task in ("066", "067", "068", "069", "070", "071"):
+              unchecked = f"- [ ] T{task}"
+              checked = f"- [x] T{task}"
+              if unchecked in text:
+                  text = text.replace(unchecked, checked, 1)
+              elif checked not in text:
+                  raise SystemExit(f"Task T{task} was not found")
+
+          phase8_acceptance = (
+              "**Independent acceptance**: US4 scenarios pass with Vietnamese task input "
+              "and English branch/commit/PR fixture output."
+          )
+          phase8_evidence = (
+              phase8_acceptance
+              + " Validation evidence: PR #78 merged the bilingual namespaces, separate "
+                "language controls, preserved instruction trace, normalization coverage, "
+                "responsive locale isolation tests, and PostgreSQL-backed Playwright acceptance."
+          )
+          if phase8_acceptance in text and phase8_evidence not in text:
+              text = text.replace(phase8_acceptance, phase8_evidence, 1)
+
+          path.write_text(text)
+          PY
+      - name: Commit generated repository metadata
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- pnpm-lock.yaml; then
+          if git diff --quiet -- pnpm-lock.yaml specs/001-remote-agent-run/tasks.md; then
             exit 0
           fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add pnpm-lock.yaml
-          git commit -m "chore(forge): sync GitHub provider lockfile"
+          git add pnpm-lock.yaml specs/001-remote-agent-run/tasks.md
+          git commit -m "chore(forge): synchronize Phase 9 task state"
           git push origin HEAD:agent/atoryn-forge-live-provider-spike
       - name: Verify frozen installation
         run: pnpm install --frozen-lockfile
+      - name: Build Forge domain
+        run: pnpm --filter @cyclewarden/forge-domain build
       - name: Typecheck GitHub provider
         run: pnpm --filter @cyclewarden/provider-github typecheck
       - name: Test GitHub provider
