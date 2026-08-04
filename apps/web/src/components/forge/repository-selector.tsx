@@ -1,20 +1,26 @@
+import type { Locale } from "@cyclewarden/i18n";
+
+import { createForgeTranslator } from "@/lib/forge/i18n";
 import type { ForgeRepositoryOption } from "@/lib/forge/repositories";
 
 export function RepositorySelector({
   repositories,
   defaultRepositoryId,
+  locale,
 }: {
   repositories: ForgeRepositoryOption[];
   defaultRepositoryId?: string;
+  locale: Locale;
 }) {
+  const t = createForgeTranslator(locale);
+
   return (
     <fieldset className="space-y-3 rounded-2xl border border-border bg-card p-5">
       <legend className="px-2 text-sm font-semibold text-foreground">
-        1. Repository / Kho mã nguồn
+        {t("repository.legend")}
       </legend>
       <p className="text-sm leading-relaxed text-muted">
-        GitHub becomes the first live source adapter later. This slice uses the same
-        provider-neutral contract with deterministic repository fixtures.
+        {t("repository.description")}
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         {repositories.map((repository) => {
