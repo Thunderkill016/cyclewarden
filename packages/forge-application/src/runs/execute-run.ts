@@ -8,6 +8,7 @@ import {
   type SandboxProvider,
 } from "@cyclewarden/forge-domain";
 
+import { normalizeLiveProviderEvent } from "../events/live-provider-event-normalizer.js";
 import type { InMemoryForgeStore } from "../store/in-memory-store.js";
 
 function move(run: Run, nextState: RunState): Run {
@@ -17,6 +18,21 @@ function move(run: Run, nextState: RunState): Run {
     ...transitioned,
     updatedAt: new Date().toISOString(),
   };
+}
+
+function appendNormalizedProviderEvent(input: {
+  store: InMemoryForgeStore;
+  runId: string;
+  event: ReturnType<typeof normalizeLiveProviderEvent>;
+}): void {
+  input.store.appendEvent({
+    runId: input.runId,
+    type: input.event.type,
+    actorType: input.event.actorType,
+    actorId: input.event.actorId,
+    correlationId: input.event.correlationId,
+    payload: input.event.payload,
+  });
 }
 
 export async function executeRun(input: {
@@ -63,11 +79,16 @@ export async function executeRun(input: {
       startedAt: new Date().toISOString(),
     };
     input.store.saveRun(run);
-    input.store.appendEvent({
+    appendNormalizedProviderEvent({
+      store: input.store,
       runId: run.id,
-      type: "sandbox.ready",
-      actorType: "provider",
-      payload: { sandboxId },
+      event: normalizeLiveProviderEvent({
+        source: "sandbox",
+        providerKey: input.sandboxProvider.key,
+        externalRunId: sandboxId,
+        cursor: `created:${sandboxId}`,
+        event: { kind: "created", expiresAt: sandbox.expiresAt },
+      }),
     });
 
     const task = input.store.getTask(run.taskId);
@@ -83,18 +104,23 @@ export async function executeRun(input: {
       runId: run.id,
       type: "agent.started",
       actorType: "provider",
+      actorId: input.codingAgentProvider.key,
       payload: { externalRunId: agent.externalRunId },
     });
 
     for await (const item of input.codingAgentProvider.events({
       externalRunId: agent.externalRunId,
     })) {
-      input.store.appendEvent({
+      appendNormalizedProviderEvent({
+        store: input.store,
         runId: run.id,
-        type: `agent.${item.event.type}`,
-        actorType: "agent",
-        correlationId: item.cursor,
-        payload: item.event,
+        event: normalizeLiveProviderEvent({
+          source: "agent",
+          providerKey: input.codingAgentProvider.key,
+          externalRunId: agent.externalRunId,
+          cursor: item.cursor,
+          event: item.event,
+        }),
       });
       if (item.event.type === "failed") {
         throw new Error(item.event.code);
@@ -109,6 +135,22 @@ export async function executeRun(input: {
       command,
       args: [],
       timeoutMs: 120_000,
+    });
+    appendNormalizedProviderEvent({
+      store: input.store,
+      runId: run.id,
+      event: normalizeLiveProviderEvent({
+        source: "sandbox",
+        providerKey: input.sandboxProvider.key,
+        externalRunId: sandboxId,
+        cursor: `validation:${run.id}`,
+        event: {
+          kind: "command.completed",
+          command,
+          exitCode: validation.exitCode,
+          durationMs: validation.durationMs,
+        },
+      }),
     });
     input.store.saveValidation({
       id: randomUUID(),
@@ -150,6 +192,17 @@ export async function executeRun(input: {
       payload: { evidenceVersion: input.store.getEvidenceVersion(run.id) },
     });
     await input.sandboxProvider.destroy({ sandboxId });
+    appendNormalizedProviderEvent({
+      store: input.store,
+      runId: run.id,
+      event: normalizeLiveProviderEvent({
+        source: "sandbox",
+        providerKey: input.sandboxProvider.key,
+        externalRunId: sandboxId,
+        cursor: `destroyed:${sandboxId}`,
+        event: { kind: "destroyed" },
+      }),
+    });
     return run;
   } catch (error) {
     if (sandboxId) {

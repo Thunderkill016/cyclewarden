@@ -137,7 +137,7 @@
 - [x] T074 Create `packages/provider-sandbox-vercel/` implementing sandbox create, execute, expose, stop, and destroy
 - [x] T075 Enforce sandbox time, storage, compute, and deny-by-default network policy
 - [x] T076 Create `packages/provider-codex/` implementing start, resume, additional instruction, approval, cancel, event stream, and usage summary
-- [ ] T077 Normalize live provider events into versioned Atoryn run events
+- [x] T077 Normalize live provider events into versioned Atoryn run events
 - [ ] T078 Add opt-in live GitHub contract test against a disposable repository
 - [ ] T079 Add opt-in live sandbox/Codex smoke test for one deterministic JavaScript/TypeScript task
 - [ ] T080 Record startup time, dependency-install time, model usage, sandbox usage, cancellation time, and cleanup result in `specs/001-remote-agent-run/live-spike-results.md`
