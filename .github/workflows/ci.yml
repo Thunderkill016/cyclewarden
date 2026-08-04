@@ -1,272 +1,222 @@
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
-    branches:
-      - agent/atoryn-forge-live-controls
+    branches: [main]
 
-permissions:
-  contents: write
+env:
+  # Stable host for cookies + Playwright (P2 e2e harden)
+  PLAYWRIGHT_HOST: 127.0.0.1
+  PORT: "3000"
 
 jobs:
-  forge-evidence-review:
-    name: Forge evidence review gate
+  test-and-build:
+    name: Test & Build
     runs-on: ubuntu-latest
-    timeout-minutes: 18
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: cyclewarden
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d cyclewarden"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      CI: true
-      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/cyclewarden
-      BETTER_AUTH_SECRET: ci-test-secret-at-least-32-characters-long!!
-      BETTER_AUTH_URL: http://127.0.0.1:3000
-      AUTH_ADAPTER: better-auth
-      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-
-      - name: Apply idempotency corrections
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path("apps/web/src/lib/forge/evidence-review-service.ts")
-          text = path.read_text()
-
-          replacements = [
-              (
-                  '  | "awaiting_approval"\n  | "validating"',
-                  '  | "awaiting_approval"\n  | "cancelling"\n  | "validating"',
-              ),
-              (
-                  '''    if (run.source_provider !== "fake-source") {
-      throw new ForgeEvidenceReviewError(
-        "PROVIDER_UNAVAILABLE",
-        "Fixture evidence is available only for the fake source provider.",
-        409,
-      );
-    }
-    if (!FIXTURE_COMPLETABLE_STATES.has(run.state)) {
-      throw new ForgeEvidenceReviewError(
-        "RUN_NOT_REVIEWABLE",
-        `Evidence cannot be generated while the run is ${run.state}.`,
-        409,
-      );
-    }
-    const operation = "prepare-fixture-evidence";
-    const claim = await claimMutation(transaction, {
-      workspaceId: run.workspace_id,
-      operation,
-      idempotencyKey: input.idempotencyKey,
-      hash: requestHash({ runId: run.id }),
-    });
-    if (claim.replay) return claim.replay;
-''',
-                  '''    const operation = "prepare-fixture-evidence";
-    const claim = await claimMutation(transaction, {
-      workspaceId: run.workspace_id,
-      operation,
-      idempotencyKey: input.idempotencyKey,
-      hash: requestHash({ runId: run.id }),
-    });
-    if (claim.replay) return claim.replay;
-    if (run.source_provider !== "fake-source") {
-      throw new ForgeEvidenceReviewError(
-        "PROVIDER_UNAVAILABLE",
-        "Fixture evidence is available only for the fake source provider.",
-        409,
-      );
-    }
-    if (!FIXTURE_COMPLETABLE_STATES.has(run.state)) {
-      throw new ForgeEvidenceReviewError(
-        "RUN_NOT_REVIEWABLE",
-        `Evidence cannot be generated while the run is ${run.state}.`,
-        409,
-      );
-    }
-''',
-              ),
-              (
-                  '''    if (run.state !== "awaiting_review") {
-      throw new ForgeEvidenceReviewError(
-        "RUN_NOT_REVIEWABLE",
-        `The run is ${run.state}, not awaiting review.`,
-        409,
-      );
-    }
-    const operation = "resolve-evidence-review";
-    const claim = await claimMutation(transaction, {
-      workspaceId: run.workspace_id,
-      operation,
-      idempotencyKey: input.idempotencyKey,
-      hash: requestHash({
-        runId: run.id,
-        decision: input.decision,
-        rationale,
-        expectedSnapshotVersion: input.expectedSnapshotVersion,
-      }),
-    });
-    if (claim.replay) return claim.replay;
-''',
-                  '''    const operation = "resolve-evidence-review";
-    const claim = await claimMutation(transaction, {
-      workspaceId: run.workspace_id,
-      operation,
-      idempotencyKey: input.idempotencyKey,
-      hash: requestHash({
-        runId: run.id,
-        decision: input.decision,
-        rationale,
-        expectedSnapshotVersion: input.expectedSnapshotVersion,
-      }),
-    });
-    if (claim.replay) return claim.replay;
-    if (run.state !== "awaiting_review") {
-      throw new ForgeEvidenceReviewError(
-        "RUN_NOT_REVIEWABLE",
-        `The run is ${run.state}, not awaiting review.`,
-        409,
-      );
-    }
-''',
-              ),
-              (
-                  '''    if (run.state !== "awaiting_review" && run.state !== "publishing") {
-      throw new ForgeEvidenceReviewError(
-        "RUN_NOT_REVIEWABLE",
-        `The run cannot publish while it is ${run.state}.`,
-        409,
-      );
-    }
-    const operation = "publish-approved-run";
-    const hash = requestHash({
-      runId: run.id,
-      expectedSnapshotVersion: input.expectedSnapshotVersion,
-    });
-    const claim = await claimMutation(transaction, {
-      workspaceId: run.workspace_id,
-      operation,
-      idempotencyKey: input.idempotencyKey,
-      hash,
-      allowPendingReconciliation: true,
-    });
-    if (claim.replay) return { replay: claim.replay } as const;
-''',
-                  '''    const operation = "publish-approved-run";
-    const hash = requestHash({
-      runId: run.id,
-      expectedSnapshotVersion: input.expectedSnapshotVersion,
-    });
-    const claim = await claimMutation(transaction, {
-      workspaceId: run.workspace_id,
-      operation,
-      idempotencyKey: input.idempotencyKey,
-      hash,
-      allowPendingReconciliation: true,
-    });
-    if (claim.replay) return { replay: claim.replay } as const;
-    if (
-      run.state !== "awaiting_review" &&
-      run.state !== "publishing" &&
-      run.state !== "completed"
-    ) {
-      throw new ForgeEvidenceReviewError(
-        "RUN_NOT_REVIEWABLE",
-        `The run cannot publish while it is ${run.state}.`,
-        409,
-      );
-    }
-''',
-              ),
-              (
-                  '  const id = `draft-${sha256(`${input.runId}:${input.branchName}`).slice(0, 12)}`;',
-                  '  const id = `draft-${sha256(`${input.runId}:${input.branchName}:${input.headCommitSha}`).slice(0, 12)}`;',
-              ),
-          ]
-
-          for old, new in replacements:
-              if old in text:
-                  text = text.replace(old, new, 1)
-
-          marker = '''  assertIdempotencyKey(input.idempotencyKey);
-  if (!Number.isInteger(input.expectedSnapshotVersion) || input.expectedSnapshotVersion < 0) {'''
-          replacement = '''  assertIdempotencyKey(input.idempotencyKey);
-  if (input.decision !== "approved" && input.decision !== "rejected") {
-    throw new ForgeEvidenceReviewError(
-      "INVALID_INPUT",
-      "Review decision must be approved or rejected.",
-      400,
-    );
-  }
-  if (!Number.isInteger(input.expectedSnapshotVersion) || input.expectedSnapshotVersion < 0) {'''
-          if marker in text:
-              text = text.replace(marker, replacement, 1)
-
-          path.write_text(text)
-          PY
-
       - uses: pnpm/action-setup@v4
         with:
           version: 9.15.0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm doctor || true
+      - run: pnpm check:deploy || true
 
-      - name: Run targeted checks
+  evolution-core-standalone:
+    name: Evolution Core standalone / Node ${{ matrix.node }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Workspace package typecheck
+        run: pnpm --filter @cyclewarden/evolution-core typecheck
+      - name: Workspace package tests
+        run: pnpm --filter @cyclewarden/evolution-core test
+      - name: Clean standalone install, pack and consumer proof
+        run: node scripts/test-evolution-core-standalone.mjs
+
+  evolution-engine-proof:
+    name: Evolution Engine Proof
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build Evolution Engine
+        run: pnpm --filter @cyclewarden/evolution-core build
+      - name: Dogfood CycleWarden assessment
+        run: node scripts/test-evolution-cli.mjs
+      - name: Upload Evolution dogfood diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evolution-dogfood-diagnostics
+          if-no-files-found: warn
+          retention-days: 7
+          path: artifacts/evolution-dogfood-report.json
+      - name: Assess pinned external repository
+        run: node scripts/test-evolution-external-repo.mjs
+      - name: Run fixed named-candidate research proof
+        run: node scripts/test-candidate-research.mjs
+      - name: Upload named-candidate research proof
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-research-proof
+          if-no-files-found: warn
+          retention-days: 14
+          path: artifacts/candidate-research-proof.json
+      - name: Run deterministic public-search proof
+        run: node scripts/test-public-search.mjs
+      - name: Upload public-search proof
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-search-proof
+          if-no-files-found: warn
+          retention-days: 14
+          path: artifacts/public-search-proof.json
+
+  sandbox-docker-proof:
+    name: Sandbox / hostile Docker proof
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build Evolution Engine
+        run: pnpm --filter @cyclewarden/evolution-core build
+      - name: Explicitly provision local sandbox image
         shell: bash
         run: |
-          set +e
-          : > /tmp/forge-evidence.log
-          overall=0
+          set -euo pipefail
+          docker pull node:22-bookworm-slim
+          image_id="$(docker image inspect node:22-bookworm-slim --format '{{.Id}}')"
+          [[ "$image_id" =~ ^sha256:[a-f0-9]{64}$ ]]
+          echo "CYCLEWARDEN_SANDBOX_IMAGE=$image_id" >> "$GITHUB_ENV"
+      - name: Run hostile sandbox fixture
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          node scripts/test-sandbox-docker.mjs 2>&1 | tee artifacts/sandbox-docker-proof.log
+        env:
+          CYCLEWARDEN_HOST_SECRET: ci-secret-must-not-enter-sandbox
+      - name: Upload hostile sandbox diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-docker-proof
+          if-no-files-found: warn
+          retention-days: 7
+          path: artifacts/sandbox-docker-proof.log
 
-          run_check() {
-            label="$1"
-            shift
-            echo "## ${label}" | tee -a /tmp/forge-evidence.log
-            "$@" 2>&1 | tee -a /tmp/forge-evidence.log
-            status=${PIPESTATUS[0]}
-            echo "STATUS=${status}" | tee -a /tmp/forge-evidence.log
-            echo | tee -a /tmp/forge-evidence.log
-            if [ "${status}" -ne 0 ]; then overall=${status}; fi
-          }
+  e2e-demo:
+    name: E2E / demo mode
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm --filter @cyclewarden/web exec playwright install chromium --with-deps
+      - name: E2E smoke (demo)
+        run: pnpm test:e2e
+        env:
+          CI: true
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
 
-          run_check "Frozen install" pnpm install --frozen-lockfile
-          run_check "Database migrations" pnpm db:migrate
-          run_check "Database typecheck" pnpm --filter @cyclewarden/db typecheck
-          run_check "Forge domain build" pnpm --filter @cyclewarden/forge-domain build
-          run_check "Completion gate tests" pnpm --filter @cyclewarden/forge-domain exec vitest run src/review/completion-gate.test.ts
-          run_check "Web typecheck" pnpm --filter @cyclewarden/web typecheck
-          run_check "Publication recovery tests" pnpm --filter @cyclewarden/web exec vitest run src/lib/forge/evidence-review-service.test.ts
-          run_check "Web production build" pnpm --filter @cyclewarden/web build
-
-          {
-            echo "# Forge evidence review verification"
-            echo
-            echo "SOURCE_COMMIT=${GITHUB_SHA}"
-            echo "OVERALL_STATUS=${overall}"
-            echo
-            cat /tmp/forge-evidence.log
-          } > .github/forge-evidence-result.txt
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/web/src/lib/forge/evidence-review-service.ts .github/forge-evidence-result.txt
-          git commit -m "Record Forge evidence verification" || true
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
-          exit "${overall}"
+  e2e-portable-pg:
+    name: E2E / portable-pg
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cyclewarden
+          POSTGRES_PASSWORD: cyclewarden
+          POSTGRES_DB: cyclewarden
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate database
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: postgresql://cyclewarden:cyclewarden@localhost:5432/cyclewarden
+      - name: Install Playwright Chromium
+        run: pnpm --filter @cyclewarden/web exec playwright install chromium --with-deps
+      - name: E2E auth + isolation
+        run: pnpm test:e2e
+        env:
+          CI: true
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+          BETTER_AUTH_URL: http://127.0.0.1:3000
+          DATABASE_URL: postgresql://cyclewarden:cyclewarden@localhost:5432/cyclewarden
+          BETTER_AUTH_SECRET: ci-test-secret-at-least-32-characters-long!!
+          AUTH_ADAPTER: better-auth
+      - name: Upload portable-pg Playwright evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: portable-pg-playwright-evidence
+          if-no-files-found: warn
+          retention-days: 7
+          path: |
+            apps/web/test-results
+            apps/web/playwright-report
