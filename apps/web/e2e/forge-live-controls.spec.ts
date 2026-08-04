@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+const portable =
+  Boolean(process.env.DATABASE_URL) &&
+  Boolean(process.env.BETTER_AUTH_SECRET) &&
+  (process.env.AUTH_ADAPTER === "better-auth" || !process.env.AUTH_ADAPTER);
+
+test.skip(!portable, "durable live controls require Better Auth and PostgreSQL");
+
 async function authenticate(page: import("@playwright/test").Page) {
   const email = `forge_controls_${Date.now()}@cyclewarden.test`;
   await page.goto("/login");
