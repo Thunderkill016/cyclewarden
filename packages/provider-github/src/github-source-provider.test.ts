@@ -128,11 +128,6 @@ function provider(client: RecordingClient): GitHubSourceProvider {
       forConnection: async () => client,
       forRepository: async () => client,
     },
-    publicationContext: () => ({
-      publicationId: "11111111-1111-4111-8111-111111111111",
-      runId: "22222222-2222-4222-8222-222222222222",
-    }),
-    now: () => new Date("2026-08-04T12:00:00.000Z"),
   });
 }
 
@@ -169,8 +164,6 @@ describe("GitHubSourceProvider", () => {
     const source = provider(client);
 
     await expect(source.createDraftChangeRequest(changeRequestInput())).resolves.toEqual({
-      id: "11111111-1111-4111-8111-111111111111",
-      runId: "22222222-2222-4222-8222-222222222222",
       provider: "github",
       externalRepositoryId: "123",
       branchName: "atoryn/run-42",
@@ -179,8 +172,6 @@ describe("GitHubSourceProvider", () => {
       changeRequestUrl: "https://github.com/atoryn/forge-fixture/pull/7",
       status: "pr_created",
       failureCode: null,
-      createdAt: "2026-08-04T12:00:00.000Z",
-      updatedAt: "2026-08-04T12:00:00.000Z",
     });
     expect(client.createBranchCalls).toHaveLength(1);
     expect(client.createPullRequestCalls).toHaveLength(1);
