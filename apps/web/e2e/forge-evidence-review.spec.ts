@@ -86,10 +86,27 @@ test("reject iteration -> approve evidence -> create draft pull request", async 
   await expect(page.getByTestId("forge-review-state")).toHaveText("completed");
   await expect(page.getByTestId("forge-next-iteration")).toBeVisible();
 
+  const iterationResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().endsWith(`/api/forge/runs/${firstRunId}/iterations`),
+  );
   await page.getByTestId("forge-next-iteration").click();
-  await page.waitForURL(/\/app\/forge\/runs\/[0-9a-f-]+\/review$/i);
-  const secondRunId = (await page.getByTestId("forge-review-run-id").innerText()).trim();
+  const iterationResponse = await iterationResponsePromise;
+  const iterationPayload = (await iterationResponse.json()) as {
+    ok?: boolean;
+    nextRunId?: string;
+    errorCode?: string;
+    error?: string;
+  };
+  expect(iterationResponse.ok(), JSON.stringify(iterationPayload)).toBeTruthy();
+  expect(iterationPayload.nextRunId, JSON.stringify(iterationPayload)).toMatch(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+  );
+  const secondRunId = iterationPayload.nextRunId as string;
   expect(secondRunId).not.toBe(firstRunId);
+  await page.waitForURL(`/app/forge/runs/${secondRunId}/review`);
+  await expect(page.getByTestId("forge-review-run-id")).toHaveText(secondRunId);
   await expect(page.getByTestId("forge-review-state")).toHaveText("queued");
 
   await page.getByTestId("forge-prepare-evidence").click();
