@@ -132,7 +132,7 @@
 ## Phase 9: Live provider technical spike
 
 - [x] T071 Create `packages/provider-github/` implementing the source-provider contract with a GitHub App
-- [ ] T072 Add signed GitHub callback/webhook handling and repository-installation reconciliation
+- [x] T072 Add signed GitHub callback/webhook handling and repository-installation reconciliation
 - [ ] T073 Add repository-scoped short-lived credential brokerage without exposing the GitHub App private key
 - [ ] T074 Create `packages/provider-sandbox-vercel/` implementing sandbox create, execute, expose, stop, and destroy
 - [ ] T075 Enforce sandbox time, storage, compute, and deny-by-default network policy
