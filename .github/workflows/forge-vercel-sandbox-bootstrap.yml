@@ -1,0 +1,59 @@
+name: Forge Vercel sandbox bootstrap
+
+on:
+  push:
+    branches:
+      - agent/atoryn-forge-vercel-sandbox
+    paths:
+      - packages/provider-sandbox-vercel/**
+      - packages/forge-domain/src/providers/sandbox-provider.ts
+      - packages/forge-application/src/testing/fake-sandbox-provider.ts
+      - package.json
+      - pnpm-lock.yaml
+      - .github/workflows/forge-vercel-sandbox-bootstrap.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: forge-vercel-sandbox-bootstrap
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/atoryn-forge-vercel-sandbox
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Synchronize workspace lockfile
+        run: pnpm install --lockfile-only
+      - name: Commit synchronized lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- pnpm-lock.yaml; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add pnpm-lock.yaml
+          git commit -m "chore(forge): sync Vercel sandbox provider lockfile"
+          git push origin HEAD:agent/atoryn-forge-vercel-sandbox
+      - name: Verify frozen installation
+        run: pnpm install --frozen-lockfile
+      - name: Build Forge domain
+        run: pnpm --filter @cyclewarden/forge-domain build
+      - name: Typecheck Vercel sandbox provider
+        run: pnpm --filter @cyclewarden/provider-sandbox-vercel typecheck
+      - name: Test Vercel sandbox provider
+        run: pnpm --filter @cyclewarden/provider-sandbox-vercel test
+      - name: Build Vercel sandbox provider
+        run: pnpm --filter @cyclewarden/provider-sandbox-vercel build
