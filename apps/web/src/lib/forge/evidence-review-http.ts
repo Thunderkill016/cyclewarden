@@ -18,6 +18,7 @@ export function forgeEvidenceReviewErrorResponse(error: unknown): NextResponse {
     );
   }
 
+  console.error("Unexpected Forge evidence review failure", error);
   return NextResponse.json(
     {
       ok: false,
