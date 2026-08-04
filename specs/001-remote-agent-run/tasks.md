@@ -121,17 +121,17 @@
 
 **Goal**: Vietnamese interface/instructions and English technical artifacts remain separately controlled and traceable.
 
-- [ ] T066 [US4] Extend `packages/i18n/` with Atoryn Forge Vietnamese and English message namespaces
-- [ ] T067 [US4] Store interface locale, instruction language, and technical-output language separately in task/project flows
-- [ ] T068 [US4] Preserve original instruction beside normalized technical instruction in all review and audit surfaces
-- [ ] T069 [P] [US4] Add Vietnamese task normalization fixture and English artifact assertions
-- [ ] T070 [P] [US4] Add responsive locale-switch tests proving domain state does not change
+- [x] T066 [US4] Extend `packages/i18n/` with Atoryn Forge Vietnamese and English message namespaces
+- [x] T067 [US4] Store interface locale, instruction language, and technical-output language separately in task/project flows
+- [x] T068 [US4] Preserve original instruction beside normalized technical instruction in all review and audit surfaces
+- [x] T069 [P] [US4] Add Vietnamese task normalization fixture and English artifact assertions
+- [x] T070 [P] [US4] Add responsive locale-switch tests proving domain state does not change
 
-**Independent acceptance**: US4 scenarios pass with Vietnamese task input and English branch/commit/PR fixture output.
+**Independent acceptance**: US4 scenarios pass with Vietnamese task input and English branch/commit/PR fixture output. Validation evidence: PR #78 merged the bilingual namespaces, separate language controls, preserved instruction trace, normalization coverage, responsive locale isolation tests, and PostgreSQL-backed Playwright acceptance.
 
 ## Phase 9: Live provider technical spike
 
-- [ ] T071 Create `packages/provider-github/` implementing the source-provider contract with a GitHub App
+- [x] T071 Create `packages/provider-github/` implementing the source-provider contract with a GitHub App
 - [ ] T072 Add signed GitHub callback/webhook handling and repository-installation reconciliation
 - [ ] T073 Add repository-scoped short-lived credential brokerage without exposing the GitHub App private key
 - [ ] T074 Create `packages/provider-sandbox-vercel/` implementing sandbox create, execute, expose, stop, and destroy
