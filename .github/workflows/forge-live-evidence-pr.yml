@@ -1,0 +1,141 @@
+name: Forge tracked live evidence
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: forge-tracked-live-evidence
+  cancel-in-progress: false
+
+jobs:
+  github-contract:
+    if: ${{ contains(github.event.pull_request.title, '[run-live-evidence]') }}
+    runs-on: ubuntu-latest
+    environment: live-github-contract
+    timeout-minutes: 15
+    env:
+      TOKEN: ${{ secrets.ATORYN_LIVE_GITHUB_TOKEN }}
+      OWNER: Thunderkill016
+      API_VERSION: "2022-11-28"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Create disposable repository and run contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          test -n "$TOKEN"
+          name="atoryn-disposable-contract-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          repository="$OWNER/$name"
+          cleanup() {
+            code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              -X DELETE \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "X-GitHub-Api-Version: $API_VERSION" \
+              "https://api.github.com/repos/$repository" || true)"
+            jq --arg code "$code" '.repositoryCleanup={attempted:true,httpStatus:$code,success:($code=="204")}' \
+              artifacts/forge-live-github-contract.json > artifacts/forge-live-github-contract.tmp 2>/dev/null || true
+            test -f artifacts/forge-live-github-contract.tmp && mv artifacts/forge-live-github-contract.tmp artifacts/forge-live-github-contract.json || true
+          }
+          trap cleanup EXIT
+          response="$(curl --fail-with-body --silent --show-error \
+            -X POST https://api.github.com/user/repos \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "X-GitHub-Api-Version: $API_VERSION" \
+            -d "$(jq -cn --arg name "$name" '{name:$name,private:true,auto_init:true,description:"Disposable Atoryn Forge live contract fixture"}')")"
+          base_branch="$(jq -r .default_branch <<<"$response")"
+          jq -n \
+            --arg repository "$repository" \
+            --arg baseBranch "$base_branch" \
+            --arg runUrl "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --arg commit "$GITHUB_SHA" \
+            '{status:"running",repository:$repository,baseBranch:$baseBranch,workflowRunUrl:$runUrl,workflowRunId:env.GITHUB_RUN_ID,commitSha:$commit,productionRepositoryTargeted:false}' \
+            > artifacts/forge-live-github-contract.json
+          pnpm install --frozen-lockfile
+          pnpm --filter @cyclewarden/forge-domain build
+          export ATORYN_LIVE_GITHUB_CONTRACT=1
+          export ATORYN_LIVE_GITHUB_TOKEN="$TOKEN"
+          export ATORYN_LIVE_GITHUB_REPOSITORY="$repository"
+          export ATORYN_LIVE_GITHUB_CONFIRM_DISPOSABLE="DESTROY:$repository"
+          export ATORYN_LIVE_GITHUB_BASE_BRANCH="$base_branch"
+          pnpm --filter @cyclewarden/provider-github test:live 2>&1 | tee artifacts/forge-live-github-contract.log
+          jq '.status="passed"' artifacts/forge-live-github-contract.json > artifacts/forge-live-github-contract.tmp
+          mv artifacts/forge-live-github-contract.tmp artifacts/forge-live-github-contract.json
+      - name: Upload GitHub evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-live-github-contract
+          path: artifacts/forge-live-github-contract.*
+          if-no-files-found: error
+          retention-days: 30
+
+  sandbox-codex-smoke:
+    if: ${{ contains(github.event.pull_request.title, '[run-live-evidence]') }}
+    runs-on: ubuntu-latest
+    environment: live-sandbox-codex
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate protected credentials
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          jq -n \
+            --arg runUrl "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --arg commit "$GITHUB_SHA" \
+            --argjson openai "$([ -n "$OPENAI_API_KEY" ] && echo true || echo false)" \
+            --argjson token "$([ -n "$VERCEL_TOKEN" ] && echo true || echo false)" \
+            --argjson team "$([ -n "$VERCEL_TEAM_ID" ] && echo true || echo false)" \
+            --argjson project "$([ -n "$VERCEL_PROJECT_ID" ] && echo true || echo false)" \
+            '{status:"preflight",workflowRunUrl:$runUrl,workflowRunId:env.GITHUB_RUN_ID,commitSha:$commit,secretsPresent:{openaiApiKey:$openai,vercelToken:$token,vercelTeamId:$team,vercelProjectId:$project}}' \
+            > artifacts/forge-live-sandbox-codex-preflight.json
+          test -n "$OPENAI_API_KEY"
+          test -n "$VERCEL_TOKEN"
+          test -n "$VERCEL_TEAM_ID"
+          test -n "$VERCEL_PROJECT_ID"
+      - name: Install Vercel Sandbox SDK
+        run: npm install --no-save --package-lock=false @vercel/sandbox@latest
+      - name: Run deterministic live smoke
+        env:
+          ATORYN_LIVE_SANDBOX_CODEX_SMOKE: "1"
+          ATORYN_LIVE_SANDBOX_CODEX_CONFIRM: RUN:LIVE-SANDBOX-CODEX
+          ATORYN_LIVE_CODEX_VERSION: "0.146.0"
+          ATORYN_LIVE_SMOKE_REPORT_PATH: artifacts/forge-live-sandbox-codex-smoke.json
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: node scripts/forge-live-sandbox-codex-smoke.mjs
+      - name: Upload sandbox evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-live-sandbox-codex-smoke
+          path: artifacts/forge-live-sandbox-codex-*.json
+          if-no-files-found: error
+          retention-days: 30
