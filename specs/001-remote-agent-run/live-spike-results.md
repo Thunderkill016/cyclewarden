@@ -6,9 +6,9 @@ This file records evidence for Phase 9 tasks T078-T080. A harness or workflow de
 
 | Task | Evidence required | Status | Evidence |
 |---|---|---|---|
-| T078 live GitHub contract | Disposable repository, exact-head draft PR, idempotent replay, unchanged base branch, successful cleanup | Pending external run | Manual workflow `Forge live GitHub contract`; requires a repository explicitly named as disposable plus the protected environment secret |
-| T079 live sandbox/Codex smoke | Ephemeral Vercel sandbox, deterministic JavaScript change by Codex, passing validation, usage capture, successful cleanup | Pending external run | Manual workflow `Forge live sandbox Codex smoke`; JSON artifact is uploaded even on failure |
-| T080 measured spike report | Reviewed artifacts for startup, dependency installation, model usage, sandbox usage, cancellation, and cleanup | Pending evidence review | Populate the measurements table from successful workflow artifacts; do not estimate missing values |
+| T078 live GitHub contract | Disposable repository, exact-head draft PR, idempotent replay, unchanged base branch, successful cleanup | Pending protected credential | Tracked attempt `30980978118` reached the protected job, but `ATORYN_LIVE_GITHUB_TOKEN` was absent; no repository was created |
+| T079 live sandbox/Codex smoke | Ephemeral Vercel sandbox, deterministic JavaScript change by Codex, passing validation, usage capture, successful cleanup | Pending protected credentials | Tracked attempt `30980978118` uploaded a preflight artifact proving all four required credentials were absent; no sandbox or model call was created |
+| T080 measured spike report | Reviewed artifacts for startup, dependency installation, model usage, sandbox usage, cancellation, and cleanup | Pending successful T078/T079 plus cancellation probe | No timing or usage value was manufactured from the failed preflight attempt |
 
 ## Required measurements
 
@@ -20,6 +20,42 @@ This file records evidence for Phase 9 tasks T078-T080. A harness or workflow de
 | Sandbox usage | Not applicable | Required | Pending |
 | Cancellation time | Not applicable | Required before T080 completion | Pending |
 | Cleanup result | Required | Required | Pending |
+
+## Protected live attempt — 2026-08-05
+
+- Workflow: `Forge tracked live evidence` run `30980978118`.
+- Run URL: `https://github.com/Thunderkill016/cyclewarden/actions/runs/30980978118`.
+- Tracking PR: `#88`.
+- Head commit: `197102887f0f90b2cbcd22c7b8d4c48946d6a451`.
+- Pull-request merge-ref commit observed by Actions: `563014d3eafa7486a6800ed89c1bdced4737a982`.
+
+### GitHub contract preflight
+
+The `github-contract` job entered environment `live-github-contract` and failed before repository creation because `ATORYN_LIVE_GITHUB_TOKEN` resolved to an empty value. The disposable repository creation command, provider contract, draft pull request, and cleanup path were therefore not executed. No existing product repository was targeted and no GitHub resource was left behind.
+
+### Sandbox/Codex preflight
+
+The `sandbox-codex-smoke` job entered environment `live-sandbox-codex`. Artifact `forge-live-sandbox-codex-smoke` (`8920114009`, SHA-256 `70b7fd37817f9a4e51a2e697418503e328cd9426a9cfe7562dc8be705a962ee4`) recorded:
+
+```json
+{
+  "openaiApiKey": false,
+  "vercelToken": false,
+  "vercelTeamId": false,
+  "vercelProjectId": false
+}
+```
+
+The job stopped before installing the Vercel Sandbox SDK, creating a sandbox, invoking Codex, or consuming model/sandbox resources. No cleanup action was necessary and no external cost was incurred by this tracked attempt.
+
+### Required protected configuration before retry
+
+Configure these exact environment secrets in `Thunderkill016/cyclewarden`:
+
+- environment `live-github-contract`: `ATORYN_LIVE_GITHUB_TOKEN` with permission to create, write to, and delete an explicitly disposable repository;
+- environment `live-sandbox-codex`: `OPENAI_API_KEY`, `VERCEL_TOKEN`, `VERCEL_TEAM_ID`, and `VERCEL_PROJECT_ID`.
+
+After configuration, re-run the existing manual workflows. T078 and T079 remain unchecked until successful artifacts are reviewed. T080 additionally remains blocked on a real cancellation probe and its measured cleanup interval.
 
 ## Live GitHub contract acceptance
 
