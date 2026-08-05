@@ -6,13 +6,13 @@ export interface ForgeOperationalLog {
   timestamp: string;
   level: ForgeOperationalLevel;
   event: string;
-  workspaceId?: string;
-  runId?: string;
-  provider?: string;
-  state?: string;
-  outcome?: string;
-  failureCode?: string;
-  latencyMs?: number;
+  workspaceId?: string | undefined;
+  runId?: string | undefined;
+  provider?: string | undefined;
+  state?: string | undefined;
+  outcome?: string | undefined;
+  failureCode?: string | undefined;
+  latencyMs?: number | undefined;
   attributes: Record<string, unknown>;
   redactionCount: number;
 }
@@ -47,10 +47,10 @@ function latency(value: number): number {
 }
 
 function metricTags(input: {
-  provider?: string;
-  outcome?: string;
-  state?: string;
-  operation?: string;
+  provider?: string | undefined;
+  outcome?: string | undefined;
+  state?: string | undefined;
+  operation?: string | undefined;
 }): Record<string, string> {
   return Object.fromEntries(
     Object.entries(input).filter((entry): entry is [string, string] => Boolean(entry[1])),
@@ -227,10 +227,10 @@ export class ForgeOperationalTelemetry {
     name: string,
     value: number,
     tags: {
-      provider?: string;
-      outcome?: string;
-      state?: string;
-      operation?: string;
+      provider?: string | undefined;
+      outcome?: string | undefined;
+      state?: string | undefined;
+      operation?: string | undefined;
     },
   ): Promise<void> {
     await this.dependencies.sink.writeMetric({
