@@ -143,9 +143,7 @@ describe("GitHubCredentialBroker", () => {
     const { broker, grants, signer, tokens } = fixture();
     grants.active = false;
 
-    await expect(consume(broker)).rejects.toMatchObject<
-      Partial<GitHubCredentialBrokerError>
-    >({ code: "REPOSITORY_NOT_GRANTED" });
+    await expect(consume(broker)).rejects.toMatchObject({ code: "REPOSITORY_NOT_GRANTED" });
 
     expect(signer.calls).toHaveLength(0);
     expect(tokens.calls).toHaveLength(0);
@@ -155,9 +153,7 @@ describe("GitHubCredentialBroker", () => {
     const { broker, tokens } = fixture();
     tokens.repositoryIds = [REPOSITORY_ID, "202"];
 
-    await expect(consume(broker)).rejects.toMatchObject<
-      Partial<GitHubCredentialBrokerError>
-    >({ code: "CREDENTIAL_SCOPE_CONFLICT" });
+    await expect(consume(broker)).rejects.toMatchObject({ code: "CREDENTIAL_SCOPE_CONFLICT" });
   });
 
   it("rejects a permission broader than requested", async () => {
@@ -173,9 +169,7 @@ describe("GitHubCredentialBroker", () => {
       pull_requests: "read",
     };
 
-    await expect(consume(broker, requested)).rejects.toMatchObject<
-      Partial<GitHubCredentialBrokerError>
-    >({ code: "CREDENTIAL_SCOPE_CONFLICT" });
+    await expect(consume(broker, requested)).rejects.toMatchObject({ code: "CREDENTIAL_SCOPE_CONFLICT" });
   });
 
   it("rejects missing or unexpected permissions in the token response", async () => {
@@ -186,25 +180,19 @@ describe("GitHubCredentialBroker", () => {
       admin: "read",
     } as typeof tokens.permissions;
 
-    await expect(consume(broker)).rejects.toMatchObject<
-      Partial<GitHubCredentialBrokerError>
-    >({ code: "CREDENTIAL_SCOPE_CONFLICT" });
+    await expect(consume(broker)).rejects.toMatchObject({ code: "CREDENTIAL_SCOPE_CONFLICT" });
   });
 
   it("rejects expired and overlong installation token lifetimes", async () => {
     const expired = fixture();
     expired.tokens.expiresAt = new Date(NOW.getTime() - 1_000).toISOString();
-    await expect(consume(expired.broker)).rejects.toMatchObject<
-      Partial<GitHubCredentialBrokerError>
-    >({ code: "INVALID_EXPIRY" });
+    await expect(consume(expired.broker)).rejects.toMatchObject({ code: "INVALID_EXPIRY" });
 
     const overlong = fixture();
     overlong.tokens.expiresAt = new Date(
       NOW.getTime() + 60 * 60 * 1_000 + 1_000,
     ).toISOString();
-    await expect(consume(overlong.broker)).rejects.toMatchObject<
-      Partial<GitHubCredentialBrokerError>
-    >({ code: "INVALID_EXPIRY" });
+    await expect(consume(overlong.broker)).rejects.toMatchObject({ code: "INVALID_EXPIRY" });
   });
 
   it("never accepts a private key dependency and exposes the token only to the scoped callback", async () => {
