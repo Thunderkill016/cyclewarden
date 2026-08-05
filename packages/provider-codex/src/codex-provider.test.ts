@@ -289,7 +289,7 @@ describe("CodexProvider", () => {
     workspace.cwd = "/workspace/replaced";
     await expect(
       provider.resume({ externalRunId: THREAD_ID }),
-    ).rejects.toMatchObject<Partial<CodexProviderError>>({
+    ).rejects.toMatchObject({
       code: "WORKSPACE_CONFLICT",
     });
   });
@@ -481,7 +481,7 @@ describe("CodexProvider", () => {
     client.usage = { ...USAGE, totalTokens: 201 };
     await expect(
       provider.usageSummary({ externalRunId: THREAD_ID }),
-    ).rejects.toMatchObject<Partial<CodexProviderError>>({
+    ).rejects.toMatchObject({
       code: "USAGE_CONFLICT",
     });
   });
@@ -494,9 +494,7 @@ describe("CodexProvider", () => {
       { cursor: "same", type: "agent_message", text: "two" },
     ];
 
-    await expect(collect(provider)).rejects.toMatchObject<
-      Partial<CodexProviderError>
-    >({ code: "EVENT_CONFLICT" });
+    await expect(collect(provider)).rejects.toMatchObject({ code: "EVENT_CONFLICT" });
 
     await expect(
       provider.resolveApproval({
@@ -504,7 +502,7 @@ describe("CodexProvider", () => {
         requestKey: "missing",
         decision: "rejected",
       }),
-    ).rejects.toMatchObject<Partial<CodexProviderError>>({
+    ).rejects.toMatchObject({
       code: "APPROVAL_NOT_FOUND",
     });
   });
