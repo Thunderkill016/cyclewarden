@@ -1,0 +1,68 @@
+name: Forge live sandbox Codex smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_live_run:
+        description: Exact RUN:LIVE-SANDBOX-CODEX confirmation
+        required: true
+        type: string
+      codex_version:
+        description: Pinned @openai/codex version
+        required: true
+        default: "0.146.0"
+        type: string
+      model:
+        description: Optional Codex model override
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: forge-live-sandbox-codex-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    environment: live-sandbox-codex
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate destructive confirmation
+        shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirm_live_run }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = "RUN:LIVE-SANDBOX-CODEX"
+      - name: Install current Vercel Sandbox SDK without changing repository state
+        run: npm install --no-save --package-lock=false @vercel/sandbox@latest
+      - name: Prepare evidence directory
+        run: mkdir -p artifacts
+      - name: Run deterministic live smoke
+        env:
+          ATORYN_LIVE_SANDBOX_CODEX_SMOKE: "1"
+          ATORYN_LIVE_SANDBOX_CODEX_CONFIRM: ${{ inputs.confirm_live_run }}
+          ATORYN_LIVE_CODEX_VERSION: ${{ inputs.codex_version }}
+          ATORYN_LIVE_CODEX_MODEL: ${{ inputs.model }}
+          ATORYN_LIVE_SMOKE_REPORT_PATH: artifacts/forge-live-sandbox-codex-smoke.json
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: node scripts/forge-live-sandbox-codex-smoke.mjs
+      - name: Upload smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-live-sandbox-codex-smoke
+          path: artifacts/forge-live-sandbox-codex-smoke.json
+          if-no-files-found: error
+          retention-days: 30
