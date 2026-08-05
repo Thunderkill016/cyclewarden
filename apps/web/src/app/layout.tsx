@@ -1,3 +1,4 @@
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { createMetadata } from "@/lib/seo";
 import { getLocale } from "@/lib/i18n";
@@ -13,11 +14,31 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = createMetadata({
-  description:
-    "Open product kit for vibe coding — idea to landing, auth, app, security, and deploy.",
-  path: "/",
-});
+export const metadata: Metadata = {
+  ...createMetadata({
+    description:
+      "Governed remote AI coding runs with review, approvals, evidence, and draft publication.",
+    path: "/",
+  }),
+  applicationName: "Atoryn Forge",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Atoryn Forge",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  colorScheme: "dark",
+  themeColor: "#0c0b0a",
+};
 
 export default async function RootLayout({
   children,
