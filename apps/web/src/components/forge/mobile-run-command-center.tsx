@@ -32,17 +32,19 @@ export function MobileRunCommandCenter({
   const pendingApprovals = approvals.filter((approval) => approval.status === "pending");
 
   return (
-    <aside className="rounded-2xl border border-border bg-card p-5 lg:sticky lg:top-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
+    <aside className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-5 lg:sticky lg:top-6">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
             Mobile command center
           </p>
-          <h2 className="mt-1 text-lg font-semibold text-foreground">Control this run</h2>
+          <h2 className="mt-1 break-words text-lg font-semibold text-foreground">
+            Control this run
+          </h2>
         </div>
         <span
           data-testid="forge-run-state"
-          className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-mono text-xs text-accent"
+          className="max-w-full break-all rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-mono text-xs text-accent"
         >
           {state}
         </span>
@@ -66,12 +68,12 @@ export function MobileRunCommandCenter({
           onChange={(event) => setInstruction(event.target.value)}
           disabled={terminal || pendingAction !== null}
           placeholder="Example: request package registry access and rerun validation"
-          className="min-h-28 w-full resize-y rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none focus:border-accent disabled:opacity-50"
+          className="min-h-32 w-full resize-y rounded-xl border border-border bg-background px-3 py-3 text-base text-foreground outline-none transition-colors focus:border-accent disabled:opacity-50 sm:text-sm"
         />
         <button
           type="submit"
           disabled={terminal || pendingAction !== null || instruction.trim().length < 3}
-          className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-background transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pendingAction === "instruction" ? "Sending…" : "Send instruction"}
         </button>
@@ -83,21 +85,23 @@ export function MobileRunCommandCenter({
           {pendingApprovals.map((approval) => (
             <article
               key={approval.id}
-              className="rounded-xl border border-amber-400/40 bg-amber-400/5 p-4"
+              className="min-w-0 rounded-xl border border-amber-400/40 bg-amber-400/5 p-4"
             >
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
                 <span className="text-xs font-semibold uppercase tracking-wide text-amber-300">
                   {approval.riskLevel} risk
                 </span>
-                <span className="font-mono text-xs text-muted">v{approval.version}</span>
+                <span className="break-all font-mono text-xs text-muted">
+                  v{approval.version}
+                </span>
               </div>
-              <p className="mt-2 text-sm text-foreground">{approval.summary}</p>
-              <div className="mt-4 grid grid-cols-2 gap-2">
+              <p className="mt-2 break-words text-sm text-foreground">{approval.summary}</p>
+              <div className="mt-4 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
                 <button
                   type="button"
                   disabled={pendingAction !== null}
                   onClick={() => void onApproval(approval, "rejected")}
-                  className="rounded-lg border border-border px-3 py-2 text-sm text-muted disabled:opacity-50"
+                  className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-muted disabled:opacity-50"
                 >
                   Reject
                 </button>
@@ -105,7 +109,7 @@ export function MobileRunCommandCenter({
                   type="button"
                   disabled={pendingAction !== null}
                   onClick={() => void onApproval(approval, "approved")}
-                  className="rounded-lg border border-accent bg-accent/10 px-3 py-2 text-sm font-semibold text-accent disabled:opacity-50"
+                  className="min-h-11 rounded-lg border border-accent bg-accent/10 px-3 py-2 text-sm font-semibold text-accent disabled:opacity-50"
                 >
                   Approve
                 </button>
@@ -119,7 +123,7 @@ export function MobileRunCommandCenter({
         type="button"
         disabled={terminal || pendingAction !== null}
         onClick={() => void onCancel()}
-        className="mt-5 w-full rounded-xl border border-red-500/50 bg-red-500/5 px-4 py-3 text-sm font-semibold text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-5 min-h-11 w-full rounded-xl border border-red-500/50 bg-red-500/5 px-4 py-3 text-sm font-semibold text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pendingAction === "cancel" ? "Cancelling…" : "Cancel run"}
       </button>
