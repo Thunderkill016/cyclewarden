@@ -26,22 +26,24 @@ const repository: ForgeRepositoryOption = {
 
 const approval: ForgeApprovalView = {
   id: "approval-1",
-  runId: "run-1",
+  requestKey: "network-registry-access",
   actionType: "network_access",
   riskLevel: "high",
   summary: "Allow a deliberately long package registry hostname without overflowing.",
+  scope: { host: "packages.example.invalid" },
   status: "pending",
   requestedAt: "2026-08-05T04:00:00.000Z",
   resolvedAt: null,
-  resolvedByUserId: null,
-  resolutionReason: null,
+  reason: null,
   version: 1,
 };
 
 const event: ForgeRunEventView = {
-  runId: "run-1",
+  id: "event-1",
   sequence: 1,
   type: "provider.event.with.an.intentionally.long.identifier",
+  actorType: "provider",
+  actorId: "codex",
   payload: {
     summary: "A long event detail that must wrap inside the activity card on mobile.",
   },
