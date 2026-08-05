@@ -1,0 +1,17 @@
+name: Forge task tail diagnostic
+
+on:
+  push:
+    branches:
+      - agent/atoryn-forge-final-hardening
+
+permissions:
+  contents: read
+
+jobs:
+  tail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print final task ledger
+        run: tail -n 45 specs/001-remote-agent-run/tasks.md
