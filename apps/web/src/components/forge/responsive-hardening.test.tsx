@@ -15,7 +15,7 @@ import { TaskComposer } from "./task-composer";
 
 const repository: ForgeRepositoryOption = {
   id: "repo-1",
-  provider: "github",
+  provider: "fake-source",
   namespace: "a-very-long-namespace-that-must-wrap",
   name: "a-very-long-repository-name-that-must-not-overflow",
   defaultBranch: "main",
