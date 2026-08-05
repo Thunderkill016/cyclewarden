@@ -208,9 +208,7 @@ describe("VercelSandboxProvider", () => {
     const { provider, sandbox, registry, failBootstrap } = fixture();
     failBootstrap(new Error("clone failed"));
 
-    await expect(create(provider)).rejects.toMatchObject<
-      Partial<VercelSandboxProviderError>
-    >({ code: "PROVIDER_UNAVAILABLE" });
+    await expect(create(provider)).rejects.toMatchObject({ code: "PROVIDER_UNAVAILABLE" });
 
     expect(sandbox.deleteCalls).toBe(1);
     await expect(registry.get(sandbox.sandboxId)).resolves.toBeNull();
@@ -259,7 +257,7 @@ describe("VercelSandboxProvider", () => {
         timeoutMs: 60_000,
         environment: { GITHUB_TOKEN: "must-not-enter-sandbox" },
       }),
-    ).rejects.toMatchObject<Partial<VercelSandboxProviderError>>({
+    ).rejects.toMatchObject({
       code: "SENSITIVE_ENVIRONMENT_DENIED",
     });
 
@@ -277,7 +275,7 @@ describe("VercelSandboxProvider", () => {
         args: ["600"],
         timeoutMs: 600_000,
       }),
-    ).rejects.toMatchObject<Partial<VercelSandboxProviderError>>({
+    ).rejects.toMatchObject({
       code: "LIMIT_EXCEEDED",
     });
   });
@@ -295,7 +293,7 @@ describe("VercelSandboxProvider", () => {
 
     await expect(
       provider.expose({ sandboxId: sandbox.sandboxId, port: 3000 }),
-    ).rejects.toMatchObject<Partial<VercelSandboxProviderError>>({
+    ).rejects.toMatchObject({
       code: "EXPOSURE_DENIED",
     });
     expect(sandbox.domains).toEqual([8080]);
@@ -325,19 +323,19 @@ describe("VercelSandboxProvider", () => {
 
     await expect(
       create(provider, limits({ allowedHosts: ["http://api.github.com/path"] })),
-    ).rejects.toMatchObject<Partial<VercelSandboxProviderError>>({
+    ).rejects.toMatchObject({
       code: "INVALID_INPUT",
     });
 
     await expect(
       create(provider, limits({ allowedHosts: ["localhost"] })),
-    ).rejects.toMatchObject<Partial<VercelSandboxProviderError>>({
+    ).rejects.toMatchObject({
       code: "INVALID_INPUT",
     });
 
     await expect(
       create(provider, limits({ memoryMb: 16_384 })),
-    ).rejects.toMatchObject<Partial<VercelSandboxProviderError>>({
+    ).rejects.toMatchObject({
       code: "LIMIT_EXCEEDED",
     });
   });

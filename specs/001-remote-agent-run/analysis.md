@@ -1,60 +1,77 @@
 # Specification Analysis Report
 
 **Feature**: `001-remote-agent-run`  
-**Analyzed**: 2026-08-04  
-**Artifacts**: `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `.specify/memory/constitution.md`  
-**Method**: Spec Kit `speckit-analyze` rules applied as a read-first cross-artifact review, followed by direct remediation of all CRITICAL and HIGH findings.
+**Initial analysis**: 2026-08-04  
+**Final analysis**: 2026-08-05  
+**Artifacts**: `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, `research.md`, `quickstart.md`, `.specify/memory/constitution.md`, implementation and acceptance evidence  
+**Method**: Spec Kit `speckit-analyze` consistency, coverage, ambiguity, constitution-alignment, and evidence-integrity rules applied across specification, task ledger, implementation, tests, and active product documentation.
 
-## Findings
+## Remediated findings
 
-| ID | Category | Severity | Location(s) | Summary | Resolution |
-|---|---|---:|---|---|---|
-| C1 | Constitution alignment | CRITICAL | constitution Principle VI; spec FR-016; data model `AcceptanceEvidence` | The specification allowed mandatory evidence to be waived, which could permit completion without the evidence required by the constitution. | Split evidence into constitution, task-mandatory, and advisory classes. Constitution and task-mandatory evidence cannot be waived; advisory waivers require actor, reason, scope, time, and an immutable evidence snapshot. |
-| H1 | Lifecycle inconsistency | HIGH | spec US3/FR-018; plan state machine; data model `Run` | Rejected review required another iteration, but the plan did not define whether the existing run reopened or a new run was created. | A rejected run now transitions to `completed` with `reviewOutcome = rejected`, remains unpublished, and is immutable. A new instruction creates a new `Run` with the next iteration number. |
-| H2 | Requirement ambiguity | HIGH | spec FR-020; plan constraints; tasks T022/T043 | The MVP allowed either rejecting or queueing a second active run, leaving core admission behavior undefined. | The MVP now rejects a second start with stable result `ACTIVE_RUN_EXISTS` and creates no run, queue entry, sandbox, or provider side effect. |
-| H3 | Cancellation ambiguity | HIGH | spec FR-013; plan state machine | “Active or blocked” did not enumerate cancellable states, risking inconsistent terminal behavior across adapters. | Cancellable states are explicitly `queued`, `provisioning`, `running`, `awaiting_approval`, and `validating`; the state machine owns the transition through `cancelling`. |
-| M1 | Task granularity | MEDIUM | tasks T018, T023, T028 | Several tasks grouped multiple use cases or directories without exact files, weakening independent completion evidence. | Phase 2 and 3 tasks were refined to name concrete files and explicit behaviors while retaining task numbering. |
-| M2 | Evidence freshness | MEDIUM | spec FR-016; plan review flow | Approval did not explicitly bind to an immutable evidence snapshot, allowing a later mutation to invalidate the reviewed result. | Review decisions now reference an evidence snapshot; later file or validation changes make the prior review stale. |
-| L1 | Terminology | LOW | plan and tasks | “Iteration” could mean reopening a run or creating a new run. | `Run.iteration` is now explicitly a unique per-task sequence, and every new iteration is a new run record. |
+| ID | Category | Severity | Summary | Resolution |
+|---|---|---:|---|---|
+| C1 | Constitution alignment | CRITICAL | Mandatory evidence could have been interpreted as waivable. | Evidence is classified as constitution, task-mandatory, or advisory. Mandatory evidence cannot be waived; advisory waivers are actor/reason/scope/time/snapshot bound. |
+| H1 | Lifecycle | HIGH | Rejected review did not define reopen versus new iteration. | Rejected runs complete immutably and remain unpublished; later instruction creates a distinct next-iteration run. |
+| H2 | Admission | HIGH | A second active run could be rejected or queued. | MVP behavior is deterministic `ACTIVE_RUN_EXISTS` with no provider or persistence side effect. |
+| H3 | Cancellation | HIGH | Cancellable states were not enumerated. | `queued`, `provisioning`, `running`, `awaiting_approval`, and `validating` transition through application-owned cancellation. |
+| M1 | Task evidence | MEDIUM | Early tasks grouped several files/behaviors. | Tasks name concrete package/file targets and acceptance behavior. |
+| M2 | Evidence freshness | MEDIUM | Review was not explicitly bound to immutable evidence. | Approval references a versioned immutable snapshot; later mutation makes review stale. |
+| M3 | Product direction | MEDIUM | Root documentation still presented frozen CycleWarden practical validation as active direction. | Root README now defines Atoryn Forge as the active product and identifies CycleWarden trusted-local material as frozen historical/technical evidence. |
+| M4 | Final hardening evidence | MEDIUM | PWA, responsive, security, cleanup, telemetry, and final evidence tasks lacked consolidated review records. | Added responsive audit, security review, terminal cleanup matrix, telemetry tests, and specification-to-implementation evidence review. |
+| L1 | Terminology | LOW | “Iteration” could mean reopening a run. | Each iteration is a unique new run record for the task. |
 
-## Coverage Summary
+## Final coverage summary
 
-| Requirement area | Covered by tasks | Primary tasks | Notes |
-|---|---|---|---|
-| Authentication and workspace ownership | Yes | T021, T037, T038, T042 | Server-side authorization remains mandatory. |
-| Provider-neutral domain | Yes | T009-T012, T027 | No provider imports are allowed in domain code. |
-| Run lifecycle and active-run limit | Yes | T013, T017, T022, T028-T029 | Includes rejected-review iteration and `ACTIVE_RUN_EXISTS`. |
-| Sensitive approvals | Yes | T015, T018, T023, T051, T053 | Approval resolution is idempotent and scope-bound. |
-| Completion evidence | Yes | T014, T018, T055-T060, T063 | Mandatory evidence cannot be waived. |
-| Redaction and credential safety | Yes | T016, T019, T057, T073, T083 | Redaction occurs before persistence and presentation. |
-| Durable events and reconnect | Yes | T031-T035, T046-T054 | Persisted history precedes live events. |
-| Review and publication | Yes | T023, T029, T055-T065 | Publication requires approved current evidence. |
-| Bilingual workflow | Yes | T066-T070 | Original and normalized instructions remain traceable. |
-| Responsive UX | Yes | T039-T049, T058-T059, T081-T082 | Desktop, tablet, and mobile acceptance remains explicit. |
+| Requirement area | Implementation and evidence | Result |
+|---|---|---|
+| Authentication and workspace isolation | Workspace-authorized queries/actions, cross-workspace PostgreSQL tests, browser isolation acceptance | Covered |
+| Provider-neutral domain | Source, coding-agent, and sandbox contracts isolated from provider implementations | Covered |
+| Run lifecycle and active-run limit | State machine, durable admission, replay-safe controls, terminal transitions | Covered |
+| Sensitive approvals | Risk classification, scoped decisions, optimistic races, provider approval integration | Covered |
+| Completion evidence | Mandatory/advisory classification, immutable snapshot, validation and acceptance evidence | Covered |
+| Redaction and credentials | Domain redaction, scoped GitHub credentials, sandbox secret denial, telemetry redaction | Covered |
+| Durable events and reconnect | Ordered PostgreSQL events, application sequence, provider correlation replay, SSE recovery | Covered |
+| Review and publication | Redacted diff, exact reviewed SHA, draft-only publication, idempotent recovery, no base write | Covered |
+| Bilingual workflow | Separate locale/instruction/output controls and original/normalized trace | Covered |
+| Responsive/installable UX | PWA metadata without offline claim, responsive audit and regression tests | Covered |
+| Cleanup and operations | Terminal cleanup matrix and structured state/provider/approval/failure/cleanup telemetry | Covered |
+| Live-provider acceptance | Protected GitHub and Sandbox/Codex harnesses exist; successful external artifacts are not yet available | Explicitly pending T078-T080 |
+
+## Final evidence-gap analysis
+
+No missing implementation task was discovered. The only unresolved feature-level evidence is already represented by:
+
+- **T078** — successful GitHub contract against an explicitly disposable repository;
+- **T079** — successful deterministic Vercel Sandbox/Codex live smoke;
+- **T080** — reviewed real startup, installation, model usage, sandbox usage, cancellation, and cleanup measurements.
+
+These require protected environment credentials and external disposable infrastructure. Fake-provider, unit, or ordinary CI evidence cannot satisfy them and is not reported as doing so.
 
 ## Metrics
 
 - Functional requirements: 22
 - Non-functional requirements: 6
-- Implementation tasks: 90
-- CRITICAL findings before remediation: 1
-- HIGH findings before remediation: 3
+- Implementation/evidence tasks: 90
 - Remaining CRITICAL findings: 0
 - Remaining HIGH findings: 0
-- Material requirement areas with task coverage: 10 / 10
+- Newly required implementation tasks: 0
+- Explicit external-evidence tasks still open: 3
 
-## Constitution Alignment
+## Constitution alignment
 
-The remediated artifacts comply with all ten Atoryn Forge principles. In particular:
+The final implementation preserves the Atoryn Forge principles:
 
-- no agent claim or advisory waiver can bypass mandatory completion evidence;
-- provider-specific APIs remain outside the core domain;
-- a browser is never authoritative for run state;
-- sensitive actions remain blocked pending an explicit scoped decision;
-- rejected work remains auditable and immutable across later iterations.
+- provider APIs remain outside the core domain;
+- browser state is never authoritative;
+- every sensitive action remains policy- or approval-bound;
+- mandatory evidence cannot be waived;
+- provider cursors cannot replace durable application sequence;
+- credentials are scoped and secret material is redacted before durable or user-visible output;
+- publication is human-approved, exact-head, draft-only, and never an automatic merge;
+- unsuccessful, cancelled, expired, and rejected paths remain auditable and cleanup-aware.
 
 ## Decision
 
-**PASS FOR IMPLEMENTATION FOUNDATION.**
+**PASS FOR DETERMINISTIC IMPLEMENTATION AND FINAL MERGE REVIEW.**
 
-T008-T029 may begin. Live GitHub, Codex, and sandbox adapters remain blocked until the provider-neutral domain and deterministic fake-provider lifecycle pass their tests.
+No CRITICAL or HIGH artifact/code inconsistency remains. The implementation can be merged after final CI and security/evidence verification. The stronger Phase 9 live-provider checkpoint remains pending until T078-T080 produce reviewed external artifacts.

@@ -1,180 +1,128 @@
-# ✦ CycleWarden
+# Atoryn Forge
 
-**Experimental local workflow for bounded AI-assisted software delivery**
+**A governed web platform for delegating software work to remote AI coding agents.**
 
-CycleWarden helps a solo developer prepare a real repository task, hand implementation to a coding agent, verify the resulting change, and make a human merge decision.
-
-> **Current direction:** CycleWarden is in practical validation mode. The previous full-platform roadmap is frozen. Active work is tracked in [issue #57](https://github.com/Thunderkill016/cyclewarden/issues/57) and defined in [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md).
-
-CycleWarden was formerly named Shipkit. Existing state and configuration compatibility are documented in [`docs/RENAMING_FROM_SHIPKIT.md`](docs/RENAMING_FROM_SHIPKIT.md).
-
-## Current product hypothesis
-
-For a solo developer using Codex or another coding agent on real repositories, bounded task preparation and independent verification can reduce:
-
-- unclear task scope;
-- accidental changes outside the request;
-- repeated implementation attempts;
-- uncertainty about whether a change is ready to merge.
-
-The repository does **not** currently claim that CycleWarden is better than using a coding agent directly. That must be decided from six real project tasks.
-
-## Practical workflow
+Atoryn Forge turns a developer request into a controlled remote run:
 
 ```text
-real task
-→ repository context and bounded scope
-→ coding agent implementation
-→ test / lint / typecheck / build
-→ changed-file and patch verification
-→ human review and merge decision
+repository + task
+→ reviewed execution policy
+→ isolated sandbox
+→ governed coding-agent session
+→ ordered events and approvals
+→ objective validation evidence
+→ human review
+→ exact-head draft pull request
 ```
 
-The useful surface today is:
+The repository was previously developed as **CycleWarden**, an experimental trusted-local workflow. That local workflow is now frozen as technical evidence. The active product direction is Atoryn Forge: a provider-neutral, bilingual, web-operated system that can continue a run from another device while preserving human control over sensitive actions and publication.
 
-1. inspect and assess a repository;
-2. prepare an evidence-backed execution handoff;
-3. run one trusted local implementation in an isolated branch or worktree;
-4. require a different verifier before accepting the change;
-5. optionally publish the exact verified commit as a draft pull request.
+## Current implementation
 
-## Practical validation
+The repository contains an end-to-end Forge foundation:
 
-Issue #57 compares:
+- provider-neutral domain contracts for source control, coding agents, and sandboxes;
+- durable PostgreSQL state, idempotency, optimistic concurrency, ordered event projection, and reconciliation;
+- authenticated repository/task/run creation;
+- desktop and mobile run monitoring with reconnectable event streams;
+- additional instructions, approvals, rejection, cancellation, and next-iteration flows;
+- immutable evidence snapshots, redacted unified diffs, validation results, and explicit review decisions;
+- exact-head, draft-only, idempotent publication rules;
+- separate Vietnamese interface/instruction language and English technical-output controls;
+- GitHub App source-provider, webhook reconciliation, and repository-scoped credential brokerage;
+- ephemeral Vercel Sandbox provider with deny-by-default networking and resource ceilings;
+- resumable Codex app-server provider with approvals, cancellation, event streaming, and usage summaries;
+- versioned provider-event normalization and durable replay protection;
+- protected live-provider contract and smoke-test harnesses.
 
-- three real tasks using the normal coding-agent workflow;
-- three comparable real tasks using CycleWarden.
+The deterministic fake-provider workflow and PostgreSQL Playwright acceptance tests are complete. Protected live GitHub and Vercel/Codex workflows exist, but their tasks remain evidence-gated until successful runs are recorded with disposable infrastructure and real environment credentials.
 
-Fixtures and synthetic work do not count. Every task records preparation time, implementation retries, scope escapes, checks, review time, friction, and final outcome using [`docs/practical/TASK_RECORD_TEMPLATE.md`](docs/practical/TASK_RECORD_TEMPLATE.md).
+## Product boundaries
 
-After six tasks:
+Atoryn Forge is deliberately governed:
 
-- keep task preparation only if it materially improves clarity or context recovery;
-- keep execution orchestration only if it removes repeated work without comparable friction;
-- keep verification if it catches meaningful errors or clarifies merge decisions;
-- freeze CycleWarden as a research prototype if direct coding-agent use performs as well or better.
+- it never merges a pull request automatically;
+- it never writes directly to the base branch;
+- sensitive actions require explicit policy or approval;
+- provider credentials are short-lived and repository-scoped where supported;
+- sandbox network access is denied unless explicitly allowed;
+- application event sequence is owned by Atoryn, not by provider cursors;
+- evidence must match the current immutable change snapshot before publication;
+- secrets are redacted before logs, events, reviews, or evidence are persisted.
 
-## Frozen during validation
+PWA metadata makes the web application installable, but the project does **not** claim offline execution. Remote runs, approvals, event recovery, and publication require server and provider connectivity.
 
-The following are not active product goals:
+## Repository layout
 
-- multi-project web dashboards;
-- deployment and rollback automation;
-- outcome analytics and recursive learning;
-- MCP/A2A integration;
-- multi-user SaaS;
-- additional coding-agent adapters;
-- additional sandbox backends;
-- broad research-provider expansion;
-- persistence hardening unrelated to a real task blocker.
+| Path | Responsibility |
+| --- | --- |
+| `packages/forge-domain/` | Provider-neutral contracts, policies, state machine, completion gate, and redaction |
+| `packages/forge-application/` | Orchestration, persistence boundaries, reconciliation, event normalization, and telemetry |
+| `packages/provider-github/` | GitHub App source provider, webhooks, credential brokerage, and live contract harness |
+| `packages/provider-sandbox-vercel/` | Ephemeral Vercel Sandbox lifecycle and security policy |
+| `packages/provider-codex/` | Governed Codex app-server adapter |
+| `apps/web/` | Authenticated Forge interface, API routes, responsive controls, evidence review, and E2E tests |
+| `specs/001-remote-agent-run/` | Active Forge specification, plan, task ledger, and live-spike evidence |
+| `packages/evolution-core/` | Frozen CycleWarden research and trusted-local delivery mechanisms |
 
-Existing code for these areas is preserved as technical evidence. It is not deleted, but architecture completeness no longer justifies new work.
-
-## Existing technical capabilities
-
-The repository already contains:
-
-- a deterministic lifecycle and evidence core;
-- repository inspection and readiness assessment;
-- bounded repository research and `ExecutionHandoff` records;
-- trusted-local command and optional Codex CLI delivery profiles;
-- clean-base and isolated worktree requirements;
-- changed-file scope checks and external-symlink rejection;
-- separate implementer and verifier identities;
-- test, lint, typecheck and build verification commands;
-- local commit creation only after an accepted verdict;
-- explicit opt-in draft pull-request publication;
-- CI, Docker hostile-check fixtures, and Node.js 20/22/24 package verification.
-
-These mechanisms are implementation details supporting the practical workflow, not separate roadmap obligations.
-
-## Important boundaries
-
-- Trusted-local execution is **not a security sandbox**. Commands inherit the current operating-system user's accessible filesystem, credentials, tools, and network.
-- The web workspace ends at the execution handoff. Execute, verify, and publish remain CLI operations.
-- Draft pull-request publication requires an installed and authenticated GitHub CLI.
-- CycleWarden never automatically merges, deploys, accesses production secrets, or spends money.
-- CI success proves technical checks passed; it does not prove product value.
-
-## Quickstart
+## Development
 
 ### Prerequisites
 
 - Node.js 20 or later
-- pnpm 9 or later
-- Git
-- GitHub CLI only when publishing a draft pull request
+- pnpm 9.15
+- PostgreSQL 16 for durable integration and E2E tests
+- Docker for hostile-sandbox proof workflows
+- external credentials only for protected opt-in live-provider workflows
 
-### Install
-
-```bash
-git clone https://github.com/Thunderkill016/cyclewarden.git
-cd cyclewarden
-pnpm install
-pnpm --filter @cyclewarden/evolution-core build
-pnpm evolve -- init
-```
-
-### Inspect a trusted repository
+### Install and verify
 
 ```bash
-pnpm evolve -- start \
-  --id practical:task-001 \
-  --objective "Prepare one bounded real project task" \
-  --autonomy A2 \
-  --risk R1
-
-pnpm evolve -- inspect practical:task-001 \
-  --project-root /absolute/path/to/trusted/repository
-
-pnpm evolve -- assess practical:task-001 \
-  --project-root /absolute/path/to/trusted/repository
-
-pnpm evolve -- show practical:task-001
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm check:ai
 ```
 
-Repository research can then produce a reviewed `ExecutionHandoff`.
-
-### Run trusted-local delivery
-
-See [`docs/evolution/GOVERNED_DELIVERY.md`](docs/evolution/GOVERNED_DELIVERY.md) for the manifest contract and safety boundaries.
+### Run the web application
 
 ```bash
-pnpm deliver -- execute <cycle-id> \
-  --root /absolute/path/to/project/.cyclewarden \
-  --project-root /absolute/path/to/trusted/repository \
-  --manifest delivery.json \
-  --actor owner-implementation-agent \
-  --trusted-repository
-
-pnpm deliver -- verify <cycle-id> \
-  --root /absolute/path/to/project/.cyclewarden \
-  --project-root /absolute/path/to/trusted/repository \
-  --actor independent-verifier
+pnpm db:up
+pnpm db:migrate
+pnpm dev
 ```
 
-Publishing is a separate explicit operation:
+Open the authenticated Forge area at `/app/forge`.
 
-```bash
-pnpm deliver -- publish <cycle-id> \
-  --root /absolute/path/to/project/.cyclewarden \
-  --project-root /absolute/path/to/trusted/repository \
-  --actor owner-publisher \
-  --draft-pr \
-  --remote origin \
-  --base main
-```
+## Live-provider validation
 
-## Documentation
+Live workflows are manual and protected:
 
-| Document | Purpose |
-| --- | --- |
-| [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md) | Active product direction and frozen boundaries |
-| [`docs/practical/TASK_RECORD_TEMPLATE.md`](docs/practical/TASK_RECORD_TEMPLATE.md) | Evidence template for the six-task comparison |
-| [`ROADMAP.md`](ROADMAP.md) | Current practical validation roadmap |
-| [`docs/evolution/GOVERNED_DELIVERY.md`](docs/evolution/GOVERNED_DELIVERY.md) | Trusted-local execution and verification contract |
-| [`docs/CAPABILITIES.json`](docs/CAPABILITIES.json) | Machine-readable technical capability evidence |
-| [`IDEA.md`](IDEA.md) | Historical broad product vision retained for reference |
+- `Forge live GitHub contract` targets only a repository explicitly designated as disposable and cleans up its draft pull request and branch;
+- `Forge live sandbox Codex smoke` creates a non-persistent Vercel Sandbox, runs a deterministic Codex repair task, validates it independently, records timing/usage evidence, and destroys the sandbox.
+
+Harness code is not treated as proof. The live task ledger remains open until the protected workflow artifacts are reviewed and recorded in `specs/001-remote-agent-run/live-spike-results.md`.
+
+## Frozen CycleWarden material
+
+The previous CycleWarden practical-validation direction is retained for history and reuse:
+
+- [`PRACTICAL_SCOPE.md`](PRACTICAL_SCOPE.md)
+- [`docs/practical/TASK_RECORD_TEMPLATE.md`](docs/practical/TASK_RECORD_TEMPLATE.md)
+- [`docs/evolution/GOVERNED_DELIVERY.md`](docs/evolution/GOVERNED_DELIVERY.md)
+- [`docs/RENAMING_FROM_SHIPKIT.md`](docs/RENAMING_FROM_SHIPKIT.md)
+
+These documents describe the frozen trusted-local experiment. They are not the active Atoryn Forge roadmap.
+
+## Active specification
+
+Start with:
+
+- [`specs/001-remote-agent-run/spec.md`](specs/001-remote-agent-run/spec.md)
+- [`specs/001-remote-agent-run/plan.md`](specs/001-remote-agent-run/plan.md)
+- [`specs/001-remote-agent-run/tasks.md`](specs/001-remote-agent-run/tasks.md)
+- [`specs/001-remote-agent-run/live-spike-results.md`](specs/001-remote-agent-run/live-spike-results.md)
 
 ## License
 

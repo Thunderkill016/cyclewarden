@@ -219,7 +219,7 @@ describe("GitHubWebhookHandler", () => {
           secret: "wrong-secret",
         }),
       ),
-    ).rejects.toMatchObject<Partial<GitHubWebhookError>>({
+    ).rejects.toMatchObject({
       code: "INVALID_SIGNATURE",
     });
 

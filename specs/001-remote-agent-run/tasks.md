@@ -146,16 +146,16 @@
 
 ## Phase 10: Security, responsive hardening, and final verification
 
-- [ ] T081 Add PWA manifest and installability metadata without making offline execution claims
-- [ ] T082 Audit all Forge pages at desktop, tablet, and mobile viewports and fix overflow, focus, and touch-target defects
-- [ ] T083 Add security tests for cross-workspace access, replay, secret leakage, expired token, denied network, and direct base-branch write
-- [ ] T084 Add cleanup tests for completed, failed, expired, and cancelled sandboxes
-- [ ] T085 Add structured operational logs and metrics for run state, provider latency, failures, approvals, and cleanup
-- [ ] T086 Update active product documentation to distinguish Atoryn Forge direction from the frozen CycleWarden practical-validation scope
-- [ ] T087 Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, and web end-to-end tests
-- [ ] T088 Run `$speckit-analyze`, fix all material artifact/code inconsistencies, and update tasks if needed
-- [ ] T089 Perform a final specification-to-implementation evidence review and append any missing implementation or evidence tasks
-- [ ] T090 Complete final security and evidence review before marking the feature ready for merge
+- [X] T081 Add PWA manifest and installability metadata without making offline execution claims
+- [X] T082 Audit all Forge pages at desktop, tablet, and mobile viewports and fix overflow, focus, and touch-target defects
+- [X] T083 Add security tests for cross-workspace access, replay, secret leakage, expired token, denied network, and direct base-branch write
+- [X] T084 Add cleanup tests for completed, failed, expired, and cancelled sandboxes
+- [X] T085 Add structured operational logs and metrics for run state, provider latency, failures, approvals, and cleanup
+- [X] T086 Update active product documentation to distinguish Atoryn Forge direction from the frozen CycleWarden practical-validation scope
+- [X] T087 Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, and web end-to-end tests
+- [X] T088 Run `$speckit-analyze`, fix all material artifact/code inconsistencies, and update tasks if needed
+- [X] T089 Perform a final specification-to-implementation evidence review and append any missing implementation or evidence tasks
+- [X] T090 Complete final security and evidence review before marking the feature ready for merge
 
 ## Dependency graph
 

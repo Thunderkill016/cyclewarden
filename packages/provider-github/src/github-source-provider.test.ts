@@ -200,8 +200,6 @@ describe("GitHubSourceProvider", () => {
     const input = changeRequestInput();
     input.branchName = input.baseBranch;
 
-    await expect(source.createDraftChangeRequest(input)).rejects.toMatchObject<
-      Partial<GitHubSourceProviderError>
-    >({ code: "INVALID_INPUT" });
+    await expect(source.createDraftChangeRequest(input)).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
 });
