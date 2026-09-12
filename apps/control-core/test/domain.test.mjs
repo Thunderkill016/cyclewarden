@@ -50,3 +50,24 @@ test("dashboard groups decision states instead of exposing a generic kanban", ()
   assert.equal(snapshot.readyToShip.length, 1);
   assert.deepEqual(snapshot.projects[0].taskCounts, { total: 3, active: 1, blocked: 1, readyToShip: 1 });
 });
+
+test("interrupted tasks are surfaced as needs-you and count as blocked", () => {
+  const base = {
+    version: 1,
+    projects: [{ id: "project_1", name: "demo", rootPath: "/tmp/demo" }],
+    events: [],
+    tasks: [],
+  };
+  let interrupted = createTaskRecord({ projectId: "project_1", title: "Interrupted", objective: "x", baseHead: "a" });
+  interrupted = transitionTask(transitionTask(interrupted, "READY"), "RUNNING");
+  interrupted = transitionTask(interrupted, "INTERRUPTED", {
+    recovery: { canResume: true, reason: "WORKTREE_CLEAN" },
+    failure: { code: "CORE_RESTARTED", message: "restart" },
+  });
+  const snapshot = dashboardSnapshot({ ...base, tasks: [interrupted] });
+  assert.equal(snapshot.needsYou.length, 1);
+  assert.equal(snapshot.needsYou[0].status, "INTERRUPTED");
+  assert.equal(snapshot.backlog.length, 0);
+  assert.equal(snapshot.inFlight.length, 0);
+  assert.deepEqual(snapshot.projects[0].taskCounts, { total: 1, active: 0, blocked: 1, readyToShip: 0 });
+});
