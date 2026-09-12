@@ -190,6 +190,8 @@ test("real Control Core process restart surfaces INTERRUPTED and explicitly resu
     assert.equal(interrupted.failure.code, "CORE_RESTARTED");
     assert.equal(interrupted.recovery.canResume, true);
     assert.equal(interrupted.recovery.reason, "WORKTREE_CLEAN");
+    assert.equal(interrupted.recovery.worktreeExists, true);
+    assert.equal(interrupted.recovery.branchExists, true);
     assert.equal(interrupted.worktreePath, originalWorktree);
     assert.equal(interrupted.branch, originalBranch);
 
