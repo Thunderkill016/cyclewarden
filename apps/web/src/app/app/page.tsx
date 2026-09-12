@@ -51,6 +51,29 @@ export default async function AppHomePage() {
         )}
 
         <Link
+          href="/app/control-center"
+          className="group block rounded-2xl border border-accent/60 bg-accent/10 p-6 transition-colors hover:border-accent"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+                Local AI operations
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-foreground group-hover:text-accent">
+                Open AI Project Control Center
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+                Register local repositories, launch bounded Codex tasks in isolated worktrees, watch live state,
+                and only surface changes as ready to ship after repository checks pass on a clean exact head.
+              </p>
+            </div>
+            <span className="rounded-full border border-accent/40 px-3 py-1 text-xs text-accent">
+              local core →
+            </span>
+          </div>
+        </Link>
+
+        <Link
           href="/app/evolution"
           className="group block rounded-2xl border border-accent/50 bg-accent/5 p-6 transition-colors hover:border-accent"
         >
