@@ -96,7 +96,7 @@ test("project watcher records unavailable and recovered transitions", async () =
 
   await watcher.refreshProject(store.project.id);
   assert.equal(store.project.health.available, false);
-  assert.equal(store.events.at(-1).type, "project.health_changed");
+  assert.equal(store.events.at(-1).type, "project.unavailable");
 
   await watcher.refreshProject(store.project.id);
   assert.equal(store.project.health.available, true);
