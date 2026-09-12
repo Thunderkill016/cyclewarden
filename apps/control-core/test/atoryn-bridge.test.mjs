@@ -139,7 +139,7 @@ test("re-delivered remote run command is not executed twice", async () => {
   const results = calls.filter((call) => call.url.endsWith("/result"));
   assert.equal(results.length, 2);
   assert.equal(results[1].body.result.ok, true);
-  assert.match(results[1].body.result.message, /không chạy lặp/);
+  assert.match(results[1].body.result.message, /giao cho Codex local/);
 });
 
 test("bridge rejects plaintext remote endpoints but allows localhost test endpoints", () => {
