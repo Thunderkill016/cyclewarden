@@ -114,7 +114,7 @@ export class AtoRynBridge {
     try {
       const now = Date.now();
       const snapshot = sanitizeDashboard(this.store.dashboard());
-      const hash = sha256(JSON.stringify(snapshot));
+      const hash = sha256(JSON.stringify({ ...snapshot, generatedAt: null }));
       if (this.dirty || hash !== this.lastSnapshotHash || now - this.lastSyncAt >= HEARTBEAT_MS) {
         await this.#post("sync", { coreId: this.coreId, snapshot });
         this.lastSnapshotHash = hash;
