@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 
 const CORE_URL = process.env.NEXT_PUBLIC_CONTROL_CORE_URL ?? "http://127.0.0.1:4318";
 
@@ -59,7 +59,7 @@ type Doctor = {
 async function coreFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${CORE_URL}${path}`, {
     ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+    headers: init?.body ? { "content-type": "application/json", ...(init?.headers ?? {}) } : init?.headers,
     cache: "no-store",
   });
   const body = await response.json().catch(() => ({}));
@@ -164,7 +164,7 @@ function TaskCard({ task, action }: { task: Task; action: (task: Task, verb: "st
   );
 }
 
-function Section({ title, count, tone, children }: { title: string; count: number; tone: "warn" | "good" | "busy" | "muted"; children: React.ReactNode }) {
+function Section({ title, count, tone, children }: { title: string; count: number; tone: "warn" | "good" | "busy" | "muted"; children: ReactNode }) {
   return (
     <section>
       <div className="mb-3 flex items-center gap-2">
@@ -181,6 +181,7 @@ export function ControlCenterClient() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [streamConnected, setStreamConnected] = useState(false);
   const [busy, setBusy] = useState(false);
   const [repoPath, setRepoPath] = useState("");
   const [projectId, setProjectId] = useState("");
@@ -200,8 +201,25 @@ export function ControlCenterClient() {
   useEffect(() => {
     void refresh();
     void coreFetch<Doctor>("/doctor").then(setDoctor).catch(() => setDoctor(null));
-    const timer = window.setInterval(() => void refresh(), 2500);
-    return () => window.clearInterval(timer);
+
+    const source = new EventSource(`${CORE_URL}/events`);
+    const onSnapshot = (event: MessageEvent<string>) => {
+      try {
+        setSnapshot(JSON.parse(event.data) as Snapshot);
+        setStreamConnected(true);
+        setError(null);
+      } catch {
+        setStreamConnected(false);
+      }
+    };
+    source.addEventListener("snapshot", onSnapshot as EventListener);
+    source.onopen = () => setStreamConnected(true);
+    source.onerror = () => setStreamConnected(false);
+
+    return () => {
+      source.removeEventListener("snapshot", onSnapshot as EventListener);
+      source.close();
+    };
   }, [refresh]);
 
   useEffect(() => {
@@ -218,7 +236,7 @@ export function ControlCenterClient() {
     setError(null);
     try {
       await work();
-      await refresh();
+      if (!streamConnected) await refresh();
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : String(nextError));
     } finally {
@@ -271,8 +289,8 @@ export function ControlCenterClient() {
           <span className={`rounded-full border px-3 py-1 ${doctor?.codex.ok ? "border-emerald-500/30 text-emerald-300" : "border-amber-500/30 text-amber-300"}`}>
             Codex {doctor?.codex.ok ? "online" : "offline"}
           </span>
-          <span className={`rounded-full border px-3 py-1 ${error ? "border-amber-500/30 text-amber-300" : "border-sky-500/30 text-sky-300"}`}>
-            Core {error ? "offline" : "live"}
+          <span className={`rounded-full border px-3 py-1 ${error ? "border-amber-500/30 text-amber-300" : streamConnected ? "border-emerald-500/30 text-emerald-300" : "border-sky-500/30 text-sky-300"}`}>
+            Core {error ? "offline" : streamConnected ? "live" : "connecting"}
           </span>
         </div>
       </header>
