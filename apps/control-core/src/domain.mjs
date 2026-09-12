@@ -6,6 +6,7 @@ export const TASK_STATES = Object.freeze([
   "RUNNING",
   "NEEDS_INPUT",
   "VERIFYING",
+  "INTERRUPTED",
   "READY_TO_SHIP",
   "FAILED",
   "MERGED",
@@ -15,9 +16,10 @@ export const TASK_STATES = Object.freeze([
 const TRANSITIONS = Object.freeze({
   BACKLOG: new Set(["READY", "CLOSED"]),
   READY: new Set(["RUNNING", "CLOSED"]),
-  RUNNING: new Set(["NEEDS_INPUT", "VERIFYING", "FAILED", "CLOSED"]),
-  NEEDS_INPUT: new Set(["RUNNING", "FAILED", "CLOSED"]),
-  VERIFYING: new Set(["READY_TO_SHIP", "FAILED", "CLOSED"]),
+  RUNNING: new Set(["NEEDS_INPUT", "VERIFYING", "INTERRUPTED", "FAILED", "CLOSED"]),
+  NEEDS_INPUT: new Set(["RUNNING", "INTERRUPTED", "FAILED", "CLOSED"]),
+  VERIFYING: new Set(["READY_TO_SHIP", "INTERRUPTED", "FAILED", "CLOSED"]),
+  INTERRUPTED: new Set(["READY", "RUNNING", "CLOSED"]),
   READY_TO_SHIP: new Set(["MERGED", "CLOSED", "RUNNING"]),
   FAILED: new Set(["READY", "RUNNING", "CLOSED"]),
   MERGED: new Set(["CLOSED"]),
@@ -68,6 +70,7 @@ export function createTaskRecord(input) {
     lastMessage: null,
     pendingDecision: null,
     verification: [],
+    recovery: null,
     failure: null,
     createdAt,
     updatedAt: createdAt,
@@ -84,10 +87,16 @@ export function transitionTask(task, nextStatus, patch = {}) {
     status: nextStatus,
     updatedAt: nowIso(),
   };
-  if (nextStatus === "RUNNING" && !updated.startedAt) {
-    updated.startedAt = updated.updatedAt;
+  if (nextStatus === "RUNNING") {
+    if (!updated.startedAt || ["FAILED", "INTERRUPTED"].includes(task.status)) {
+      updated.startedAt = updated.updatedAt;
+    }
+    updated.completedAt = null;
   }
-  if (["READY_TO_SHIP", "FAILED", "MERGED", "CLOSED"].includes(nextStatus)) {
+  if (nextStatus === "READY" && ["FAILED", "INTERRUPTED"].includes(task.status)) {
+    updated.completedAt = null;
+  }
+  if (["READY_TO_SHIP", "FAILED", "INTERRUPTED", "MERGED", "CLOSED"].includes(nextStatus)) {
     updated.completedAt = updated.updatedAt;
   }
   return updated;
@@ -117,14 +126,14 @@ export function dashboardSnapshot(state) {
           if (task.projectId !== project.id) return acc;
           acc.total += 1;
           if (task.status === "RUNNING" || task.status === "VERIFYING") acc.active += 1;
-          if (task.status === "NEEDS_INPUT" || task.status === "FAILED") acc.blocked += 1;
+          if (["NEEDS_INPUT", "FAILED", "INTERRUPTED"].includes(task.status)) acc.blocked += 1;
           if (task.status === "READY_TO_SHIP") acc.readyToShip += 1;
           return acc;
         },
         { total: 0, active: 0, blocked: 0, readyToShip: 0 },
       ),
     })),
-    needsYou: tasks.filter((task) => task.status === "NEEDS_INPUT" || task.status === "FAILED"),
+    needsYou: tasks.filter((task) => ["NEEDS_INPUT", "FAILED", "INTERRUPTED"].includes(task.status)),
     readyToShip: tasks.filter((task) => task.status === "READY_TO_SHIP"),
     inFlight: tasks.filter((task) => task.status === "RUNNING" || task.status === "VERIFYING"),
     backlog: tasks.filter((task) => task.status === "BACKLOG" || task.status === "READY"),
