@@ -5,7 +5,12 @@ import os from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { git, inspectRepository } from "../src/git.mjs";
+import {
+  createTaskWorktree,
+  git,
+  inspectInterruptedWorktree,
+  inspectRepository,
+} from "../src/git.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -54,6 +59,47 @@ test("inspectRepository imports safe agent-contract checks without enabling shel
     );
     assert.equal(project.contractWarnings.length, 1);
     assert.match(project.contractWarnings[0], /Unsupported agent-contract alwaysCheck/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("interrupted task can reattach an existing branch after its worktree was removed", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "cyclewarden-recovery-"));
+  const repoDir = path.join(root, "repo");
+  const dataDir = path.join(root, "control-data");
+  try {
+    await execFileAsync("git", ["init", repoDir]);
+    await git(repoDir, ["config", "user.email", "ci@example.test"]);
+    await git(repoDir, ["config", "user.name", "CycleWarden Test"]);
+    await writeFile(path.join(repoDir, "README.md"), "fixture\n");
+    await git(repoDir, ["add", "."]);
+    await git(repoDir, ["commit", "-m", "fixture base"]);
+
+    const project = await inspectRepository(repoDir);
+    const task = {
+      id: "task_12345678abcdef",
+      title: "Resume interrupted work",
+      baseHead: project.registeredHead,
+      branch: null,
+      worktreePath: null,
+    };
+
+    const created = await createTaskWorktree({ project, task, dataDir });
+    task.branch = created.branch;
+    task.worktreePath = created.worktreePath;
+    await git(repoDir, ["worktree", "remove", created.worktreePath]);
+
+    const recovery = await inspectInterruptedWorktree({ project, task, dataDir });
+    assert.equal(recovery.canResume, true);
+    assert.equal(recovery.worktreeExists, false);
+    assert.equal(recovery.branchExists, true);
+    assert.equal(recovery.reason, "WORKTREE_MISSING_BRANCH_RECOVERABLE");
+
+    const reattached = await createTaskWorktree({ project, task, dataDir });
+    assert.equal(reattached.branch, created.branch);
+    assert.equal(reattached.reused, true);
+    assert.equal(reattached.exactHead, project.registeredHead);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
