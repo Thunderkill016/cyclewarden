@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { createId, nowIso } from "./domain.mjs";
 
 const execFileAsync = promisify(execFile);
+const SAFE_SCRIPT_NAME = /^[A-Za-z0-9][A-Za-z0-9:._-]{0,127}$/;
 
 async function exists(filePath) {
   try {
@@ -43,6 +44,60 @@ function packageManagerFor(rootPath) {
   });
 }
 
+function parseSafeContractCheck(value) {
+  if (typeof value !== "string") return null;
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 3 && parts[0] === "npm" && parts[1] === "run" && SAFE_SCRIPT_NAME.test(parts[2])) {
+    return { name: `contract:${parts[2]}`, command: "npm", args: ["run", parts[2]], source: "agent-contract" };
+  }
+  if (parts.length === 3 && parts[0] === "pnpm" && parts[1] === "run" && SAFE_SCRIPT_NAME.test(parts[2])) {
+    return { name: `contract:${parts[2]}`, command: "pnpm", args: ["run", parts[2]], source: "agent-contract" };
+  }
+  if (parts.length === 2 && parts[0] === "pnpm" && SAFE_SCRIPT_NAME.test(parts[1])) {
+    return { name: `contract:${parts[1]}`, command: "pnpm", args: [parts[1]], source: "agent-contract" };
+  }
+  if (parts.length === 2 && parts[0] === "yarn" && SAFE_SCRIPT_NAME.test(parts[1])) {
+    return { name: `contract:${parts[1]}`, command: "yarn", args: [parts[1]], source: "agent-contract" };
+  }
+  if (parts.length === 3 && parts[0] === "bun" && parts[1] === "run" && SAFE_SCRIPT_NAME.test(parts[2])) {
+    return { name: `contract:${parts[2]}`, command: "bun", args: ["run", parts[2]], source: "agent-contract" };
+  }
+  return null;
+}
+
+async function readAgentContract(contractPath) {
+  if (!(await exists(contractPath))) return { contract: null, checks: [], warnings: [] };
+  try {
+    const raw = JSON.parse(await readFile(contractPath, "utf8"));
+    const alwaysChecks = Array.isArray(raw?.alwaysChecks) ? raw.alwaysChecks : [];
+    const checks = [];
+    const warnings = [];
+    for (const value of alwaysChecks) {
+      const parsed = parseSafeContractCheck(value);
+      if (parsed) checks.push(parsed);
+      else warnings.push(`Unsupported agent-contract alwaysCheck: ${String(value).slice(0, 200)}`);
+    }
+    return {
+      contract: {
+        schemaVersion: raw?.schemaVersion ?? null,
+        canonicalInstructionFile:
+          typeof raw?.canonicalInstructionFile === "string" ? raw.canonicalInstructionFile : null,
+        contextRouter: typeof raw?.contextRouter === "string" ? raw.contextRouter : null,
+        minimumNodeMajor: Number.isInteger(raw?.minimumNodeMajor) ? raw.minimumNodeMajor : null,
+        stableCheckName: typeof raw?.stableCheckName === "string" ? raw.stableCheckName : null,
+      },
+      checks,
+      warnings,
+    };
+  } catch (error) {
+    return {
+      contract: null,
+      checks: [],
+      warnings: [`Invalid agent-contract.json: ${error.message}`],
+    };
+  }
+}
+
 async function discoverVerification(rootPath, packageManager) {
   const packagePath = path.join(rootPath, "package.json");
   if (!(await exists(packagePath))) return [];
@@ -53,12 +108,22 @@ async function discoverVerification(rootPath, packageManager) {
     return ordered
       .filter((name) => typeof scripts[name] === "string")
       .map((name) => {
-        if (packageManager === "npm") return { name, command: "npm", args: ["run", name] };
-        return { name, command: packageManager, args: [name] };
+        if (packageManager === "npm") return { name, command: "npm", args: ["run", name], source: "package" };
+        return { name, command: packageManager, args: [name], source: "package" };
       });
   } catch {
     return [];
   }
+}
+
+function dedupeChecks(checks) {
+  const seen = new Set();
+  return checks.filter((check) => {
+    const key = [check.command, ...check.args].join("\0");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export async function inspectRepository(inputPath) {
@@ -77,10 +142,20 @@ export async function inspectRepository(inputPath) {
     branch = "HEAD";
   }
 
-  const agentsPath = path.join(rootPath, "AGENTS.md");
+  const defaultAgentsPath = path.join(rootPath, "AGENTS.md");
   const contractPath = path.join(rootPath, "agent-contract.json");
   const packageManager = await packageManagerFor(rootPath);
-  const verification = await discoverVerification(rootPath, packageManager);
+  const contractResult = await readAgentContract(contractPath);
+  const instructionCandidate = contractResult.contract?.canonicalInstructionFile
+    ? path.join(rootPath, contractResult.contract.canonicalInstructionFile)
+    : defaultAgentsPath;
+  const agentsPath = (await exists(instructionCandidate))
+    ? instructionCandidate
+    : (await exists(defaultAgentsPath))
+      ? defaultAgentsPath
+      : null;
+  const discoveredChecks = await discoverVerification(rootPath, packageManager);
+  const verification = dedupeChecks([...contractResult.checks, ...discoveredChecks]);
 
   return {
     id: projectIdFor(rootPath),
@@ -88,8 +163,10 @@ export async function inspectRepository(inputPath) {
     rootPath,
     defaultBranch: branch,
     registeredHead: head,
-    agentsPath: (await exists(agentsPath)) ? agentsPath : null,
+    agentsPath,
     contractPath: (await exists(contractPath)) ? contractPath : null,
+    contract: contractResult.contract,
+    contractWarnings: contractResult.warnings,
     packageManager,
     verification,
     registeredAt: nowIso(),
