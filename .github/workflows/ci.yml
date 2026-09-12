@@ -25,6 +25,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm control:test
       - run: pnpm test
       - run: pnpm build
       - run: pnpm doctor || true
@@ -100,7 +101,7 @@ jobs:
           name: public-search-proof
           if-no-files-found: warn
           retention-days: 14
-          path: artifacts/public-search-proof.json
+          path: artifacts/candidate-research-proof.json
 
   sandbox-docker-proof:
     name: Sandbox / hostile Docker proof
