@@ -50,6 +50,39 @@ function sendJson(req, res, status, value) {
   res.end(payload);
 }
 
+function writeSse(res, event, data) {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+function openEventStream(req, res) {
+  requireBrowserOrigin(req);
+  res.writeHead(200, {
+    "content-type": "text/event-stream; charset=utf-8",
+    "cache-control": "no-cache, no-transform",
+    connection: "keep-alive",
+    "x-accel-buffering": "no",
+    ...corsHeaders(req),
+  });
+  res.flushHeaders?.();
+
+  writeSse(res, "snapshot", store.dashboard());
+  const unsubscribe = store.subscribe((snapshot) => {
+    if (!res.writableEnded && !res.destroyed) writeSse(res, "snapshot", snapshot);
+  });
+  const heartbeat = setInterval(() => {
+    if (!res.writableEnded && !res.destroyed) res.write(`: heartbeat ${Date.now()}\n\n`);
+  }, 15_000);
+  heartbeat.unref?.();
+
+  const close = () => {
+    clearInterval(heartbeat);
+    unsubscribe();
+  };
+  req.once("close", close);
+  res.once("close", close);
+}
+
 async function readJson(req) {
   let size = 0;
   const chunks = [];
@@ -116,6 +149,11 @@ async function route(req, res) {
 
   if (req.method === "GET" && url.pathname === "/snapshot") {
     sendJson(req, res, 200, store.dashboard());
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/events") {
+    openEventStream(req, res);
     return;
   }
 
