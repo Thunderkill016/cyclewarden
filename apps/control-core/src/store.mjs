@@ -147,11 +147,18 @@ export class ControlStore {
 
   async #mutate(mutator) {
     let result;
-    this.writeQueue = this.writeQueue.then(async () => {
-      result = await mutator(this.state);
-      await this.#persist();
+    const operation = this.writeQueue.then(async () => {
+      const previousState = structuredClone(this.state);
+      try {
+        result = await mutator(this.state);
+        await this.#persist();
+      } catch (error) {
+        this.state = previousState;
+        throw error;
+      }
     });
-    await this.writeQueue;
+    this.writeQueue = operation.catch(() => undefined);
+    await operation;
     return structuredClone(result);
   }
 
