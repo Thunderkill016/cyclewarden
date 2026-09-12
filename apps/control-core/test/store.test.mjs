@@ -42,3 +42,24 @@ test("restart reconciliation prevents phantom running tasks", async () => {
     await rm(dataDir, { recursive: true, force: true });
   }
 });
+
+test("subscribers receive committed dashboard snapshots and can unsubscribe", async () => {
+  const dataDir = await mkdtemp(path.join(os.tmpdir(), "cyclewarden-control-"));
+  try {
+    const store = await new ControlStore({ dataDir }).init();
+    const snapshots = [];
+    const unsubscribe = store.subscribe((snapshot) => snapshots.push(snapshot));
+
+    await store.registerProject({ id: "project_1", name: "demo", rootPath: "/tmp/demo", registeredAt: new Date().toISOString() });
+    assert.equal(snapshots.length, 1);
+    assert.equal(snapshots[0].projects.length, 1);
+
+    unsubscribe();
+    await store.addTask(
+      createTaskRecord({ projectId: "project_1", title: "Task", objective: "Do work", baseHead: "abc123" }),
+    );
+    assert.equal(snapshots.length, 1);
+  } finally {
+    await rm(dataDir, { recursive: true, force: true });
+  }
+});
