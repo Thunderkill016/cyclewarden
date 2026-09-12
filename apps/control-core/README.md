@@ -125,6 +125,8 @@ The bridge is disabled when URL/token are absent. It is intentionally outbound-o
 
 The synchronized snapshot excludes local paths, task objectives, acceptance criteria, Codex output and file contents. Telegram can only request `run` or `cancel` for tasks that already exist in the local store.
 
+The local core polls for commands at the configured cadence (5 seconds by default). Snapshot changes sync immediately; when nothing changes, snapshot sync falls back to a 15-second heartbeat instead of retransmitting on every poll.
+
 Remote delivery is at-least-once. The core persists `remote.command_started` / `remote.command_completed` events so a redelivered command does not execute its side effect twice.
 
 Bridge health is visible in:
