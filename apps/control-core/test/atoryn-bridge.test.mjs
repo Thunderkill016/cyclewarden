@@ -87,6 +87,33 @@ test("sanitized snapshot never exports local paths or task objective", () => {
   assert.equal(sanitized.projects[0].name, "demo");
 });
 
+test("idle bridge does not resync only because generatedAt changed", async () => {
+  const store = new FakeStore();
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push(String(url));
+    if (String(url).endsWith("/sync")) return jsonResponse({ ok: true });
+    if (String(url).endsWith("/pull")) return jsonResponse({ ok: true, commands: [] });
+    return jsonResponse({ error: "unexpected" }, 404);
+  };
+  const bridge = new AtoRynBridge({
+    store,
+    runner: { start() {}, cancel() {} },
+    fetchImpl,
+    baseUrl: "https://telegram-ai.example.workers.dev",
+    token: "test-secret",
+    coreId: "core_test",
+    pollMs: 5_000,
+  });
+
+  await bridge.tickOnce();
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  await bridge.tickOnce();
+
+  assert.equal(calls.filter((url) => url.endsWith("/sync")).length, 1);
+  assert.equal(calls.filter((url) => url.endsWith("/pull")).length, 2);
+});
+
 test("re-delivered remote run command is not executed twice", async () => {
   const store = new FakeStore();
   let starts = 0;
