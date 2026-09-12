@@ -31,6 +31,7 @@ export class ControlStore {
     this.statePath = path.join(dataDir, "state.json");
     this.state = cloneEmptyState();
     this.writeQueue = Promise.resolve();
+    this.subscribers = new Set();
   }
 
   async init() {
@@ -51,6 +52,12 @@ export class ControlStore {
 
   dashboard() {
     return dashboardSnapshot(this.state);
+  }
+
+  subscribe(listener) {
+    if (typeof listener !== "function") throw new TypeError("listener must be a function");
+    this.subscribers.add(listener);
+    return () => this.subscribers.delete(listener);
   }
 
   getProject(projectId) {
@@ -152,6 +159,7 @@ export class ControlStore {
       try {
         result = await mutator(this.state);
         await this.#persist();
+        this.#emit();
       } catch (error) {
         this.state = previousState;
         throw error;
@@ -160,6 +168,17 @@ export class ControlStore {
     this.writeQueue = operation.catch(() => undefined);
     await operation;
     return structuredClone(result);
+  }
+
+  #emit() {
+    const snapshot = this.dashboard();
+    for (const listener of this.subscribers) {
+      try {
+        listener(snapshot);
+      } catch {
+        // Subscribers are observational only; one broken client cannot poison persistence.
+      }
+    }
   }
 
   async #persist() {
