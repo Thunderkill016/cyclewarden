@@ -97,6 +97,12 @@ export class AgentRunner {
     if (this.processes.has(taskId)) throw new Error("Task is already running.");
     const project = this.store.getProject(task.projectId);
     if (!project) throw new Error(`Project not found: ${task.projectId}`);
+    if (project.health?.available === false) {
+      throw new Error("Project repository is currently unavailable.");
+    }
+    if (task.status === "INTERRUPTED" && task.recovery?.canResume !== true) {
+      throw new Error("Interrupted task cannot resume until recovery evidence proves the branch/worktree is recoverable.");
+    }
 
     if (["BACKLOG", "FAILED", "INTERRUPTED"].includes(task.status)) {
       task = await this.store.transition(taskId, "READY", { failure: null, verification: [] });
