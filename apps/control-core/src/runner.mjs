@@ -121,7 +121,13 @@ export class AgentRunner {
       env: process.env,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    const processRecord = { child, cancelled: false, stderr: "", stdoutBuffer: "" };
+    const processRecord = {
+      child,
+      cancelled: false,
+      stderr: "",
+      stdoutBuffer: "",
+      consumeQueue: Promise.resolve(),
+    };
     this.processes.set(taskId, processRecord);
 
     await this.store.appendEvent({
@@ -132,7 +138,16 @@ export class AgentRunner {
     });
 
     child.stdout.on("data", (chunk) => {
-      void this.#consumeStdout(taskId, chunk.toString());
+      processRecord.consumeQueue = processRecord.consumeQueue
+        .then(() => this.#consumeStdout(taskId, chunk.toString()))
+        .catch((error) =>
+          this.store.appendEvent({
+            taskId,
+            projectId: task.projectId,
+            type: "agent.event_parse_failed",
+            payload: { message: error.message },
+          }),
+        );
     });
     child.stderr.on("data", (chunk) => {
       processRecord.stderr = appendBounded(processRecord.stderr, chunk.toString());
@@ -215,6 +230,10 @@ export class AgentRunner {
 
   async #handleExit(taskId, code, signal) {
     const record = this.processes.get(taskId);
+    if (record) {
+      await record.consumeQueue;
+      if (record.stdoutBuffer.trim()) await this.#consumeStdout(taskId, "\n");
+    }
     this.processes.delete(taskId);
     const task = this.store.getTask(taskId);
     if (!task || task.status !== "RUNNING") return;
