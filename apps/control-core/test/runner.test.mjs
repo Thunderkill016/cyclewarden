@@ -100,3 +100,40 @@ test("runner creates an isolated worktree and reaches READY_TO_SHIP after exact-
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("runner refuses interrupted tasks without proven recovery evidence", async () => {
+  const task = {
+    id: "task_interrupted",
+    projectId: "project_demo",
+    status: "INTERRUPTED",
+    recovery: { canResume: false, reason: "WORKTREE_AND_BRANCH_MISSING" },
+  };
+  const store = {
+    dataDir: "/tmp/cyclewarden-test",
+    getTask: () => task,
+    getProject: () => ({ id: "project_demo", rootPath: "/tmp/demo", health: { available: true } }),
+  };
+  const runner = new AgentRunner({ store });
+  await assert.rejects(
+    () => runner.start(task.id),
+    /cannot resume until recovery evidence proves/,
+  );
+});
+
+test("runner refuses to start work when the registered repository is unavailable", async () => {
+  const task = {
+    id: "task_ready",
+    projectId: "project_demo",
+    status: "READY",
+  };
+  const store = {
+    dataDir: "/tmp/cyclewarden-test",
+    getTask: () => task,
+    getProject: () => ({ id: "project_demo", rootPath: "/tmp/demo", health: { available: false } }),
+  };
+  const runner = new AgentRunner({ store });
+  await assert.rejects(
+    () => runner.start(task.id),
+    /repository is currently unavailable/,
+  );
+});
