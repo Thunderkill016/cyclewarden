@@ -8,6 +8,8 @@
   "scripts": {
     "ready": "node scripts/ready.mjs",
     "dev": "pnpm --filter @cyclewarden/evolution-core build && pnpm --filter @cyclewarden/forge-domain build && pnpm --filter @cyclewarden/web dev",
+    "dev:control-center": "pnpm --parallel --filter @cyclewarden/control-core --filter @cyclewarden/web dev",
+    "control:start": "pnpm --filter @cyclewarden/control-core start",
     "build": "pnpm --filter @cyclewarden/evolution-core build && pnpm --filter @cyclewarden/forge-domain build && pnpm --filter @cyclewarden/provider-github build && pnpm --filter @cyclewarden/provider-sandbox-vercel build && pnpm --filter @cyclewarden/provider-codex build && pnpm --filter @cyclewarden/web build",
     "start": "pnpm --filter @cyclewarden/web start",
     "lint": "pnpm --filter @cyclewarden/web lint",
