@@ -109,7 +109,16 @@ try {
     throw new Error("standalone package still delegates tests to apps/web");
   }
 
-  await run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund"], isolatedPackageRoot);
+  // This install exists only to provision the package's pinned development tools
+  // (TypeScript/Vitest) in a lockfile-less copy. npm 10's Arborist can crash while
+  // resolving Vitest's optional peer surface with `edgesOut`; peer resolution here
+  // is not part of the published package contract. The packed consumer install
+  // below deliberately remains a normal npm install and still exercises that contract.
+  await run(
+    "npm",
+    ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--legacy-peer-deps"],
+    isolatedPackageRoot
+  );
   await run("npm", ["run", "typecheck"], isolatedPackageRoot);
   await run("npm", ["test"], isolatedPackageRoot);
 
@@ -206,9 +215,11 @@ try {
         version: copiedPackage.version,
         node: process.version,
         isolatedFromWeb: true,
+        isolatedDevInstall: "legacy-peer-deps",
         typecheck: "passed",
         tests: "passed",
         pack: "passed",
+        consumerInstall: "normal-npm-peer-resolution",
         consumerImport: "passed",
         consumerCli: "passed",
         consumerCandidateCli: "passed",
