@@ -114,3 +114,62 @@ test("app-server transport handshakes, correlates approval, and rejects stale de
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("app-server approval timeout automatically cancels the request", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "cyclewarden-app-timeout-"));
+  const fakeCodex = path.join(root, "fake-codex-timeout.mjs");
+  const timeoutSeen = deferred();
+  const cancelSeen = deferred();
+
+  try {
+    await writeFile(
+      fakeCodex,
+      `#!/usr/bin/env node\n` +
+        `import readline from "node:readline";\n` +
+        `const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });\n` +
+        `for await (const line of rl) {\n` +
+        `  if (!line.trim()) continue;\n` +
+        `  const msg = JSON.parse(line);\n` +
+        `  if (msg.method === "initialize") { console.log(JSON.stringify({ id: msg.id, result: {} })); continue; }\n` +
+        `  if (msg.method === "initialized") continue;\n` +
+        `  if (msg.method === "thread/start") { console.log(JSON.stringify({ id: msg.id, result: { thread: { id: "thread_timeout" } } })); continue; }\n` +
+        `  if (msg.method === "turn/start") {\n` +
+        `    console.log(JSON.stringify({ id: msg.id, result: { turn: { id: "turn_timeout" } } }));\n` +
+        `    console.log(JSON.stringify({ id: "approval_timeout", method: "item/fileChange/requestApproval", params: { threadId: "thread_timeout", turnId: "turn_timeout", itemId: "file_timeout", startedAtMs: Date.now(), reason: "timeout fixture" } }));\n` +
+        `    continue;\n` +
+        `  }\n` +
+        `  if (msg.id === "approval_timeout") {\n` +
+        `    console.log(JSON.stringify({ method: "fixture/cancelled", params: { decision: msg.result?.decision ?? null } }));\n` +
+        `  }\n` +
+        `}\n`,
+      "utf8",
+    );
+    await chmod(fakeCodex, 0o755);
+
+    const client = new CodexAppServerClient({
+      cwd: root,
+      bin: fakeCodex,
+      env: { ...process.env, CYCLEWARDEN_CODEX_APPROVAL_TIMEOUT_MS: "60" },
+      onApprovalTimeout: (approval) => timeoutSeen.resolve(approval),
+      onNotification: (notification) => {
+        if (notification.method === "fixture/cancelled") cancelSeen.resolve(notification.params);
+      },
+    });
+
+    await client.start();
+    const thread = await client.startThread({ cwd: root });
+    await client.startTurn({ threadId: thread.threadId, text: "Wait for timeout." });
+
+    const timedOut = await timeoutSeen.promise;
+    assert.equal(timedOut.requestId, "approval_timeout");
+    assert.equal(timedOut.method, "item/fileChange/requestApproval");
+    const cancelled = await cancelSeen.promise;
+    assert.equal(cancelled.decision, "cancel");
+    assert.equal(client.hasApproval("approval_timeout"), false);
+    await assert.rejects(() => client.decide("approval_timeout", "accept"), /stale, unknown, or already answered/);
+
+    client.kill();
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
