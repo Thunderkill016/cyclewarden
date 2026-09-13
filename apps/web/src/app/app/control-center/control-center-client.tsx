@@ -26,6 +26,19 @@ type Recovery = {
   inspectedAt?: string;
 };
 
+type ApprovalDecision = "accept" | "acceptForSession" | "decline" | "cancel";
+
+type PendingDecision = {
+  requestId: string;
+  kind: "command" | "fileChange";
+  command: string | null;
+  reason: string | null;
+  threadId: string | null;
+  turnId: string | null;
+  itemId: string | null;
+  requestedAt: string;
+};
+
 type Task = {
   id: string;
   projectId: string;
@@ -38,6 +51,7 @@ type Task = {
   externalThreadId: string | null;
   exactHead: string | null;
   lastMessage: string | null;
+  pendingDecision?: PendingDecision | null;
   verification: VerificationResult[];
   recovery?: Recovery | null;
   failure?: { code: string; message: string } | null;
@@ -115,8 +129,17 @@ function StatusDot({ kind }: { kind: "good" | "warn" | "busy" | "muted" }) {
   return <span className={`inline-block h-2 w-2 rounded-full ${classes[kind]}`} />;
 }
 
-function TaskCard({ task, action }: { task: Task; action: (task: Task, verb: "start" | "cancel") => Promise<void> }) {
+function TaskCard({
+  task,
+  action,
+  decide,
+}: {
+  task: Task;
+  action: (task: Task, verb: "start" | "cancel") => Promise<void>;
+  decide: (task: Task, decision: ApprovalDecision) => Promise<void>;
+}) {
   const running = task.status === "RUNNING" || task.status === "VERIFYING";
+  const needsInput = task.status === "NEEDS_INPUT";
   const interrupted = task.status === "INTERRUPTED";
   const resumable = interrupted && task.recovery?.canResume === true;
   const startable = ["BACKLOG", "READY", "FAILED"].includes(task.status) || resumable;
@@ -143,6 +166,8 @@ function TaskCard({ task, action }: { task: Task; action: (task: Task, verb: "st
           >
             Cancel
           </button>
+        ) : needsInput ? (
+          <span className="shrink-0 rounded-lg border border-amber-500/30 px-3 py-1.5 text-xs text-amber-300">Decision required</span>
         ) : startable ? (
           <button
             onClick={() => void action(task, "start")}
@@ -159,6 +184,49 @@ function TaskCard({ task, action }: { task: Task; action: (task: Task, verb: "st
         <div className="mt-3 rounded-lg bg-background/60 px-3 py-2 font-mono text-xs text-muted">
           {task.branch}
           {task.exactHead ? ` · ${task.exactHead.slice(0, 10)}` : ""}
+        </div>
+      )}
+
+      {needsInput && task.pendingDecision && (
+        <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="font-semibold text-amber-200">
+              {task.pendingDecision.kind === "command" ? "Command approval" : "File change approval"}
+            </span>
+            <span className="font-mono text-muted">{task.pendingDecision.requestId}</span>
+          </div>
+          {task.pendingDecision.command && (
+            <pre className="mt-2 max-h-36 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background p-2 font-mono text-xs text-foreground">
+              {task.pendingDecision.command}
+            </pre>
+          )}
+          {task.pendingDecision.reason && <p className="mt-2 text-xs leading-relaxed text-muted">{task.pendingDecision.reason}</p>}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => void decide(task, "accept")}
+              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-background hover:opacity-90"
+            >
+              Allow once
+            </button>
+            <button
+              onClick={() => void decide(task, "acceptForSession")}
+              className="rounded-lg border border-emerald-500/30 px-3 py-1.5 text-xs text-emerald-200 hover:border-emerald-400"
+            >
+              Allow session
+            </button>
+            <button
+              onClick={() => void decide(task, "decline")}
+              className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted hover:border-amber-400 hover:text-foreground"
+            >
+              Decline
+            </button>
+            <button
+              onClick={() => void decide(task, "cancel")}
+              className="rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs text-rose-200 hover:border-rose-400"
+            >
+              Cancel turn
+            </button>
+          </div>
         </div>
       )}
 
@@ -332,6 +400,15 @@ export function ControlCenterClient() {
     await mutate(() => coreFetch(`/tasks/${encodeURIComponent(task.id)}/${verb}`, { method: "POST", body: "{}" }));
   }
 
+  async function decisionAction(task: Task, decision: ApprovalDecision) {
+    await mutate(() =>
+      coreFetch(`/tasks/${encodeURIComponent(task.id)}/decision`, {
+        method: "POST",
+        body: JSON.stringify({ decision }),
+      }),
+    );
+  }
+
   const projectName = (task: Task) => projectById.get(task.projectId)?.name ?? task.projectId;
 
   return (
@@ -374,7 +451,7 @@ export function ControlCenterClient() {
             {snapshot?.needsYou.length ? snapshot.needsYou.map((task) => (
               <div key={task.id}>
                 <p className="mb-1 text-xs text-muted">{projectName(task)}</p>
-                <TaskCard task={task} action={taskAction} />
+                <TaskCard task={task} action={taskAction} decide={decisionAction} />
               </div>
             )) : <p className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted">Không có task nào đang chờ bạn.</p>}
           </Section>
@@ -383,7 +460,7 @@ export function ControlCenterClient() {
             {snapshot?.readyToShip.length ? snapshot.readyToShip.map((task) => (
               <div key={task.id}>
                 <p className="mb-1 text-xs text-muted">{projectName(task)}</p>
-                <TaskCard task={task} action={taskAction} />
+                <TaskCard task={task} action={taskAction} decide={decisionAction} />
               </div>
             )) : <p className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted">Chưa có thay đổi nào vượt qua verification.</p>}
           </Section>
@@ -392,7 +469,7 @@ export function ControlCenterClient() {
             {snapshot?.inFlight.length ? snapshot.inFlight.map((task) => (
               <div key={task.id}>
                 <p className="mb-1 text-xs text-muted">{projectName(task)}</p>
-                <TaskCard task={task} action={taskAction} />
+                <TaskCard task={task} action={taskAction} decide={decisionAction} />
               </div>
             )) : <p className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted">Không có agent đang chạy.</p>}
           </Section>
@@ -401,7 +478,7 @@ export function ControlCenterClient() {
             {snapshot?.backlog.length ? snapshot.backlog.map((task) => (
               <div key={task.id}>
                 <p className="mb-1 text-xs text-muted">{projectName(task)}</p>
-                <TaskCard task={task} action={taskAction} />
+                <TaskCard task={task} action={taskAction} decide={decisionAction} />
               </div>
             )) : <p className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted">Tạo task đầu tiên ở panel bên phải.</p>}
           </Section>
