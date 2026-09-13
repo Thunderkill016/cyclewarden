@@ -7,6 +7,11 @@ const APPROVAL_METHODS = new Set([
 
 const ALLOWED_DECISIONS = new Set(["accept", "acceptForSession", "decline", "cancel"]);
 
+function positiveInteger(value, fallback) {
+  const parsed = Number.parseInt(value || "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function appServerArgs() {
   const raw = process.env.CYCLEWARDEN_CODEX_APP_SERVER_ARGS;
   if (raw) return raw.split(" ").map((part) => part.trim()).filter(Boolean);
@@ -28,6 +33,7 @@ export class CodexAppServerClient {
     bin = process.env.CYCLEWARDEN_CODEX_BIN || "codex",
     onNotification = null,
     onApproval = null,
+    onApprovalTimeout = null,
     onStderr = null,
     onClose = null,
   } = {}) {
@@ -36,6 +42,7 @@ export class CodexAppServerClient {
     this.bin = bin;
     this.onNotification = onNotification;
     this.onApproval = onApproval;
+    this.onApprovalTimeout = onApprovalTimeout;
     this.onStderr = onStderr;
     this.onClose = onClose;
     this.child = null;
@@ -44,6 +51,8 @@ export class CodexAppServerClient {
     this.pending = new Map();
     this.approvals = new Map();
     this.closed = false;
+    this.rpcTimeoutMs = positiveInteger(env.CYCLEWARDEN_CODEX_RPC_TIMEOUT_MS, 15_000);
+    this.approvalTimeoutMs = positiveInteger(env.CYCLEWARDEN_CODEX_APPROVAL_TIMEOUT_MS, 15 * 60_000);
   }
 
   async start() {
@@ -76,9 +85,16 @@ export class CodexAppServerClient {
   request(method, params = {}) {
     if (!this.child?.stdin?.writable) return Promise.reject(new Error("Codex app-server is not running."));
     const id = this.nextId++;
+    const key = String(id);
     const payload = { id, method, params };
     return new Promise((resolve, reject) => {
-      this.pending.set(String(id), { resolve, reject, method });
+      const timer = setTimeout(() => {
+        if (!this.pending.has(key)) return;
+        this.pending.delete(key);
+        reject(new Error(`Codex app-server request timed out: ${method}`));
+      }, this.rpcTimeoutMs);
+      timer.unref?.();
+      this.pending.set(key, { resolve, reject, method, timer });
       this.#write(payload);
     });
   }
@@ -121,6 +137,7 @@ export class CodexAppServerClient {
     const pending = this.approvals.get(key);
     if (!pending) throw new Error("Approval request is stale, unknown, or already answered.");
     this.approvals.delete(key);
+    clearTimeout(pending.timer);
     this.#write({ id: pending.id, result: { decision } });
     return { ok: true, method: pending.method, decision };
   }
@@ -160,7 +177,19 @@ export class CodexAppServerClient {
       if (APPROVAL_METHODS.has(message.method)) {
         if (this.approvals.has(key)) return;
         const approval = { id: message.id, method: message.method, params: message.params ?? {} };
-        this.approvals.set(key, approval);
+        const timer = setTimeout(() => {
+          const pending = this.approvals.get(key);
+          if (!pending) return;
+          this.approvals.delete(key);
+          try {
+            this.#write({ id: pending.id, result: { decision: "cancel" } });
+          } catch {
+            // The runner will fail the task through the timeout callback either way.
+          }
+          this.onApprovalTimeout?.({ requestId: key, ...approval });
+        }, this.approvalTimeoutMs);
+        timer.unref?.();
+        this.approvals.set(key, { ...approval, timer });
         this.onApproval?.({ requestId: key, ...approval });
         return;
       }
@@ -173,6 +202,7 @@ export class CodexAppServerClient {
       const pending = this.pending.get(key);
       if (!pending) return;
       this.pending.delete(key);
+      clearTimeout(pending.timer);
       if (message.error) pending.reject(new Error(message.error.message || `Codex app-server request failed: ${pending.method}`));
       else pending.resolve(message.result);
       return;
@@ -191,8 +221,12 @@ export class CodexAppServerClient {
   }
 
   #rejectAll(error) {
-    for (const pending of this.pending.values()) pending.reject(error);
+    for (const pending of this.pending.values()) {
+      clearTimeout(pending.timer);
+      pending.reject(error);
+    }
     this.pending.clear();
+    for (const approval of this.approvals.values()) clearTimeout(approval.timer);
     this.approvals.clear();
   }
 }
