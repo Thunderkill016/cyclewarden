@@ -288,6 +288,7 @@ export class AgentRunner {
     const client = new CodexAppServerClient({
       cwd: task.worktreePath,
       onApproval: (approval) => queue(() => this.#handleAppServerApproval(task.id, approval)),
+      onApprovalTimeout: (approval) => queue(() => this.#handleAppServerApprovalTimeout(task.id, approval)),
       onNotification: (notification) => queue(() => this.#handleAppServerNotification(task.id, notification)),
       onStderr: (chunk) => {
         record.stderr = appendBounded(record.stderr, chunk);
@@ -368,6 +369,20 @@ export class AgentRunner {
       type: "agent.approval_details",
       payload: pendingDecision,
     });
+  }
+
+  async #handleAppServerApprovalTimeout(taskId, approval) {
+    const record = this.processes.get(taskId);
+    const task = this.store.getTask(taskId);
+    if (!record || record.mode !== "app-server" || !task) return;
+    if (task.status !== "NEEDS_INPUT" || task.pendingDecision?.requestId !== String(approval.requestId)) return;
+    record.client.kill();
+    this.processes.delete(taskId);
+    await this.#fail(
+      taskId,
+      "APPROVAL_TIMEOUT",
+      "Codex approval expired without a user decision. The request was cancelled fail-closed.",
+    );
   }
 
   async #handleAppServerNotification(taskId, notification) {
