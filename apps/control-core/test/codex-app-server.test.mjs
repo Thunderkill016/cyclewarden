@@ -149,7 +149,7 @@ test("app-server approval timeout automatically cancels the request", async () =
     const client = new CodexAppServerClient({
       cwd: root,
       bin: fakeCodex,
-      env: { ...process.env, CYCLEWARDEN_CODEX_APPROVAL_TIMEOUT_MS: "60" },
+      env: { ...process.env, CYCLEWARDEN_CODEX_APPROVAL_TIMEOUT_MS: "500" },
       onApprovalTimeout: (approval) => timeoutSeen.resolve(approval),
       onNotification: (notification) => {
         if (notification.method === "fixture/cancelled") cancelSeen.resolve(notification.params);
