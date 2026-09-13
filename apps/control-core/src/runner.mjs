@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { CodexAppServerClient } from "./codex-app-server.mjs";
 import { createTaskWorktree, newRunId, worktreeEvidence } from "./git.mjs";
 
 const MAX_CAPTURE = 16_000;
@@ -41,6 +42,38 @@ function parseJsonLine(line) {
   } catch {
     return null;
   }
+}
+
+function codexMode() {
+  return process.env.CYCLEWARDEN_CODEX_MODE === "app-server" ? "app-server" : "exec";
+}
+
+function approvalSummary(approval) {
+  const params = approval.params ?? {};
+  const kind = approval.method === "item/fileChange/requestApproval" ? "fileChange" : "command";
+  return {
+    requestId: String(approval.requestId),
+    kind,
+    command: kind === "command" && params.command ? String(params.command).slice(0, 2000) : null,
+    reason: params.reason ? String(params.reason).slice(0, 1000) : null,
+    threadId: params.threadId ?? null,
+    turnId: params.turnId ?? null,
+    itemId: params.itemId ?? null,
+    requestedAt: new Date().toISOString(),
+  };
+}
+
+function finalAgentMessage(turn) {
+  const items = Array.isArray(turn?.items) ? turn.items : [];
+  const messages = items.filter((item) => item?.type === "agentMessage" && typeof item.text === "string");
+  return messages.at(-1)?.text ?? null;
+}
+
+function turnFailureMessage(turn) {
+  const error = turn?.error;
+  if (typeof error === "string") return error;
+  if (error?.message) return String(error.message);
+  return `Codex turn ended with status ${turn?.status ?? "unknown"}.`;
 }
 
 async function runCheck(check, cwd, onOutput) {
@@ -130,6 +163,69 @@ export class AgentRunner {
       recovery ? "task.resume_started" : "task.run_started",
     );
 
+    if (codexMode() === "app-server") {
+      await this.#startAppServer(task);
+      return this.store.getTask(taskId);
+    }
+
+    await this.#startExec(task);
+    return this.store.getTask(taskId);
+  }
+
+  async decide(taskId, decision) {
+    const task = this.store.getTask(taskId);
+    if (!task) throw new Error(`Task not found: ${taskId}`);
+    if (task.status !== "NEEDS_INPUT" || !task.pendingDecision?.requestId) {
+      throw new Error("Task does not have a pending Codex approval decision.");
+    }
+    const record = this.processes.get(taskId);
+    if (!record || record.mode !== "app-server" || !record.client) {
+      throw new Error("Task does not have a live Codex app-server session.");
+    }
+    const requestId = task.pendingDecision.requestId;
+    if (!record.client.hasApproval(requestId)) {
+      throw new Error("Approval request is stale or no longer active in Codex app-server.");
+    }
+
+    await this.store.transition(taskId, "RUNNING", { pendingDecision: null }, "agent.approval_resumed");
+    await this.store.appendEvent({
+      taskId,
+      projectId: task.projectId,
+      type: "agent.approval_decided",
+      payload: { requestId, decision },
+    });
+    try {
+      await record.client.decide(requestId, decision);
+    } catch (error) {
+      await this.#fail(taskId, "APPROVAL_RESPONSE_FAILED", error.message);
+      throw error;
+    }
+    return this.store.getTask(taskId);
+  }
+
+  async cancel(taskId) {
+    const record = this.processes.get(taskId);
+    if (!record) throw new Error("Task does not have a live local process.");
+    record.cancelled = true;
+    await this.store.appendEvent({
+      taskId,
+      projectId: this.store.getTask(taskId)?.projectId ?? null,
+      type: "agent.cancel_requested",
+      payload: {},
+    });
+
+    if (record.mode === "app-server") {
+      record.client.kill("SIGTERM");
+      this.processes.delete(taskId);
+      await this.#fail(taskId, "CANCELLED", "Codex app-server run was cancelled.");
+      return { ok: true };
+    }
+
+    record.child.kill("SIGTERM");
+    return { ok: true };
+  }
+
+  async #startExec(task) {
     const args = ["exec", "--json", "--sandbox", "workspace-write", buildPrompt(task)];
     const child = spawn(process.env.CYCLEWARDEN_CODEX_BIN || "codex", args, {
       cwd: task.worktreePath,
@@ -137,27 +233,28 @@ export class AgentRunner {
       stdio: ["ignore", "pipe", "pipe"],
     });
     const processRecord = {
+      mode: "exec",
       child,
       cancelled: false,
       stderr: "",
       stdoutBuffer: "",
       consumeQueue: Promise.resolve(),
     };
-    this.processes.set(taskId, processRecord);
+    this.processes.set(task.id, processRecord);
 
     await this.store.appendEvent({
-      taskId,
+      taskId: task.id,
       projectId: task.projectId,
       type: "agent.process_spawned",
-      payload: { agent: "codex", pid: child.pid ?? null, runId, resumed: Boolean(recovery) },
+      payload: { agent: "codex", mode: "exec", pid: child.pid ?? null, runId: task.runId, resumed: Boolean(task.recovery) },
     });
 
     child.stdout.on("data", (chunk) => {
       processRecord.consumeQueue = processRecord.consumeQueue
-        .then(() => this.#consumeStdout(taskId, chunk.toString()))
+        .then(() => this.#consumeStdout(task.id, chunk.toString()))
         .catch((error) =>
           this.store.appendEvent({
-            taskId,
+            taskId: task.id,
             projectId: task.projectId,
             type: "agent.event_parse_failed",
             payload: { message: error.message },
@@ -167,34 +264,201 @@ export class AgentRunner {
     child.stderr.on("data", (chunk) => {
       processRecord.stderr = appendBounded(processRecord.stderr, chunk.toString());
       void this.store.appendEvent({
-        taskId,
+        taskId: task.id,
         projectId: task.projectId,
         type: "agent.stderr",
         payload: { text: chunk.toString().slice(-2000) },
       });
     });
     child.on("error", (error) => {
-      void this.#fail(taskId, "AGENT_SPAWN_FAILED", error.message);
+      void this.#fail(task.id, "AGENT_SPAWN_FAILED", error.message);
     });
     child.on("close", (code, signal) => {
-      void this.#handleExit(taskId, code, signal);
+      void this.#handleExit(task.id, code, signal);
     });
-
-    return this.store.getTask(taskId);
   }
 
-  async cancel(taskId) {
+  async #startAppServer(task) {
+    let record;
+    const queue = (operation) => {
+      record.consumeQueue = record.consumeQueue
+        .then(operation)
+        .catch((error) => this.#fail(task.id, "APP_SERVER_EVENT_FAILED", error.message));
+    };
+    const client = new CodexAppServerClient({
+      cwd: task.worktreePath,
+      onApproval: (approval) => queue(() => this.#handleAppServerApproval(task.id, approval)),
+      onApprovalTimeout: (approval) => queue(() => this.#handleAppServerApprovalTimeout(task.id, approval)),
+      onNotification: (notification) => queue(() => this.#handleAppServerNotification(task.id, notification)),
+      onStderr: (chunk) => {
+        record.stderr = appendBounded(record.stderr, chunk);
+        void this.store.appendEvent({
+          taskId: task.id,
+          projectId: task.projectId,
+          type: "agent.stderr",
+          payload: { text: String(chunk).slice(-2000) },
+        });
+      },
+      onClose: (error) => queue(() => this.#handleAppServerClose(task.id, error)),
+    });
+    record = {
+      mode: "app-server",
+      client,
+      cancelled: false,
+      stderr: "",
+      consumeQueue: Promise.resolve(),
+      turnId: null,
+    };
+    this.processes.set(task.id, record);
+
+    await this.store.appendEvent({
+      taskId: task.id,
+      projectId: task.projectId,
+      type: "agent.process_spawned",
+      payload: { agent: "codex", mode: "app-server", runId: task.runId, resumed: Boolean(task.recovery) },
+    });
+
+    try {
+      await client.start();
+      const thread = await client.startThread({
+        cwd: task.worktreePath,
+        developerInstructions: "Follow repository-local instructions. Do not merge or deploy. Ask for approval rather than bypassing sandbox or permission boundaries.",
+      });
+      await this.store.patchTask(
+        task.id,
+        { externalThreadId: thread.threadId },
+        { type: "agent.thread_started", payload: { threadId: thread.threadId, mode: "app-server" } },
+      );
+      const turn = await client.startTurn({ threadId: thread.threadId, text: buildPrompt(this.store.getTask(task.id)) });
+      record.turnId = turn.turnId;
+      await this.store.appendEvent({
+        taskId: task.id,
+        projectId: task.projectId,
+        type: "agent.turn_started",
+        payload: { threadId: thread.threadId, turnId: turn.turnId },
+      });
+    } catch (error) {
+      client.kill();
+      this.processes.delete(task.id);
+      await this.#fail(task.id, "APP_SERVER_START_FAILED", error.message);
+    }
+  }
+
+  async #handleAppServerApproval(taskId, approval) {
     const record = this.processes.get(taskId);
-    if (!record) throw new Error("Task does not have a live local process.");
-    record.cancelled = true;
-    record.child.kill("SIGTERM");
+    const task = this.store.getTask(taskId);
+    if (!record || record.mode !== "app-server" || !task) return;
+    if (task.status !== "RUNNING") {
+      if (record.client.hasApproval(approval.requestId)) {
+        await record.client.decide(approval.requestId, "cancel");
+      }
+      await this.store.appendEvent({
+        taskId,
+        projectId: task.projectId,
+        type: "agent.approval_rejected_invalid_state",
+        payload: { requestId: approval.requestId, status: task.status },
+      });
+      return;
+    }
+
+    const pendingDecision = approvalSummary(approval);
+    await this.store.transition(taskId, "NEEDS_INPUT", { pendingDecision }, "agent.approval_requested");
     await this.store.appendEvent({
       taskId,
-      projectId: this.store.getTask(taskId)?.projectId ?? null,
-      type: "agent.cancel_requested",
-      payload: {},
+      projectId: task.projectId,
+      type: "agent.approval_details",
+      payload: pendingDecision,
     });
-    return { ok: true };
+  }
+
+  async #handleAppServerApprovalTimeout(taskId, approval) {
+    const record = this.processes.get(taskId);
+    const task = this.store.getTask(taskId);
+    if (!record || record.mode !== "app-server" || !task) return;
+    if (task.status !== "NEEDS_INPUT" || task.pendingDecision?.requestId !== String(approval.requestId)) return;
+    record.client.kill();
+    this.processes.delete(taskId);
+    await this.#fail(
+      taskId,
+      "APPROVAL_TIMEOUT",
+      "Codex approval expired without a user decision. The request was cancelled fail-closed.",
+    );
+  }
+
+  async #handleAppServerNotification(taskId, notification) {
+    const task = this.store.getTask(taskId);
+    const record = this.processes.get(taskId);
+    if (!task || !record || record.mode !== "app-server") return;
+
+    if (notification.method === "item/completed") {
+      const item = notification.params?.item;
+      if (item?.type === "agentMessage" && typeof item.text === "string") {
+        await this.store.patchTask(
+          taskId,
+          { lastMessage: item.text },
+          { type: "agent.message", payload: { text: item.text.slice(0, 4000) } },
+        );
+      } else {
+        await this.store.appendEvent({
+          taskId,
+          projectId: task.projectId,
+          type: "codex.item_completed",
+          payload: { itemType: item?.type ?? null, itemId: item?.id ?? null },
+        });
+      }
+      return;
+    }
+
+    if (notification.method !== "turn/completed") {
+      await this.store.appendEvent({
+        taskId,
+        projectId: task.projectId,
+        type: `codex.${notification.method.replaceAll("/", ".")}`,
+        payload: {
+          threadId: notification.params?.threadId ?? null,
+          turnId: notification.params?.turnId ?? notification.params?.turn?.id ?? null,
+        },
+      });
+      return;
+    }
+
+    const turn = notification.params?.turn ?? {};
+    const message = finalAgentMessage(turn);
+    if (message) await this.store.patchTask(taskId, { lastMessage: message });
+    await this.store.appendEvent({
+      taskId,
+      projectId: task.projectId,
+      type: "agent.turn_completed",
+      payload: { turnId: turn.id ?? record.turnId, status: turn.status ?? null },
+    });
+
+    record.client.kill();
+    this.processes.delete(taskId);
+
+    if (turn.status === "completed") {
+      const current = this.store.getTask(taskId);
+      if (current?.status !== "RUNNING") {
+        await this.#fail(taskId, "TURN_COMPLETED_IN_INVALID_STATE", `Codex completed while task was ${current?.status ?? "missing"}.`);
+        return;
+      }
+      await this.#verify(taskId);
+      return;
+    }
+
+    await this.#fail(
+      taskId,
+      turn.status === "interrupted" ? "AGENT_TURN_INTERRUPTED" : "AGENT_TURN_FAILED",
+      turnFailureMessage(turn),
+    );
+  }
+
+  async #handleAppServerClose(taskId, error) {
+    const record = this.processes.get(taskId);
+    if (!record || record.mode !== "app-server") return;
+    this.processes.delete(taskId);
+    const task = this.store.getTask(taskId);
+    if (!task || !["RUNNING", "NEEDS_INPUT"].includes(task.status)) return;
+    await this.#fail(taskId, "APP_SERVER_DISCONNECTED", error?.message || "Codex app-server disconnected unexpectedly.");
   }
 
   async #consumeStdout(taskId, chunk) {
@@ -331,7 +595,7 @@ export class AgentRunner {
     await this.store.transition(
       taskId,
       "FAILED",
-      { ...extraPatch, recovery: null, failure: { code, message: String(message).slice(-8000) } },
+      { ...extraPatch, pendingDecision: null, recovery: null, failure: { code, message: String(message).slice(-8000) } },
       "task.failed",
     );
   }

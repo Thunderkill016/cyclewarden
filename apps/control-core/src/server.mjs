@@ -206,7 +206,7 @@ async function route(req, res) {
     return;
   }
 
-  const taskAction = url.pathname.match(/^\/tasks\/([^/]+)\/(start|cancel)$/);
+  const taskAction = url.pathname.match(/^\/tasks\/([^/]+)\/(start|cancel|decision)$/);
   if (req.method === "POST" && taskAction) {
     requireBrowserOrigin(req);
     const [, taskId, action] = taskAction;
@@ -218,6 +218,15 @@ async function route(req, res) {
     if (action === "cancel") {
       const result = await runner.cancel(taskId);
       sendJson(req, res, 202, result);
+      return;
+    }
+    if (action === "decision") {
+      const body = await readJson(req);
+      if (typeof body.decision !== "string" || body.decision.length === 0) {
+        throw new Error("decision is required.");
+      }
+      const task = await runner.decide(taskId, body.decision);
+      sendJson(req, res, 202, { task });
       return;
     }
   }

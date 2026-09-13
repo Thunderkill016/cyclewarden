@@ -39,6 +39,8 @@ pnpm control:test
 
 ## Runtime flow
 
+Default compatibility mode:
+
 ```text
 register local Git repository
   -> create bounded task
@@ -50,11 +52,47 @@ register local Git repository
   -> READY_TO_SHIP or FAILED
 ```
 
-The V0 runner asks Codex to commit intended changes. A task cannot become `READY_TO_SHIP` while its worktree is dirty.
+The runner asks Codex to commit intended changes. A task cannot become `READY_TO_SHIP` while its worktree is dirty.
+
+### Interactive Codex app-server mode
+
+Interactive approvals are opt-in while the app-server path is being dogfooded:
+
+```bash
+export CYCLEWARDEN_CODEX_MODE="app-server"
+pnpm dev:control-center
+```
+
+The local core then starts `codex app-server --stdio`, performs the official initialize/thread/turn handshake, and routes command/file-change approval RPCs into `NEEDS_INPUT`.
+
+The Control Center exposes only bounded decisions:
+
+- `accept` — allow this request once;
+- `acceptForSession` — allow the matching request for the current Codex session;
+- `decline` — deny the request but keep the turn alive when Codex supports that path;
+- `cancel` — cancel the requested operation/turn path.
+
+There is no arbitrary approval payload or remote shell input. Decisions are correlated to the exact server request ID; stale or duplicate decisions are rejected.
+
+Optional safety tuning:
+
+```bash
+export CYCLEWARDEN_CODEX_RPC_TIMEOUT_MS="15000"
+export CYCLEWARDEN_CODEX_APPROVAL_TIMEOUT_MS="900000"
+```
+
+RPC timeout defaults to 15 seconds. Approval timeout defaults to 15 minutes. An expired approval is answered `cancel` and the task fails closed; it is never auto-approved.
+
+The local decision endpoint used by the web UI is:
+
+```text
+POST /tasks/:taskId/decision
+{"decision":"accept"}
+```
 
 ## Verification discovery
 
-For Node repositories the V0 core detects these root `package.json` scripts, when present, in this order:
+For Node repositories the core detects these root `package.json` scripts, when present, in this order:
 
 1. `typecheck`
 2. `lint`
@@ -81,7 +119,7 @@ Override it with:
 CYCLEWARDEN_CONTROL_DATA_DIR=/absolute/path pnpm control:start
 ```
 
-If the core restarts while a task is `RUNNING` or `VERIFYING`, V0 reconciles that task to `FAILED / CORE_RESTARTED` instead of leaving a phantom active task.
+If the core restarts while a task is `RUNNING` or `VERIFYING`, it reconciles the task to `INTERRUPTED`, records bounded recovery evidence, and requires an explicit manual Resume. It does not silently restart agent work.
 
 ## Live UI
 
@@ -123,7 +161,7 @@ export CYCLEWARDEN_ATORYN_POLL_MS="5000"
 
 The bridge is disabled when URL/token are absent. It is intentionally outbound-only and production URLs must use HTTPS.
 
-The synchronized snapshot excludes local paths, task objectives, acceptance criteria, Codex output and file contents. Telegram can only request `run` or `cancel` for tasks that already exist in the local store.
+The synchronized snapshot excludes local paths, task objectives, acceptance criteria, Codex output and file contents. The currently deployed bridge protocol can request `run` or `cancel` for tasks that already exist in the local store; remote approval decisions are intentionally deferred until the local app-server path is fully verified.
 
 The local core polls for commands at the configured cadence (5 seconds by default). Snapshot changes sync immediately; when nothing changes, snapshot sync falls back to a 15-second heartbeat instead of retransmitting on every poll.
 
@@ -145,6 +183,7 @@ The core deliberately stays local:
 - browser mutation requests are restricted to configured local origins;
 - no shell is used for Git, Codex or verification process spawning;
 - repository paths must be absolute and are canonicalized with `realpath`;
+- app-server approvals are bounded, request-ID-correlated and fail closed on timeout/disconnect;
 - the optional AtoRyn bridge makes outbound HTTPS requests only;
 - remote Telegram commands cannot register paths or submit arbitrary shell commands;
 - automatic merge and deployment are not implemented.
@@ -158,6 +197,6 @@ http://127.0.0.1:3000
 
 Override with a comma-separated list using `CYCLEWARDEN_CONTROL_ORIGINS`.
 
-## Current V0 limit
+## Current V0.2 boundary
 
-The runner intentionally uses non-interactive `codex exec` for the first proven vertical slice. Full interactive approval/question routing requires the `codex app-server` transport; the domain already contains `NEEDS_INPUT`, but V0 does not pretend stdout heuristics are equivalent to the official approval RPC.
+`codex exec` remains the default compatibility path. `CYCLEWARDEN_CODEX_MODE=app-server` enables the interactive approval path after deterministic protocol + runner tests have passed. The next integration step is to carry the same bounded approval decisions through the authenticated AtoRyn bridge without widening its outbound-only trust boundary.
