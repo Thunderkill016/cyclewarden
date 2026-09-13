@@ -76,7 +76,7 @@ export class CodexAppServerClient {
     });
 
     await this.request("initialize", {
-      clientInfo: { name: "cyclewarden-control-core", title: "CycleWarden Control Center", version: "0.2.0" },
+      clientInfo: { name: "cyclewarden-control-core", title: "CycleWarden Control Center", version: "0.4.0" },
       capabilities: { experimentalApi: false, requestAttestation: false },
     });
     this.notify("initialized", {});
@@ -107,6 +107,7 @@ export class CodexAppServerClient {
     const result = await this.request("thread/start", {
       cwd,
       approvalPolicy: "on-request",
+      approvalsReviewer: "user",
       sandbox: "workspace-write",
       developerInstructions,
       ephemeral: false,
