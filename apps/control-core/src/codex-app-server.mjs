@@ -29,6 +29,7 @@ export class CodexAppServerClient {
     onNotification = null,
     onApproval = null,
     onStderr = null,
+    onClose = null,
   } = {}) {
     this.cwd = cwd;
     this.env = env;
@@ -36,6 +37,7 @@ export class CodexAppServerClient {
     this.onNotification = onNotification;
     this.onApproval = onApproval;
     this.onStderr = onStderr;
+    this.onClose = onClose;
     this.child = null;
     this.nextId = 1;
     this.stdoutBuffer = "";
@@ -107,6 +109,10 @@ export class CodexAppServerClient {
     const turnId = extractTurnId(result);
     if (!turnId) throw new Error("Codex app-server turn/start did not return a turn id.");
     return { turnId, result };
+  }
+
+  hasApproval(requestId) {
+    return this.approvals.has(String(requestId));
   }
 
   async decide(requestId, decision) {
@@ -181,6 +187,7 @@ export class CodexAppServerClient {
     if (this.closed) return;
     this.closed = true;
     this.#rejectAll(error);
+    this.onClose?.(error);
   }
 
   #rejectAll(error) {
