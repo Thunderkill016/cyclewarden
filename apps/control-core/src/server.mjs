@@ -2,6 +2,7 @@ import http from "node:http";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { URL } from "node:url";
+import { AtoRynBridge } from "./atoryn-bridge.mjs";
 import { createTaskRecord } from "./domain.mjs";
 import { git, inspectRepository } from "./git.mjs";
 import { AgentRunner } from "./runner.mjs";
@@ -21,6 +22,8 @@ const allowedOrigins = new Set(
 const store = await new ControlStore().init();
 const reconciled = await store.reconcileInterruptedTasks();
 const runner = new AgentRunner({ store });
+const atorynBridge = new AtoRynBridge({ store, runner });
+atorynBridge.start();
 
 function isLoopback(address) {
   return address === "127.0.0.1" || address === "::1" || address === "::ffff:127.0.0.1";
@@ -133,6 +136,7 @@ async function route(req, res) {
       port: PORT,
       dataDir: store.dataDir,
       reconciledInterruptedTasks: reconciled,
+      remote: { atoryn: atorynBridge.status() },
       time: new Date().toISOString(),
     });
     return;
@@ -143,7 +147,12 @@ async function route(req, res) {
       versionOf("git"),
       versionOf(process.env.CYCLEWARDEN_CODEX_BIN || "codex"),
     ]);
-    sendJson(req, res, 200, { ok: gitVersion.ok && codexVersion.ok, git: gitVersion, codex: codexVersion });
+    sendJson(req, res, 200, {
+      ok: gitVersion.ok && codexVersion.ok,
+      git: gitVersion,
+      codex: codexVersion,
+      atoryn: atorynBridge.status(),
+    });
     return;
   }
 
@@ -220,10 +229,12 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`[control-core] listening on http://${HOST}:${PORT}`);
   console.log(`[control-core] state: ${store.statePath}`);
+  if (atorynBridge.enabled) console.log(`[control-core] AtoRyn bridge enabled: ${atorynBridge.status().baseUrl}`);
 });
 
 function shutdown(signal) {
   console.log(`[control-core] ${signal}; closing listener`);
+  atorynBridge.stop();
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(1), 5000).unref();
 }
