@@ -7,6 +7,31 @@ const MAX_BACKOFF_MS = 60_000;
 const REQUEST_TIMEOUT_MS = 10_000;
 const REMOTE_STARTED = "remote.command_started";
 const REMOTE_COMPLETED = "remote.command_completed";
+const REMOTE_DECISIONS = new Set(["accept", "acceptForSession", "decline", "cancel"]);
+
+function redactCommandPreview(value) {
+  let text = String(value || "").replace(/\s+/g, " ").trim().slice(0, 600);
+  text = text.replace(/\b([A-Za-z_][A-Za-z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASS|PWD))=([^\s]+)/gi, "$1=<redacted>");
+  text = text.replace(/(Bearer\s+)[A-Za-z0-9._~+/=-]+/gi, "$1<redacted>");
+  text = text.replace(/\bsk-[A-Za-z0-9_-]{8,}\b/g, "<redacted-token>");
+  text = text.replace(/\/home\/[^/\s]+/g, "~");
+  text = text.replace(/\/Users\/[^/\s]+/g, "~");
+  return text || null;
+}
+
+function sanitizePendingDecision(task) {
+  if (String(task?.status || "") !== "NEEDS_INPUT") return null;
+  const pending = task?.pendingDecision;
+  const requestId = clean(pending?.requestId, 160);
+  if (!requestId) return null;
+  return {
+    requestId,
+    kind: pending?.kind === "fileChange" ? "fileChange" : "command",
+    commandPreview: pending?.kind === "command" ? redactCommandPreview(pending?.command) : null,
+    reason: pending?.reason ? String(pending.reason).slice(0, 500) : null,
+    requestedAt: pending?.requestedAt ? String(pending.requestedAt).slice(0, 64) : null,
+  };
+}
 
 export function sanitizeDashboard(snapshot) {
   const cleanTask = (task) => ({
@@ -17,6 +42,7 @@ export function sanitizeDashboard(snapshot) {
     agent: String(task?.agent || ""),
     branch: task?.branch ? String(task.branch).slice(0, 160) : null,
     exactHead: task?.exactHead ? String(task.exactHead).slice(0, 64) : null,
+    pendingDecision: sanitizePendingDecision(task),
     failure: task?.failure?.code ? { code: String(task.failure.code).slice(0, 120) } : null,
     recovery: String(task?.status || "") === "INTERRUPTED"
       ? {
@@ -153,9 +179,12 @@ export class AtoRynBridge {
 
   async #executeCommand(command) {
     const commandId = clean(command?.id, 120);
-    const kind = command?.kind === "run" ? "run" : command?.kind === "cancel" ? "cancel" : null;
+    const rawKind = String(command?.kind || "");
+    const kind = ["run", "cancel", "decision"].includes(rawKind) ? rawKind : null;
     const taskId = clean(command?.taskId, 120);
-    if (!commandId || !kind || !taskId) {
+    const decision = kind === "decision" && REMOTE_DECISIONS.has(command?.decision) ? command.decision : null;
+    const expectedRequestId = kind === "decision" ? clean(command?.expectedRequestId, 160) : null;
+    if (!commandId || !kind || !taskId || (kind === "decision" && (!decision || !expectedRequestId))) {
       return { ok: false, error: "Malformed remote command." };
     }
 
@@ -170,10 +199,19 @@ export class AtoRynBridge {
     );
     if (started) {
       const task = this.store.getTask(taskId);
-      const active = task && ["RUNNING", "VERIFYING", "READY_TO_SHIP"].includes(task.status);
-      const replayResult = active
-        ? { ok: true, status: task.status, message: "Command đã được nhận trước đó; không chạy lặp." }
-        : { ok: false, status: task?.status || null, error: "Command đã được nhận trước đó; cần gửi lệnh mới để thử lại." };
+      let replayResult;
+      if (kind === "decision") {
+        const currentRequestId = clean(task?.pendingDecision?.requestId, 160);
+        const applied = task && ["RUNNING", "VERIFYING", "READY_TO_SHIP"].includes(task.status) && currentRequestId !== expectedRequestId;
+        replayResult = applied
+          ? { ok: true, status: task.status, message: "Decision đã được nhận trước đó; không áp dụng lặp." }
+          : { ok: false, status: task?.status || null, error: "Decision đã được nhận trước đó nhưng không có completion evidence; fail-closed." };
+      } else {
+        const active = task && ["RUNNING", "VERIFYING", "READY_TO_SHIP"].includes(task.status);
+        replayResult = active
+          ? { ok: true, status: task.status, message: "Command đã được nhận trước đó; không chạy lặp." }
+          : { ok: false, status: task?.status || null, error: "Command đã được nhận trước đó; cần gửi lệnh mới để thử lại." };
+      }
       await this.#recordCompleted(command, replayResult);
       return replayResult;
     }
@@ -185,11 +223,30 @@ export class AtoRynBridge {
       return result;
     }
 
+    if (kind === "decision") {
+      const currentRequestId = clean(task.pendingDecision?.requestId, 160);
+      if (task.status !== "NEEDS_INPUT" || !currentRequestId) {
+        const result = { ok: false, status: task.status, error: "Task không còn chờ approval; decision bị từ chối." };
+        await this.#recordCompleted(command, result);
+        return result;
+      }
+      if (currentRequestId !== expectedRequestId) {
+        const result = { ok: false, status: task.status, error: "Approval request đã thay đổi hoặc hết hạn; decision cũ bị từ chối." };
+        await this.#recordCompleted(command, result);
+        return result;
+      }
+    }
+
     await this.store.appendEvent({
       taskId,
       projectId: task.projectId,
       type: REMOTE_STARTED,
-      payload: { commandId, kind },
+      payload: {
+        commandId,
+        kind,
+        decision: kind === "decision" ? decision : null,
+        expectedRequestId: kind === "decision" ? expectedRequestId : null,
+      },
     });
 
     let result;
@@ -202,9 +259,16 @@ export class AtoRynBridge {
           status: next?.status || "RUNNING",
           message: wasInterrupted ? "Task interrupted đã được resume an toàn trên Codex local." : "Task đã được giao cho Codex local.",
         };
-      } else {
+      } else if (kind === "cancel") {
         await this.runner.cancel(taskId);
         result = { ok: true, status: this.store.getTask(taskId)?.status || task.status, message: "Đã gửi yêu cầu hủy process local." };
+      } else {
+        const next = await this.runner.decide(taskId, decision);
+        result = {
+          ok: true,
+          status: next?.status || this.store.getTask(taskId)?.status || "RUNNING",
+          message: `Codex approval đã nhận decision ${decision}.`,
+        };
       }
     } catch (error) {
       result = { ok: false, status: this.store.getTask(taskId)?.status || task.status, error: safeError(error) };
