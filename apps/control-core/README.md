@@ -56,14 +56,14 @@ The runner asks Codex to commit intended changes. A task cannot become `READY_TO
 
 ### Interactive Codex app-server mode
 
-Interactive approvals are opt-in while the app-server path is being dogfooded:
+Interactive approvals remain opt-in while the live path is being dogfooded:
 
 ```bash
 export CYCLEWARDEN_CODEX_MODE="app-server"
 pnpm dev:control-center
 ```
 
-The local core then starts `codex app-server --stdio`, performs the official initialize/thread/turn handshake, and routes command/file-change approval RPCs into `NEEDS_INPUT`.
+The local core then starts `codex app-server --stdio`, performs the initialize/thread/turn handshake, explicitly requests `approvalPolicy: on-request`, `approvalsReviewer: user`, and `sandbox: workspace-write`, and routes command/file-change approval RPCs into `NEEDS_INPUT`.
 
 The Control Center exposes only bounded decisions:
 
@@ -161,18 +161,58 @@ export CYCLEWARDEN_ATORYN_POLL_MS="5000"
 
 The bridge is disabled when URL/token are absent. It is intentionally outbound-only and production URLs must use HTTPS.
 
-The synchronized snapshot excludes local paths, task objectives, acceptance criteria, Codex output and file contents. The currently deployed bridge protocol can request `run` or `cancel` for tasks that already exist in the local store; remote approval decisions are intentionally deferred until the local app-server path is fully verified.
+The synchronized snapshot excludes local paths, task objectives, acceptance criteria, Codex output and file contents. V0.3 supports `run`, `cancel`, and bounded approval `decision` commands for tasks that already exist in the local store. Approval callbacks are request-bound, stale-safe, and still validated by the local runner before Codex receives any decision.
 
 The local core polls for commands at the configured cadence (5 seconds by default). Snapshot changes sync immediately; when nothing changes, snapshot sync falls back to a 15-second heartbeat instead of retransmitting on every poll.
 
 Remote delivery is at-least-once. The core persists `remote.command_started` / `remote.command_completed` events so a redelivered command does not execute its side effect twice.
 
-Bridge health is visible in:
+Bridge health and the active Codex runtime mode are visible in:
 
 ```text
 GET /health
 GET /doctor
 ```
+
+### Live Codex × AtoRyn approval dogfood
+
+V0.4 adds an explicit opt-in canary for the real topology. It does **not** start another core. It talks to the already-running loopback Control Core, verifies that the live AtoRyn Worker advertises approval decisions, creates an isolated Git fixture under the Control Center data directory, and starts a real app-server task.
+
+Start the real core first with app-server mode and a configured AtoRyn bridge:
+
+```bash
+export CYCLEWARDEN_CODEX_MODE="app-server"
+export CYCLEWARDEN_ATORYN_URL="https://<your-live-atoryn-worker>"
+export CYCLEWARDEN_ATORYN_TOKEN="<bridge-secret>"
+pnpm dev:control-center
+```
+
+Then, in another terminal:
+
+```bash
+export CYCLEWARDEN_LIVE_APPROVAL_DOGFOOD_CONFIRM="RUN:LIVE-ATORYN-APPROVAL"
+pnpm control:dogfood
+```
+
+The canary refuses to run unless all of these are true:
+
+- `/doctor` reports the running core is healthy and actually using `app-server`;
+- the AtoRyn bridge is enabled and recently connected;
+- the live Worker's `/check` reports `decision` support and all four bounded approval choices;
+- Codex reaches `NEEDS_INPUT` for the canary's harmless outside-worktree marker write.
+
+When the terminal prints that Codex is waiting, open the private AtoRyn Telegram chat and press **Allow once** on that task. Do not use the local web approval buttons for this canary.
+
+A passing run requires all of the following evidence:
+
+- `agent.approval_requested` and `agent.approval_decided`;
+- `remote.command_started` and successful `remote.command_completed` with `kind=decision`;
+- the exact marker content outside the worktree;
+- only `src/sum.mjs` changed inside the Git task;
+- repository verification passed;
+- the task reached `READY_TO_SHIP` with a clean worktree and exact Git head evidence.
+
+The canary is intentionally not executed in CI because it requires the user's authenticated Codex CLI, live AtoRyn Worker, Telegram interaction, and local repository access. CI only syntax-checks the harness.
 
 ## Security boundary
 
@@ -197,6 +237,6 @@ http://127.0.0.1:3000
 
 Override with a comma-separated list using `CYCLEWARDEN_CONTROL_ORIGINS`.
 
-## Current V0.2 boundary
+## Current V0.4 boundary
 
-`codex exec` remains the default compatibility path. `CYCLEWARDEN_CODEX_MODE=app-server` enables the interactive approval path after deterministic protocol + runner tests have passed. The next integration step is to carry the same bounded approval decisions through the authenticated AtoRyn bridge without widening its outbound-only trust boundary.
+`codex exec` remains the default compatibility path. `CYCLEWARDEN_CODEX_MODE=app-server` enables the interactive path. V0.3 carries bounded approvals through AtoRyn Telegram; V0.4 adds a reproducible live dogfood harness before app-server is considered for promotion to the default runtime.

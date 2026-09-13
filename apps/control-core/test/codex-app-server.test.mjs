@@ -102,6 +102,7 @@ test("app-server transport handshakes, correlates approval, and rejects stale de
     assert.equal(transcript.initialized, true);
     assert.equal(transcript.threadParams.cwd, root);
     assert.equal(transcript.threadParams.approvalPolicy, "on-request");
+    assert.equal(transcript.threadParams.approvalsReviewer, "user");
     assert.equal(transcript.threadParams.sandbox, "workspace-write");
     assert.equal(transcript.turnParams.threadId, "thread_fixture");
     assert.deepEqual(transcript.turnParams.input, [

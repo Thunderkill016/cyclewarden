@@ -13,6 +13,7 @@ const execFileAsync = promisify(execFile);
 const HOST = "127.0.0.1";
 const PORT = Number.parseInt(process.env.CYCLEWARDEN_CONTROL_PORT || "4318", 10);
 const BODY_LIMIT = 256 * 1024;
+const CODEX_MODE = process.env.CYCLEWARDEN_CODEX_MODE === "app-server" ? "app-server" : "exec";
 const allowedOrigins = new Set(
   (process.env.CYCLEWARDEN_CONTROL_ORIGINS || "http://localhost:3000,http://127.0.0.1:3000")
     .split(",")
@@ -138,6 +139,7 @@ async function route(req, res) {
       pid: process.pid,
       port: PORT,
       dataDir: store.dataDir,
+      runtime: { codexMode: CODEX_MODE },
       reconciledInterruptedTasks: reconciled,
       projectWatcher: projectWatcher.status(),
       remote: { atoryn: atorynBridge.status() },
@@ -153,6 +155,7 @@ async function route(req, res) {
     ]);
     sendJson(req, res, 200, {
       ok: gitVersion.ok && codexVersion.ok,
+      runtime: { codexMode: CODEX_MODE },
       git: gitVersion,
       codex: codexVersion,
       projectWatcher: projectWatcher.status(),
