@@ -15,6 +15,7 @@ function makeTask(status = "BACKLOG") {
     worktreePath: "/home/user/private/worktree",
     exactHead: null,
     lastMessage: "private agent output",
+    pendingDecision: null,
     failure: null,
     updatedAt: new Date().toISOString(),
   };
@@ -38,11 +39,16 @@ class FakeStore {
         name: "demo",
         rootPath: "/home/user/private/repo",
         agentsPath: "/home/user/private/repo/AGENTS.md",
-        taskCounts: { total: 1, active: this.task.status === "RUNNING" ? 1 : 0, blocked: 0, readyToShip: 0 },
+        taskCounts: {
+          total: 1,
+          active: ["RUNNING", "VERIFYING"].includes(this.task.status) ? 1 : 0,
+          blocked: this.task.status === "NEEDS_INPUT" ? 1 : 0,
+          readyToShip: this.task.status === "READY_TO_SHIP" ? 1 : 0,
+        },
       }],
-      needsYou: [],
-      readyToShip: [],
-      inFlight: this.task.status === "RUNNING" ? [task] : [],
+      needsYou: this.task.status === "NEEDS_INPUT" ? [task] : [],
+      readyToShip: this.task.status === "READY_TO_SHIP" ? [task] : [],
+      inFlight: ["RUNNING", "VERIFYING"].includes(this.task.status) ? [task] : [],
       backlog: this.task.status === "BACKLOG" ? [task] : [],
       recentEvents: structuredClone(this.events),
     };
@@ -87,10 +93,43 @@ test("sanitized snapshot never exports local paths or task objective", () => {
   assert.equal(sanitized.projects[0].name, "demo");
 });
 
+test("sanitized NEEDS_INPUT approval preserves correlation id but redacts command secrets and local home", () => {
+  const store = new FakeStore();
+  store.task.status = "NEEDS_INPUT";
+  store.task.pendingDecision = {
+    requestId: "approval_current_123",
+    kind: "command",
+    command: "OPENAI_API_KEY=super-secret curl -H 'Authorization: Bearer bearer-secret-123' /home/user/private/repo && echo sk-proj-verysecrettoken",
+    reason: "Need network permission for the bounded check.",
+    threadId: "private_thread_should_not_leave_core",
+    turnId: "private_turn_should_not_leave_core",
+    itemId: "private_item_should_not_leave_core",
+    requestedAt: "2026-09-13T05:00:00.000Z",
+  };
+
+  const sanitized = sanitizeDashboard(store.dashboard());
+  const pending = sanitized.needsYou[0].pendingDecision;
+  const raw = JSON.stringify(sanitized);
+
+  assert.equal(pending.requestId, "approval_current_123");
+  assert.equal(pending.kind, "command");
+  assert.equal(pending.reason, "Need network permission for the bounded check.");
+  assert.match(pending.commandPreview, /OPENAI_API_KEY=<redacted>/);
+  assert.match(pending.commandPreview, /Bearer <redacted>/);
+  assert.match(pending.commandPreview, /<redacted-token>/);
+  assert.equal(raw.includes("super-secret"), false);
+  assert.equal(raw.includes("bearer-secret-123"), false);
+  assert.equal(raw.includes("verysecrettoken"), false);
+  assert.equal(raw.includes("/home/user"), false);
+  assert.equal(raw.includes("private_thread_should_not_leave_core"), false);
+  assert.equal(raw.includes("private_turn_should_not_leave_core"), false);
+  assert.equal(raw.includes("private_item_should_not_leave_core"), false);
+});
+
 test("idle bridge does not resync only because generatedAt changed", async () => {
   const store = new FakeStore();
   const calls = [];
-  const fetchImpl = async (url, init) => {
+  const fetchImpl = async (url) => {
     calls.push(String(url));
     if (String(url).endsWith("/sync")) return jsonResponse({ ok: true });
     if (String(url).endsWith("/pull")) return jsonResponse({ ok: true, commands: [] });
@@ -98,7 +137,7 @@ test("idle bridge does not resync only because generatedAt changed", async () =>
   };
   const bridge = new AtoRynBridge({
     store,
-    runner: { start() {}, cancel() {} },
+    runner: { start() {}, cancel() {}, decide() {} },
     fetchImpl,
     baseUrl: "https://telegram-ai.example.workers.dev",
     token: "test-secret",
@@ -125,6 +164,9 @@ test("re-delivered remote run command is not executed twice", async () => {
       return store.task;
     },
     async cancel() {
+      throw new Error("not expected");
+    },
+    async decide() {
       throw new Error("not expected");
     },
   };
@@ -169,9 +211,135 @@ test("re-delivered remote run command is not executed twice", async () => {
   assert.match(results[1].body.result.message, /giao cho Codex local/);
 });
 
+test("remote approval decision applies once and duplicate delivery does not call runner twice", async () => {
+  const store = new FakeStore();
+  store.task.status = "NEEDS_INPUT";
+  store.task.pendingDecision = {
+    requestId: "approval_current",
+    kind: "command",
+    command: "git status",
+    reason: "fixture",
+  };
+  let decisions = 0;
+  const runner = {
+    async start() { throw new Error("not expected"); },
+    async cancel() { throw new Error("not expected"); },
+    async decide(taskId, decision) {
+      decisions += 1;
+      assert.equal(taskId, store.task.id);
+      assert.equal(decision, "accept");
+      assert.equal(store.task.pendingDecision.requestId, "approval_current");
+      store.task.status = "RUNNING";
+      store.task.pendingDecision = null;
+      return store.task;
+    },
+  };
+  const command = {
+    id: "cc_decision_1",
+    kind: "decision",
+    decision: "accept",
+    expectedRequestId: "approval_current",
+    taskId: store.task.id,
+    projectId: store.task.projectId,
+    leaseId: "lease_decision_1",
+  };
+  const results = [];
+  const fetchImpl = async (url, init) => {
+    const body = JSON.parse(init.body || "{}");
+    if (String(url).endsWith("/sync")) return jsonResponse({ ok: true });
+    if (String(url).endsWith("/pull")) return jsonResponse({ ok: true, commands: [command] });
+    if (String(url).endsWith("/result")) {
+      results.push(body.result);
+      return jsonResponse({ ok: true });
+    }
+    return jsonResponse({ error: "unexpected" }, 404);
+  };
+
+  const bridge = new AtoRynBridge({
+    store,
+    runner,
+    fetchImpl,
+    baseUrl: "https://telegram-ai.example.workers.dev",
+    token: "test-secret",
+    coreId: "core_test",
+    pollMs: 5_000,
+  });
+
+  await bridge.tickOnce();
+  await bridge.tickOnce();
+
+  assert.equal(decisions, 1);
+  assert.equal(store.task.status, "RUNNING");
+  assert.equal(store.task.pendingDecision, null);
+  assert.equal(store.events.filter((event) => event.type === "remote.command_started").length, 1);
+  assert.equal(store.events.filter((event) => event.type === "remote.command_completed").length, 1);
+  assert.equal(results.length, 2);
+  assert.equal(results[0].ok, true);
+  assert.equal(results[1].ok, true);
+});
+
+test("stale remote decision cannot approve a newer pending Codex request", async () => {
+  const store = new FakeStore();
+  store.task.status = "NEEDS_INPUT";
+  store.task.pendingDecision = {
+    requestId: "approval_new",
+    kind: "command",
+    command: "npm test",
+    reason: "new approval",
+  };
+  let decisions = 0;
+  const runner = {
+    async start() { throw new Error("not expected"); },
+    async cancel() { throw new Error("not expected"); },
+    async decide() {
+      decisions += 1;
+      throw new Error("stale decision must never reach runner");
+    },
+  };
+  const command = {
+    id: "cc_decision_stale",
+    kind: "decision",
+    decision: "acceptForSession",
+    expectedRequestId: "approval_old",
+    taskId: store.task.id,
+    projectId: store.task.projectId,
+    leaseId: "lease_stale",
+  };
+  const results = [];
+  const fetchImpl = async (url, init) => {
+    const body = JSON.parse(init.body || "{}");
+    if (String(url).endsWith("/sync")) return jsonResponse({ ok: true });
+    if (String(url).endsWith("/pull")) return jsonResponse({ ok: true, commands: [command] });
+    if (String(url).endsWith("/result")) {
+      results.push(body.result);
+      return jsonResponse({ ok: true });
+    }
+    return jsonResponse({ error: "unexpected" }, 404);
+  };
+
+  const bridge = new AtoRynBridge({
+    store,
+    runner,
+    fetchImpl,
+    baseUrl: "https://telegram-ai.example.workers.dev",
+    token: "test-secret",
+    coreId: "core_test",
+    pollMs: 5_000,
+  });
+
+  await bridge.tickOnce();
+
+  assert.equal(decisions, 0);
+  assert.equal(store.task.status, "NEEDS_INPUT");
+  assert.equal(store.task.pendingDecision.requestId, "approval_new");
+  assert.equal(results.length, 1);
+  assert.equal(results[0].ok, false);
+  assert.match(results[0].error, /thay đổi|hết hạn/);
+});
+
 test("bridge rejects plaintext remote endpoints but allows localhost test endpoints", () => {
   const store = new FakeStore();
-  const runner = { start() {}, cancel() {} };
+  const runner = { start() {}, cancel() {}, decide() {} };
   assert.throws(
     () => new AtoRynBridge({ store, runner, baseUrl: "http://example.com", token: "x" }),
     /requires HTTPS/,
