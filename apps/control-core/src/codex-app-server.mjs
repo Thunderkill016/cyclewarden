@@ -57,9 +57,10 @@ export class CodexAppServerClient {
     this.child.stderr.on("data", (chunk) => this.onStderr?.(chunk));
     this.child.once("error", (error) => this.#closeWithError(error));
     this.child.once("close", (code, signal) => {
+      const reason = signal ?? code ?? "unknown";
       const error = this.closed
         ? null
-        : new Error(`Codex app-server exited unexpectedly (${signal || code ?? "unknown"}).`);
+        : new Error(`Codex app-server exited unexpectedly (${reason}).`);
       if (error) this.#closeWithError(error);
     });
 
