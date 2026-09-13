@@ -163,6 +163,15 @@ export async function inspectRepository(inputPath) {
     rootPath,
     defaultBranch: branch,
     registeredHead: head,
+    health: {
+      available: true,
+      head,
+      branch,
+      dirty: false,
+      changedFiles: 0,
+      headMoved: false,
+      changedAt: nowIso(),
+    },
     agentsPath,
     contractPath: (await exists(contractPath)) ? contractPath : null,
     contract: contractResult.contract,
@@ -171,6 +180,41 @@ export async function inspectRepository(inputPath) {
     verification,
     registeredAt: nowIso(),
   };
+}
+
+export async function inspectProjectHealth(project) {
+  const checkedAt = nowIso();
+  try {
+    const { stdout: head } = await git(project.rootPath, ["rev-parse", "HEAD"], { timeout: 5000 });
+    let branch = "HEAD";
+    try {
+      branch = (await git(project.rootPath, ["symbolic-ref", "--short", "HEAD"], { timeout: 5000 })).stdout;
+    } catch {
+      branch = "HEAD";
+    }
+    const { stdout: status } = await git(project.rootPath, ["status", "--porcelain=v1"], { timeout: 8000 });
+    const changedFiles = status ? status.split("\n").filter(Boolean).length : 0;
+    return {
+      available: true,
+      head,
+      branch,
+      dirty: changedFiles > 0,
+      changedFiles,
+      headMoved: Boolean(project.registeredHead && project.registeredHead !== head),
+      checkedAt,
+    };
+  } catch (error) {
+    return {
+      available: false,
+      head: null,
+      branch: null,
+      dirty: null,
+      changedFiles: null,
+      headMoved: null,
+      checkedAt,
+      error: String(error?.message || error).slice(0, 500),
+    };
+  }
 }
 
 function slugify(value) {
@@ -182,11 +226,25 @@ function slugify(value) {
     .slice(0, 40) || "task";
 }
 
+function taskBranch(task) {
+  if (task.branch) return task.branch;
+  const shortId = task.id.replace(/^task_/, "").slice(0, 8);
+  return `cyclewarden/${shortId}-${slugify(task.title)}`;
+}
+
+async function localBranchExists(project, branch) {
+  try {
+    await git(project.rootPath, ["show-ref", "--verify", `refs/heads/${branch}`], { timeout: 5000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function createTaskWorktree({ project, task, dataDir }) {
   const worktreesRoot = path.join(dataDir, "worktrees");
   await mkdir(worktreesRoot, { recursive: true });
-  const shortId = task.id.replace(/^task_/, "").slice(0, 8);
-  const branch = `cyclewarden/${shortId}-${slugify(task.title)}`;
+  const branch = taskBranch(task);
   const worktreePath = path.join(worktreesRoot, task.id);
 
   if (await exists(worktreePath)) {
@@ -195,19 +253,14 @@ export async function createTaskWorktree({ project, task, dataDir }) {
     return { branch, worktreePath: existingRoot, baseHead: task.baseHead, exactHead, reused: true };
   }
 
-  await execFileAsync("git", [
-    "-C",
-    project.rootPath,
-    "worktree",
-    "add",
-    "-b",
-    branch,
-    worktreePath,
-    task.baseHead,
-  ], { encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
+  const branchExists = await localBranchExists(project, branch);
+  const args = branchExists
+    ? ["-C", project.rootPath, "worktree", "add", worktreePath, branch]
+    : ["-C", project.rootPath, "worktree", "add", "-b", branch, worktreePath, task.baseHead];
+  await execFileAsync("git", args, { encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
 
   const { stdout: exactHead } = await git(worktreePath, ["rev-parse", "HEAD"]);
-  return { branch, worktreePath, baseHead: task.baseHead, exactHead, reused: false };
+  return { branch, worktreePath, baseHead: task.baseHead, exactHead, reused: branchExists };
 }
 
 export async function worktreeEvidence({ task }) {
@@ -231,6 +284,57 @@ export async function worktreeEvidence({ task }) {
     changedFiles: changedFiles ? changedFiles.split("\n").filter(Boolean) : [],
     statSummary,
   };
+}
+
+export async function inspectInterruptedWorktree({ project, task, dataDir }) {
+  const expectedPath = task.worktreePath || path.join(dataDir, "worktrees", task.id);
+  const branch = taskBranch(task);
+  const branchExists = await localBranchExists(project, branch);
+  if (!(await exists(expectedPath))) {
+    return {
+      canResume: branchExists,
+      worktreeExists: false,
+      branchExists,
+      branch,
+      worktreePath: expectedPath,
+      clean: null,
+      exactHead: null,
+      changedFiles: [],
+      reason: branchExists ? "WORKTREE_MISSING_BRANCH_RECOVERABLE" : "WORKTREE_AND_BRANCH_MISSING",
+      inspectedAt: nowIso(),
+    };
+  }
+
+  try {
+    const recoveryTask = { ...task, branch, worktreePath: expectedPath };
+    const evidence = await worktreeEvidence({ task: recoveryTask });
+    return {
+      canResume: true,
+      worktreeExists: true,
+      branchExists,
+      branch,
+      worktreePath: expectedPath,
+      clean: evidence.clean,
+      exactHead: evidence.exactHead,
+      changedFiles: evidence.changedFiles,
+      reason: evidence.clean ? "WORKTREE_CLEAN" : "WORKTREE_DIRTY",
+      inspectedAt: nowIso(),
+    };
+  } catch (error) {
+    return {
+      canResume: branchExists,
+      worktreeExists: true,
+      branchExists,
+      branch,
+      worktreePath: expectedPath,
+      clean: null,
+      exactHead: null,
+      changedFiles: [],
+      reason: "WORKTREE_INSPECTION_FAILED",
+      error: String(error?.message || error).slice(0, 500),
+      inspectedAt: nowIso(),
+    };
+  }
 }
 
 export async function removeTaskWorktree({ project, task }) {

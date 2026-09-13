@@ -80,6 +80,24 @@ export class ControlStore {
     });
   }
 
+  async patchProject(projectId, patch, event = null) {
+    return this.#mutate((state) => {
+      const index = state.projects.findIndex((project) => project.id === projectId);
+      if (index < 0) throw new Error(`Project not found: ${projectId}`);
+      state.projects[index] = { ...state.projects[index], ...patch };
+      if (event) {
+        state.events.push(
+          makeEvent({
+            projectId,
+            type: event.type,
+            payload: event.payload ?? {},
+          }),
+        );
+      }
+      return state.projects[index];
+    });
+  }
+
   async addTask(task) {
     return this.#mutate((state) => {
       if (!state.projects.some((project) => project.id === task.projectId)) {
@@ -139,14 +157,41 @@ export class ControlStore {
     });
   }
 
-  async reconcileInterruptedTasks() {
+  async reconcileInterruptedTasks({ inspectRecovery = null } = {}) {
     const interrupted = this.state.tasks.filter((task) => ["RUNNING", "VERIFYING"].includes(task.status));
     for (const task of interrupted) {
+      const project = this.getProject(task.projectId);
+      let recovery = {
+        canResume: false,
+        reason: "RECOVERY_NOT_INSPECTED",
+        inspectedAt: nowIso(),
+      };
+      if (typeof inspectRecovery === "function" && project) {
+        try {
+          recovery = await inspectRecovery({ project, task, dataDir: this.dataDir });
+        } catch (error) {
+          recovery = {
+            canResume: false,
+            reason: "RECOVERY_INSPECTION_FAILED",
+            error: String(error?.message || error).slice(0, 500),
+            inspectedAt: nowIso(),
+          };
+        }
+      }
+
       await this.transition(
         task.id,
-        "FAILED",
-        { failure: { code: "CORE_RESTARTED", message: "Local core restarted before the run completed." } },
-        "task.reconciled_after_restart",
+        "INTERRUPTED",
+        {
+          recovery,
+          failure: {
+            code: "CORE_RESTARTED",
+            message: recovery.canResume
+              ? "Local core restarted before the run completed. The isolated worktree can be resumed manually."
+              : "Local core restarted before the run completed. Recovery evidence is incomplete; inspect before retrying.",
+          },
+        },
+        "task.interrupted_after_restart",
       );
     }
     return interrupted.length;

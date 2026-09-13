@@ -18,6 +18,12 @@ export function sanitizeDashboard(snapshot) {
     branch: task?.branch ? String(task.branch).slice(0, 160) : null,
     exactHead: task?.exactHead ? String(task.exactHead).slice(0, 64) : null,
     failure: task?.failure?.code ? { code: String(task.failure.code).slice(0, 120) } : null,
+    recovery: String(task?.status || "") === "INTERRUPTED"
+      ? {
+          canResume: task?.recovery?.canResume === true,
+          reason: task?.recovery?.reason ? String(task.recovery.reason).slice(0, 120) : null,
+        }
+      : null,
     updatedAt: String(task?.updatedAt || ""),
   });
 
@@ -189,8 +195,13 @@ export class AtoRynBridge {
     let result;
     try {
       if (kind === "run") {
+        const wasInterrupted = task.status === "INTERRUPTED";
         const next = await this.runner.start(taskId);
-        result = { ok: true, status: next?.status || "RUNNING", message: "Task đã được giao cho Codex local." };
+        result = {
+          ok: true,
+          status: next?.status || "RUNNING",
+          message: wasInterrupted ? "Task interrupted đã được resume an toàn trên Codex local." : "Task đã được giao cho Codex local.",
+        };
       } else {
         await this.runner.cancel(taskId);
         result = { ok: true, status: this.store.getTask(taskId)?.status || task.status, message: "Đã gửi yêu cầu hủy process local." };

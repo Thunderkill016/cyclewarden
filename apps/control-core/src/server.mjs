@@ -4,7 +4,8 @@ import { promisify } from "node:util";
 import { URL } from "node:url";
 import { AtoRynBridge } from "./atoryn-bridge.mjs";
 import { createTaskRecord } from "./domain.mjs";
-import { git, inspectRepository } from "./git.mjs";
+import { git, inspectInterruptedWorktree, inspectRepository } from "./git.mjs";
+import { ProjectHealthWatcher } from "./project-health-watcher.mjs";
 import { AgentRunner } from "./runner.mjs";
 import { ControlStore } from "./store.mjs";
 
@@ -20,8 +21,10 @@ const allowedOrigins = new Set(
 );
 
 const store = await new ControlStore().init();
-const reconciled = await store.reconcileInterruptedTasks();
+const reconciled = await store.reconcileInterruptedTasks({ inspectRecovery: inspectInterruptedWorktree });
 const runner = new AgentRunner({ store });
+const projectWatcher = new ProjectHealthWatcher({ store });
+projectWatcher.start();
 const atorynBridge = new AtoRynBridge({ store, runner });
 atorynBridge.start();
 
@@ -136,6 +139,7 @@ async function route(req, res) {
       port: PORT,
       dataDir: store.dataDir,
       reconciledInterruptedTasks: reconciled,
+      projectWatcher: projectWatcher.status(),
       remote: { atoryn: atorynBridge.status() },
       time: new Date().toISOString(),
     });
@@ -151,6 +155,7 @@ async function route(req, res) {
       ok: gitVersion.ok && codexVersion.ok,
       git: gitVersion,
       codex: codexVersion,
+      projectWatcher: projectWatcher.status(),
       atoryn: atorynBridge.status(),
     });
     return;
@@ -174,7 +179,8 @@ async function route(req, res) {
     }
     const inspected = await inspectRepository(body.path.trim());
     const project = await store.registerProject(inspected);
-    sendJson(req, res, 201, { project });
+    await projectWatcher.refreshProject(project.id);
+    sendJson(req, res, 201, { project: store.getProject(project.id) });
     return;
   }
 
@@ -183,6 +189,7 @@ async function route(req, res) {
     const body = await readJson(req);
     const project = store.getProject(body.projectId);
     if (!project) throw new Error("projectId does not reference a registered project.");
+    if (project.health?.available === false) throw new Error("project repository is currently unavailable.");
     if (typeof body.title !== "string" || body.title.trim().length < 2) throw new Error("title is required.");
     if (typeof body.objective !== "string" || body.objective.trim().length < 3) throw new Error("objective is required.");
     const { stdout: baseHead } = await git(project.rootPath, ["rev-parse", "HEAD"]);
@@ -229,11 +236,13 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`[control-core] listening on http://${HOST}:${PORT}`);
   console.log(`[control-core] state: ${store.statePath}`);
+  if (reconciled) console.log(`[control-core] recovered ${reconciled} interrupted task(s) for manual review`);
   if (atorynBridge.enabled) console.log(`[control-core] AtoRyn bridge enabled: ${atorynBridge.status().baseUrl}`);
 });
 
 function shutdown(signal) {
   console.log(`[control-core] ${signal}; closing listener`);
+  projectWatcher.stop();
   atorynBridge.stop();
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(1), 5000).unref();

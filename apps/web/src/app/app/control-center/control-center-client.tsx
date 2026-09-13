@@ -12,6 +12,20 @@ type VerificationResult = {
   output: string;
 };
 
+type Recovery = {
+  canResume: boolean;
+  reason: string;
+  worktreeExists?: boolean;
+  branchExists?: boolean;
+  branch?: string | null;
+  worktreePath?: string | null;
+  clean?: boolean | null;
+  exactHead?: string | null;
+  changedFiles?: string[];
+  error?: string | null;
+  inspectedAt?: string;
+};
+
 type Task = {
   id: string;
   projectId: string;
@@ -25,9 +39,21 @@ type Task = {
   exactHead: string | null;
   lastMessage: string | null;
   verification: VerificationResult[];
+  recovery?: Recovery | null;
   failure?: { code: string; message: string } | null;
   evidence?: { clean: boolean; changedFiles: string[]; statSummary: string };
   updatedAt: string;
+};
+
+type ProjectHealth = {
+  available: boolean;
+  head: string | null;
+  branch: string | null;
+  dirty: boolean | null;
+  changedFiles: number | null;
+  headMoved: boolean | null;
+  error?: string | null;
+  checkedAt?: string;
 };
 
 type Project = {
@@ -38,6 +64,7 @@ type Project = {
   contractPath: string | null;
   packageManager: string;
   verification: { name: string; command: string; args: string[] }[];
+  health?: ProjectHealth | null;
   taskCounts: { total: number; active: number; blocked: number; readyToShip: number };
 };
 
@@ -54,6 +81,7 @@ type Doctor = {
   ok: boolean;
   git: { ok: boolean; version?: string; error?: string };
   codex: { ok: boolean; version?: string; error?: string };
+  projectWatcher?: { running: boolean; intervalMs: number; lastSweepAt: string | null; lastError: string | null };
 };
 
 async function coreFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -89,6 +117,11 @@ function StatusDot({ kind }: { kind: "good" | "warn" | "busy" | "muted" }) {
 
 function TaskCard({ task, action }: { task: Task; action: (task: Task, verb: "start" | "cancel") => Promise<void> }) {
   const running = task.status === "RUNNING" || task.status === "VERIFYING";
+  const interrupted = task.status === "INTERRUPTED";
+  const resumable = interrupted && task.recovery?.canResume === true;
+  const startable = ["BACKLOG", "READY", "FAILED"].includes(task.status) || resumable;
+  const actionLabel = interrupted ? "Resume" : task.status === "FAILED" ? "Retry" : "Run";
+
   return (
     <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -110,13 +143,15 @@ function TaskCard({ task, action }: { task: Task; action: (task: Task, verb: "st
           >
             Cancel
           </button>
-        ) : ["BACKLOG", "READY", "FAILED"].includes(task.status) ? (
+        ) : startable ? (
           <button
             onClick={() => void action(task, "start")}
             className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-background hover:opacity-90"
           >
-            {task.status === "FAILED" ? "Retry" : "Run"}
+            {actionLabel}
           </button>
+        ) : interrupted ? (
+          <span className="shrink-0 rounded-lg border border-amber-500/30 px-3 py-1.5 text-xs text-amber-300">Inspect recovery</span>
         ) : null}
       </div>
 
@@ -124,6 +159,24 @@ function TaskCard({ task, action }: { task: Task; action: (task: Task, verb: "st
         <div className="mt-3 rounded-lg bg-background/60 px-3 py-2 font-mono text-xs text-muted">
           {task.branch}
           {task.exactHead ? ` · ${task.exactHead.slice(0, 10)}` : ""}
+        </div>
+      )}
+
+      {interrupted && task.recovery && (
+        <div className="mt-3 rounded-xl border border-sky-500/25 bg-sky-500/5 p-3 text-xs text-muted">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={task.recovery.canResume ? "text-emerald-300" : "text-amber-300"}>
+              {task.recovery.canResume ? "Recovery verified" : "Recovery blocked"}
+            </span>
+            <span>·</span>
+            <span className="font-mono">{task.recovery.reason}</span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span>worktree: {task.recovery.worktreeExists ? "present" : "missing"}</span>
+            <span>branch: {task.recovery.branchExists ? "present" : "missing"}</span>
+            {typeof task.recovery.clean === "boolean" && <span>{task.recovery.clean ? "clean" : "dirty"}</span>}
+            {task.recovery.changedFiles?.length ? <span>{task.recovery.changedFiles.length} changed files</span> : null}
+          </div>
         </div>
       )}
 
@@ -175,6 +228,14 @@ function Section({ title, count, tone, children }: { title: string; count: numbe
       <div className="space-y-3">{children}</div>
     </section>
   );
+}
+
+function ProjectHealthBadge({ health }: { health?: ProjectHealth | null }) {
+  if (!health) return <span className="rounded border border-border px-1.5 py-0.5 text-muted">health ?</span>;
+  if (!health.available) return <span className="rounded border border-rose-500/30 px-1.5 py-0.5 text-rose-300">repo offline</span>;
+  if (health.dirty) return <span className="rounded border border-amber-500/30 px-1.5 py-0.5 text-amber-300">dirty {health.changedFiles ?? 0}</span>;
+  if (health.headMoved) return <span className="rounded border border-sky-500/30 px-1.5 py-0.5 text-sky-300">HEAD moved</span>;
+  return <span className="rounded border border-emerald-500/30 px-1.5 py-0.5 text-emerald-300">repo healthy</span>;
 }
 
 export function ControlCenterClient() {
@@ -230,6 +291,7 @@ export function ControlCenterClient() {
     () => new Map((snapshot?.projects ?? []).map((project) => [project.id, project])),
     [snapshot],
   );
+  const selectedProject = projectId ? projectById.get(projectId) : null;
 
   async function mutate<T>(work: () => Promise<T>) {
     setBusy(true);
@@ -288,6 +350,9 @@ export function ControlCenterClient() {
           </span>
           <span className={`rounded-full border px-3 py-1 ${doctor?.codex.ok ? "border-emerald-500/30 text-emerald-300" : "border-amber-500/30 text-amber-300"}`}>
             Codex {doctor?.codex.ok ? "online" : "offline"}
+          </span>
+          <span className={`rounded-full border px-3 py-1 ${doctor?.projectWatcher?.running ? "border-emerald-500/30 text-emerald-300" : "border-border text-muted"}`}>
+            Watcher {doctor?.projectWatcher?.running ? "online" : "?"}
           </span>
           <span className={`rounded-full border px-3 py-1 ${error ? "border-amber-500/30 text-amber-300" : streamConnected ? "border-emerald-500/30 text-emerald-300" : "border-sky-500/30 text-sky-300"}`}>
             Core {error ? "offline" : streamConnected ? "live" : "connecting"}
@@ -368,6 +433,11 @@ export function ControlCenterClient() {
               <option value="">Select project</option>
               {(snapshot?.projects ?? []).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
             </select>
+            {selectedProject?.health?.available === false && (
+              <p className="mt-2 rounded-lg border border-rose-500/25 bg-rose-500/5 px-3 py-2 text-xs text-rose-200">
+                Repository unavailable. New tasks are blocked until the watcher sees it again.
+              </p>
+            )}
             <input
               value={taskTitle}
               onChange={(event) => setTaskTitle(event.target.value)}
@@ -381,7 +451,10 @@ export function ControlCenterClient() {
               rows={5}
               className="mt-3 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
             />
-            <button disabled={busy || !projectId} className="mt-3 w-full rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-background disabled:opacity-50">
+            <button
+              disabled={busy || !projectId || selectedProject?.health?.available === false}
+              className="mt-3 w-full rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-background disabled:opacity-50"
+            >
               Add to backlog
             </button>
           </form>
@@ -400,6 +473,8 @@ export function ControlCenterClient() {
                   </div>
                   <p className="mt-1 truncate font-mono text-[11px] text-muted">{project.rootPath}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-muted">
+                    <ProjectHealthBadge health={project.health} />
+                    {project.health?.branch && <span className="rounded border border-border px-1.5 py-0.5">{project.health.branch}</span>}
                     {project.agentsPath && <span className="rounded border border-border px-1.5 py-0.5">AGENTS</span>}
                     {project.contractPath && <span className="rounded border border-border px-1.5 py-0.5">contract</span>}
                     {project.verification.map((check) => <span key={check.name} className="rounded border border-border px-1.5 py-0.5">{check.name}</span>)}

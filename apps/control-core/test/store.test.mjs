@@ -22,7 +22,7 @@ test("store persists projects and tasks across instances", async () => {
   }
 });
 
-test("restart reconciliation prevents phantom running tasks", async () => {
+test("restart reconciliation marks phantom running tasks interrupted with recovery evidence", async () => {
   const dataDir = await mkdtemp(path.join(os.tmpdir(), "cyclewarden-control-"));
   try {
     const store = await new ControlStore({ dataDir }).init();
@@ -34,10 +34,52 @@ test("restart reconciliation prevents phantom running tasks", async () => {
     await store.transition(task.id, "RUNNING");
 
     const reopened = await new ControlStore({ dataDir }).init();
-    const count = await reopened.reconcileInterruptedTasks();
+    const count = await reopened.reconcileInterruptedTasks({
+      inspectRecovery: async () => ({
+        canResume: true,
+        worktreeExists: true,
+        branchExists: true,
+        branch: "cyclewarden/task-demo",
+        worktreePath: "/tmp/recovery-worktree",
+        clean: false,
+        exactHead: "def456",
+        changedFiles: ["src/demo.ts"],
+        reason: "WORKTREE_DIRTY",
+        inspectedAt: new Date().toISOString(),
+      }),
+    });
+    const recovered = reopened.getTask(task.id);
     assert.equal(count, 1);
-    assert.equal(reopened.getTask(task.id).status, "FAILED");
-    assert.equal(reopened.getTask(task.id).failure.code, "CORE_RESTARTED");
+    assert.equal(recovered.status, "INTERRUPTED");
+    assert.equal(recovered.failure.code, "CORE_RESTARTED");
+    assert.equal(recovered.recovery.canResume, true);
+    assert.equal(recovered.recovery.reason, "WORKTREE_DIRTY");
+    assert.deepEqual(recovered.recovery.changedFiles, ["src/demo.ts"]);
+    assert.equal(reopened.dashboard().needsYou.some((item) => item.id === task.id), true);
+  } finally {
+    await rm(dataDir, { recursive: true, force: true });
+  }
+});
+
+test("restart reconciliation fails closed when recovery inspection cannot prove resumability", async () => {
+  const dataDir = await mkdtemp(path.join(os.tmpdir(), "cyclewarden-control-"));
+  try {
+    const store = await new ControlStore({ dataDir }).init();
+    await store.registerProject({ id: "project_1", name: "demo", rootPath: "/tmp/demo", registeredAt: new Date().toISOString() });
+    const task = await store.addTask(
+      createTaskRecord({ projectId: "project_1", title: "Task", objective: "Do work", baseHead: "abc123" }),
+    );
+    await store.transition(task.id, "READY");
+    await store.transition(task.id, "RUNNING");
+
+    const reopened = await new ControlStore({ dataDir }).init();
+    await reopened.reconcileInterruptedTasks({
+      inspectRecovery: async () => ({ canResume: false, reason: "WORKTREE_AND_BRANCH_MISSING", inspectedAt: new Date().toISOString() }),
+    });
+    const recovered = reopened.getTask(task.id);
+    assert.equal(recovered.status, "INTERRUPTED");
+    assert.equal(recovered.recovery.canResume, false);
+    assert.match(recovered.failure.message, /Recovery evidence is incomplete/);
   } finally {
     await rm(dataDir, { recursive: true, force: true });
   }

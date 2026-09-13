@@ -12,6 +12,12 @@ function buildPrompt(task) {
   const acceptance = task.acceptanceCriteria.length
     ? task.acceptanceCriteria.map((item) => `- ${item}`).join("\n")
     : "- Preserve existing behavior outside the requested scope.";
+  const recovery = task.recovery?.canResume
+    ? [
+        "This task is being resumed after the previous local process was interrupted.",
+        "Inspect the current branch/worktree before editing. Preserve coherent existing work rather than starting over blindly.",
+      ]
+    : [];
   return [
     "You are implementing one bounded task inside an isolated git worktree.",
     "Read AGENTS.md and repository-local instructions before editing.",
@@ -20,6 +26,7 @@ function buildPrompt(task) {
     "Run relevant repository checks before finishing.",
     "Commit all intended changes to the current task branch before your final response.",
     "Leave the worktree clean. If you cannot safely finish, explain the blocker instead of inventing success.",
+    ...recovery,
     "",
     `Task: ${task.title}`,
     `Objective: ${task.objective}`,
@@ -90,14 +97,21 @@ export class AgentRunner {
     if (this.processes.has(taskId)) throw new Error("Task is already running.");
     const project = this.store.getProject(task.projectId);
     if (!project) throw new Error(`Project not found: ${task.projectId}`);
+    if (project.health?.available === false) {
+      throw new Error("Project repository is currently unavailable.");
+    }
+    if (task.status === "INTERRUPTED" && task.recovery?.canResume !== true) {
+      throw new Error("Interrupted task cannot resume until recovery evidence proves the branch/worktree is recoverable.");
+    }
 
-    if (task.status === "BACKLOG" || task.status === "FAILED") {
+    if (["BACKLOG", "FAILED", "INTERRUPTED"].includes(task.status)) {
       task = await this.store.transition(taskId, "READY", { failure: null, verification: [] });
     }
     if (task.status !== "READY" && task.status !== "READY_TO_SHIP") {
       throw new Error(`Task cannot start from ${task.status}.`);
     }
 
+    const recovery = task.recovery ?? null;
     const worktree = await createTaskWorktree({ project, task, dataDir: this.store.dataDir });
     const runId = newRunId();
     task = await this.store.transition(
@@ -110,9 +124,10 @@ export class AgentRunner {
         exactHead: worktree.exactHead,
         lastMessage: null,
         pendingDecision: null,
+        recovery,
         failure: null,
       },
-      "task.run_started",
+      recovery ? "task.resume_started" : "task.run_started",
     );
 
     const args = ["exec", "--json", "--sandbox", "workspace-write", buildPrompt(task)];
@@ -134,7 +149,7 @@ export class AgentRunner {
       taskId,
       projectId: task.projectId,
       type: "agent.process_spawned",
-      payload: { agent: "codex", pid: child.pid ?? null, runId },
+      payload: { agent: "codex", pid: child.pid ?? null, runId, resumed: Boolean(recovery) },
     });
 
     child.stdout.on("data", (chunk) => {
@@ -303,6 +318,7 @@ export class AgentRunner {
         verification: results,
         exactHead: evidence.exactHead,
         evidence,
+        recovery: null,
         failure: null,
       },
       "task.ready_to_ship",
@@ -315,7 +331,7 @@ export class AgentRunner {
     await this.store.transition(
       taskId,
       "FAILED",
-      { ...extraPatch, failure: { code, message: String(message).slice(-8000) } },
+      { ...extraPatch, recovery: null, failure: { code, message: String(message).slice(-8000) } },
       "task.failed",
     );
   }
